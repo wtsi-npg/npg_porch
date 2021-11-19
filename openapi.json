@@ -1,0 +1,418 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Pipeline Orchestration (POrch)",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/pipelines/": {
+      "get": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Get information about all pipelines.",
+        "description": "Get all pipelines. A filter will be applied if used in the query.",
+        "operationId": "get_pipelines_pipelines__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Pipelines Pipelines  Get",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pipeline"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Create one pipeline record.",
+        "operationId": "create_pipeline_pipelines__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pipeline"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pipeline"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipelines/{pipeline_id}": {
+      "get": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Get information about one pipeline.",
+        "operationId": "get_pipeline_pipelines__pipeline_id__get",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Pipeline Name",
+              "type": "string"
+            },
+            "name": "pipeline_name",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pipeline"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analysis_tasks/": {
+      "get": {
+        "tags": [
+          "analysis_tasks"
+        ],
+        "summary": "Returns all analysis tasks.",
+        "description": "Return all tasks. A filter will be applied if used in the query.",
+        "operationId": "get_analysis_tasks_analysis_tasks__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Analysis Tasks Analysis Tasks  Get",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "analysis_tasks"
+        ],
+        "summary": "Update one analysis task.",
+        "operationId": "update_analysis_task_analysis_tasks__put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Task"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "analysis_tasks"
+        ],
+        "summary": "Create one analysis task.",
+        "operationId": "create_analysis_task_analysis_tasks__post",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Task Name",
+              "type": "string"
+            },
+            "name": "task_name",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analysis_tasks/{task_name}": {
+      "get": {
+        "tags": [
+          "analysis_tasks"
+        ],
+        "summary": "Get one analysis task.",
+        "description": "Get one analysis task using its unique name.",
+        "operationId": "get_analysis_task_analysis_tasks__task_name__get",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Task Name",
+              "type": "string"
+            },
+            "name": "task_name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analysis_tasks/claim": {
+      "post": {
+        "tags": [
+          "analysis_tasks"
+        ],
+        "summary": "Claim one analysis task.",
+        "description": "Claim one analysis task for a particular pipeline.",
+        "operationId": "claim_analysis_task_analysis_tasks_claim_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pipeline"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "index"
+        ],
+        "summary": "Web page with links to OpenAPI documentation.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "title": "HTTPValidationError",
+        "type": "object",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "Pipeline": {
+        "title": "Pipeline",
+        "required": [
+          "name",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        }
+      },
+      "Task": {
+        "title": "Task",
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        }
+      },
+      "ValidationError": {
+        "title": "ValidationError",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "loc": {
+            "title": "Location",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "pipelines",
+      "description": "Manage pipelines."
+    },
+    {
+      "name": "analysis_tasks",
+      "description": "Manage analysis tasks."
+    },
+    {
+      "name": "index",
+      "description": "Links to documentation."
+    }
+  ]
+}
