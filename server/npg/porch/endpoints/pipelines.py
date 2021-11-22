@@ -1,10 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from typing import List
 
-class Pipeline(BaseModel):
-    name: str
-    version: str
+from ..models.pipeline import Pipeline
 
 router = APIRouter(
     prefix="/pipelines",

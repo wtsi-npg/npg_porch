@@ -1,11 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from typing import List
 
-from ..endpoints.pipelines import Pipeline
-
-class Task(BaseModel):
-    name: str
+from ..models.pipeline import Pipeline
+from ..models.task import Task
 
 router = APIRouter(
     prefix="/analysis_tasks",
