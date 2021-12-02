@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from npg.porch.endpoints import pipelines, analysis_tasks
-#from npg.porch.endpoints import pipelines
+from npg.porch.endpoints import pipelines, tasks
 
 #https://fastapi.tiangolo.com/tutorial/bigger-applications/
 #https://fastapi.tiangolo.com/tutorial/metadata
@@ -24,12 +23,12 @@ tags_metadata = [
 
 
 app = FastAPI(
-    title = "Pipeline Orchestration (POrch)", 
+    title = "Pipeline Orchestration (POrch)",
     openapi_url = "/api/v1/openapi.json",
     openapi_tags = tags_metadata,
 )
 app.include_router(pipelines.router)
-app.include_router(analysis_tasks.router)
+app.include_router(tasks.router)
 
 @app.get(
     "/",

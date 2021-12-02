@@ -1,6 +1,6 @@
 # FastAPI Server for Pipeline Orchestration Project
 
-## Requirements.
+## Requirements
 
 Python >= 3.7
 
@@ -8,7 +8,7 @@ Python >= 3.7
 
 To run the server, please execute the following from the root directory:
 
-```
+```bash
 bash
 pip3 install -r requirements.txt
 cd server

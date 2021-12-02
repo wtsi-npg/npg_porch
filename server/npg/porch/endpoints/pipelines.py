@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from ..models.pipeline import Pipeline
+from npg.porch.models.pipeline import Pipeline
 
 router = APIRouter(
     prefix="/pipelines",
