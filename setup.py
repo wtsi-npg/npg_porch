@@ -13,7 +13,7 @@ setup(
         'npg': './server'
     },
     packages=['npg'],
-    license='Apache License 2.0',
+    license='GNU General Public License v3.0',
     author='Wellcome Sanger Institute',
     author_email='npg@sanger.ac.uk',
     description='Work allocation and tracking for portable pipelines',
