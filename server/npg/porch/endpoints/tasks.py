@@ -18,11 +18,13 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porch.models.task import Task
+
+from npg.porchdb.data_access import get_DbAccessor
 
 router = APIRouter(
     prefix="/tasks",
@@ -65,7 +67,7 @@ def get_tasks():
     response_model=Task,
     summary="Create one task."
 )
-def create_task(task: Task):
+def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
     Given a Task object, creats a database record for it and returns
     the same object with status 201 'Created'
@@ -76,6 +78,7 @@ def create_task(task: Task):
 
     Errors if task status is not PENDING.
     """
+    task = db_accessor.create_task(agent_id='stuff', task=task)
     return task
 
 @router.put(
@@ -83,7 +86,7 @@ def create_task(task: Task):
     response_model=Task,
     summary="Update one task."
 )
-def update_task(task: Task):
+def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
     Given a Task object, updates the status of the task in the database.
 
@@ -91,7 +94,7 @@ def update_task(task: Task):
     should exist. If it does not exist, return status 404 'Not found' and
     an error.
     """
-    return task
+    return db_accessor.update_task(task)
 
 @router.post(
     "/claim",
@@ -99,7 +102,11 @@ def update_task(task: Task):
     summary="Claim tasks.",
     description="Claim tasks for a particular pipeline."
 )
-def claim_task(pipeline: Pipeline, num_tasks: int = 1) -> List[Task]:
+def claim_task(
+    pipeline: Pipeline,
+    num_tasks: int=1,
+    db_accessor=Depends(get_DbAccessor)
+) -> List[Task]:
     """
     Arguments - the Pipeline object and the maximum number of tasks
     to retrieve and claim, the latter defaults to 1 if not given.
@@ -125,9 +132,10 @@ def claim_task(pipeline: Pipeline, num_tasks: int = 1) -> List[Task]:
     # The pipeline object returned within the Task should be consistent
     # with the pipeline object in the payload, but, typically, will have
     # more attributes defined (uri, the specific version).
-    return [Task(
-                pipeline = Pipeline(name="yours"),
-                task_input_id = "fdgdfgfgdg",
-                task_input = ["/seq/4345/4345_1.bam","/seq/4345/4345_2.bam"],
-                status = "PENDING"
-            )]
+
+    tasks = db_accessor.claim_tasks(
+        agent_id='stuff',
+        pipeline=pipeline,
+        claim_limit=num_tasks
+    )
+    return tasks

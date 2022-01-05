@@ -23,7 +23,7 @@ setup(
         'fastapi',
         'pydantic',
         'psycopg2-binary',
-        'sqlalchemy',
+        'sqlalchemy>=1.4.29',
         'ujson',
         'uvicorn'
     ]

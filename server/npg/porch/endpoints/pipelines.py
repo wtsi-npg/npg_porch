@@ -18,10 +18,11 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
 from npg.porch.models.pipeline import Pipeline
+from npg.porchdb.data_access import get_DbAccessor
 
 router = APIRouter(
     prefix="/pipelines",
@@ -34,8 +35,8 @@ router = APIRouter(
     summary="Get information about all pipelines.",
     description="Get all pipelines. A filter will be applied if used in the query."
 )
-def get_pipelines() -> List[Pipeline]:
-    return [Pipeline(name="longranger", version="3.0")]
+def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
+    return db_accessor.get_all_pipelines()
 
 @router.get(
     "/{name}",
@@ -43,16 +44,15 @@ def get_pipelines() -> List[Pipeline]:
     responses={404: {"description": "Not found"}},
     summary="Get information about one pipeline.",
 )
-def get_pipeline(pipeline_name: str) -> List[Pipeline]:
+def get_pipeline(pipeline_name: str, db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
     if pipeline_name != "longranger":
         raise HTTPException(status_code=404, detail="Pipeline not found")
-    return [Pipeline(name="longranger", version="3.0")]
+    return db_accessor.get_all_pipelines(pipeline_name)
 
 @router.post(
     "/",
     response_model=Pipeline,
     summary="Create one pipeline record.",
 )
-def create_pipeline(pipeline: Pipeline) -> Pipeline:
-    return pipeline
-
+def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
+    return db_accessor.create_pipeline(pipeline)
