@@ -34,8 +34,8 @@ class Agent(Base):
     name = Column(String)
 
     claimed_tasks = relationship(
-        'task'
+        'Task'
     )
     events = relationship(
-        'event', back_populates='agent'
+        'Event', back_populates='agent'
     )

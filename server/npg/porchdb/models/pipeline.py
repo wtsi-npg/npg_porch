@@ -39,7 +39,7 @@ class Pipeline(Base):
 
     UniqueConstraint('repository_uri', 'version', name='unique_pipeline')
 
-    tasks = relationship('task', back_populates='pipeline')
+    tasks = relationship('Task', back_populates='pipeline')
 
     def convert_to_model(self):
         'Convert sqlalchemy object to npg_porch format'

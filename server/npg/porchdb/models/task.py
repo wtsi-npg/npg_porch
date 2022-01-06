@@ -50,19 +50,18 @@ class Task(Base):
     UniqueConstraint('pipeline_id', 'job_descriptor', name='unique_tasks')
 
     pipeline = relationship(
-        'pipeline', back_populates='tasks'
+        'Pipeline', back_populates='tasks'
     )
     events = relationship(
-        'event', back_populates='task'
+        'Event', back_populates='task'
     )
     agent = relationship(
-        'agent', back_populates='claimed_tasks'
+        'Agent', back_populates='claimed_tasks'
     )
 
-    @staticmethod
     def convert_to_model(self) -> ModelledTask:
         return ModelledTask(
-            pipeline=self.pipeline,
+            pipeline=self.pipeline.convert_to_model(),
             task_input_id=self.job_descriptor,
             task_input=self.definition,
             status=self.state

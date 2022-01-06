@@ -37,21 +37,8 @@ router = APIRouter(
     summary="Returns all tasks.",
     description="Return all tasks. A filter will be applied if used in the query."
 )
-def get_tasks():
-    return [
-        Task(
-            pipeline = Pipeline(name="mine"),
-            task_input_id = "sssssfffffff",
-            task_input = ["/seq/4345/4346_1.bam","/seq/4345/4346_2.bam"],
-            status = "COMPLETED"
-        ),
-        Task(
-            pipeline = Pipeline(name="yours"),
-            task_input_id = "fdgdfgfgdg",
-            task_input = ["/seq/4345/4345_1.bam","/seq/4345/4345_2.bam"],
-            status = "PENDING"
-        )
-    ]
+async def get_tasks(db_accessor=Depends(get_DbAccessor)):
+    return await db_accessor.get_tasks()
 
 #@router.get(
 #    "/{task_name}",
@@ -67,7 +54,7 @@ def get_tasks():
     response_model=Task,
     summary="Create one task."
 )
-def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
+async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
     Given a Task object, creats a database record for it and returns
     the same object with status 201 'Created'
@@ -78,15 +65,15 @@ def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
 
     Errors if task status is not PENDING.
     """
-    task = db_accessor.create_task(agent_id='stuff', task=task)
-    return task
+    # Needs error handling when creating a clashing unique task
+    return await db_accessor.create_task(agent_id=1, task=task)
 
 @router.put(
     "/",
     response_model=Task,
     summary="Update one task."
 )
-def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
+async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
     Given a Task object, updates the status of the task in the database.
 
@@ -94,7 +81,7 @@ def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     should exist. If it does not exist, return status 404 'Not found' and
     an error.
     """
-    return db_accessor.update_task(task)
+    return await db_accessor.update_task(task)
 
 @router.post(
     "/claim",
@@ -102,7 +89,7 @@ def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     summary="Claim tasks.",
     description="Claim tasks for a particular pipeline."
 )
-def claim_task(
+async def claim_task(
     pipeline: Pipeline,
     num_tasks: int=1,
     db_accessor=Depends(get_DbAccessor)
@@ -133,7 +120,7 @@ def claim_task(
     # with the pipeline object in the payload, but, typically, will have
     # more attributes defined (uri, the specific version).
 
-    tasks = db_accessor.claim_tasks(
+    tasks = await db_accessor.claim_tasks(
         agent_id='stuff',
         pipeline=pipeline,
         claim_limit=num_tasks

@@ -43,7 +43,10 @@ Permissions must be granted to the npg_rw and npg_ro users to the newly created 
 
 ```sql
 GRANT USAGE ON SCHEMA npg_porch TO npgtest_ro, npgtest_rw;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA npg_porch TO npgtest_rw;
 GRANT SELECT ON ALL TABLES IN SCHEMA npg_porch TO npgtest_ro;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA npg_porch TO npgtest_rw;
 ```
+
+Note that granting usage on sequences is required to allow autoincrement columns to work during an insert. This is a trick of newer Postgres versions.

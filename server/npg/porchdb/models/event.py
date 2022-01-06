@@ -39,9 +39,9 @@ class Event(Base):
     change = Column(String)
 
     task = relationship(
-        'task'
+        'Task'
     )
 
     agent = relationship(
-        'agent', back_populates='events'
+        'Agent', back_populates='events'
     )

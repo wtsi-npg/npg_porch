@@ -39,6 +39,5 @@ class Task(BaseModel):
     )
     status: Optional[str]
 
-    @staticmethod
-    def generate_analysis_id(self):
+    def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()

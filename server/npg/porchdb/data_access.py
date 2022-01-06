@@ -20,7 +20,7 @@
 
 import os
 from sqlalchemy import select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from typing import Optional, Dict, List
 
@@ -60,7 +60,7 @@ class AsyncDbAccessor:
 
             pipeline_result = await self.session.execute(
                 select(DbPipeline)
-                .filter(name=pipeline.name)
+                .filter_by(name=pipeline.name)
             )
         else:
             pipeline_result = await self.session.execute(
@@ -69,12 +69,12 @@ class AsyncDbAccessor:
             )
         return pipeline_result.scalar_one().convert_to_model()
 
-    async def get_all_pipelines(self, name: Optional[str]) -> List[Pipeline]:
+    async def get_all_pipelines(self, name: Optional[str]=None) -> List[Pipeline]:
         pipelines = []
         if name:
             pipelines = await self.session.execute(
                 select(DbPipeline)
-                .filter(name=name)
+                .filter_by(name=name)
             )
         else:
             pipelines = await self.session.execute(
@@ -124,10 +124,17 @@ class AsyncDbAccessor:
         )
         db_pipeline = pipeline_result.scalar_one()
         # Check they exist and so on
-        task.state('READY')
+        task.status = 'PENDING'
 
-        t = self.convert_task_to_db(task, agent, db_pipeline)
+        t = self.convert_task_to_db(task, db_pipeline)
         session.add(t)
+
+        event = Event(
+            task=t,
+            agent=agent,
+            change='Created'
+        )
+        t.events.append(event)
 
         await session.commit()
         # Error handling to follow
@@ -147,7 +154,7 @@ class AsyncDbAccessor:
         potential_runs = await session.execute(
             select(DbPipeline)
             .filter_by(repository_uri=pipeline.uri)
-            .filter_by(state='READY')
+            .filter_by(state='PENDING')
             .limit(claim_limit)
         )
 
@@ -174,7 +181,7 @@ class AsyncDbAccessor:
         task_result = await self.session.execute(
             select(DbTask)
             .filter(pipeline=db_pipe)
-            .filter(job_descriptor=task.generate_analysis_id())
+            .filter(job_descriptor=task.generate_task_id())
         )
         og_task = task_result.scalar_one()
         # Check that the updated state is a valid change
@@ -187,3 +194,23 @@ class AsyncDbAccessor:
             raise Exception('Could not find task to update it')
 
         return og_task.convert_to_model()
+
+    async def get_tasks(self) -> List[Task]:
+        '''
+        Gets all the tasks. Going to be problematic without filtering
+        '''
+        task_result = await self.session.execute(
+            select(DbTask)
+            .options(joinedload(DbTask.pipeline))
+        )
+        tasks = task_result.scalars().all()
+        return [t.convert_to_model() for t in tasks]
+
+    @staticmethod
+    def convert_task_to_db(task: Task, pipeline: DbPipeline) -> DbTask:
+        return DbTask(
+            pipeline=pipeline,
+            job_descriptor=task.generate_task_id(),
+            definition=task.task_input,
+            state=task.status
+        )

@@ -35,24 +35,25 @@ router = APIRouter(
     summary="Get information about all pipelines.",
     description="Get all pipelines. A filter will be applied if used in the query."
 )
-def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
-    return db_accessor.get_all_pipelines()
+async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
+    return await db_accessor.get_all_pipelines()
 
 @router.get(
-    "/{name}",
+    "/{pipeline_name}",
     response_model=List[Pipeline],
     responses={404: {"description": "Not found"}},
     summary="Get information about one pipeline.",
 )
-def get_pipeline(pipeline_name: str, db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
-    if pipeline_name != "longranger":
-        raise HTTPException(status_code=404, detail="Pipeline not found")
-    return db_accessor.get_all_pipelines(pipeline_name)
+async def get_pipeline(pipeline_name: str, db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
+    pipelines = await db_accessor.get_all_pipelines(name=pipeline_name)
+    if len(pipelines) == 0:
+        raise HTTPException(status_code=404, detail=f"Pipeline {pipeline_name} not found")
+    return pipelines
 
 @router.post(
     "/",
     response_model=Pipeline,
     summary="Create one pipeline record.",
 )
-def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
-    return db_accessor.create_pipeline(pipeline)
+async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
+    return await db_accessor.create_pipeline(pipeline)
