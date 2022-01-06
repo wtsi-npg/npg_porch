@@ -42,6 +42,7 @@ psql --host=npg_porch_db --port=$PORT --username=npg_admin --password -d $SCHEMA
 Permissions must be granted to the npg_rw and npg_ro users to the newly created schema
 
 ```sql
+GRANT USAGE ON SCHEMA npg_porch TO npgtest_ro, npgtest_rw;
 GRANT SELECT ON ALL TABLES IN SCHEMA npg_porch TO npgtest_ro;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA npg_porch TO npgtest_rw;
