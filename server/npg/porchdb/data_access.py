@@ -20,7 +20,8 @@
 
 import os
 from sqlalchemy import select
-from sqlalchemy.orm import sessionmaker, joinedload
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import contains_eager, sessionmaker, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from typing import Optional, Dict, List
 
@@ -152,18 +153,28 @@ class AsyncDbAccessor:
         agent = agent_result.scalar_one()
 
         potential_runs = await session.execute(
-            select(DbPipeline)
-            .filter_by(repository_uri=pipeline.uri)
-            .filter_by(state='PENDING')
+            select(DbTask)
+            .join(DbTask.pipeline)
+            .where(DbPipeline.repository_uri == pipeline.uri)
+            .where(DbTask.state == 'PENDING')
+            .options(contains_eager(DbTask.pipeline))
+            .with_for_update()
             .limit(claim_limit)
+            .execution_options(populate_existing=True)
         )
 
         runs = potential_runs.scalars().all()
-        for run in runs:
-            run.agent = agent
-            run.state = 'CLAIMED'
-
-        await session.commit()
+        try:
+            for run in runs:
+                run.agent = agent
+                run.state = 'CLAIMED'
+                event = Event(change='Run claimed', agent=agent, task=run)
+                session.add(event)
+            await session.commit()
+        except IntegrityError as e:
+            print(e)
+            await session.rollback()
+            return []
 
         work = []
         for run in runs:

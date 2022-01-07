@@ -121,7 +121,7 @@ async def claim_task(
     # more attributes defined (uri, the specific version).
 
     tasks = await db_accessor.claim_tasks(
-        agent_id='stuff',
+        agent_id=1,
         pipeline=pipeline,
         claim_limit=num_tasks
     )

@@ -32,10 +32,6 @@ tags_metadata = [
         "description": "Manage pipelines.",
     },
     {
-        "name": "analysis_tasks",
-        "description": "Manage analysis tasks.",
-    },
-    {
         "name": "index",
         "description": "Links to documentation.",
     },
