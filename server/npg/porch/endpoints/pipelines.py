@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Genome Research Ltd.
+# Copyright (C) 2021, 2022 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
