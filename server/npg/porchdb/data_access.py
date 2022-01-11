@@ -157,6 +157,7 @@ class AsyncDbAccessor:
             .join(DbTask.pipeline)
             .where(DbPipeline.repository_uri == pipeline.uri)
             .where(DbTask.state == 'PENDING')
+            .order_by(DbTask.created)
             .options(contains_eager(DbTask.pipeline))
             .with_for_update()
             .limit(claim_limit)

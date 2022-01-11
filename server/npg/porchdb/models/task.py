@@ -19,9 +19,11 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from sqlalchemy import (
-    Column, Integer, String, JSON, UniqueConstraint, ForeignKey
+    Column, Integer, String, JSON, UniqueConstraint, ForeignKey, Index
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql.functions import now
+from sqlalchemy.sql.sqltypes import DateTime
 
 from .base import Base
 from npg.porch.models import Task as ModelledTask
@@ -46,8 +48,10 @@ class Task(Base):
     # prefix is a special property for uniquifying folder names
     # or LSF job names and so on.
     prefix = Column(String)
+    created = Column(DateTime, default=now())
 
     UniqueConstraint('pipeline_id', 'job_descriptor', name='unique_tasks')
+    Index('idx_ordered_tasks', pipeline_id, created)
 
     pipeline = relationship(
         'Pipeline', back_populates='tasks'
