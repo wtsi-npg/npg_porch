@@ -18,18 +18,24 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from sqlalchemy import (
+    Column, Integer, String
+)
+from sqlalchemy.orm import relationship
 
-class Pipeline(BaseModel):
-    name: str = Field(
-        None,
-        title='Pipeline Name',
-        description='A user-controlled name for the pipeline'
+from .base import Base
+
+class Agent(Base):
+    '''
+    An autonomous client that can take work units
+    '''
+    __tablename__ = 'agent'
+    agent_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+
+    claimed_tasks = relationship(
+        'Task'
     )
-    version: Optional[str] = 'latest'
-    uri: Optional[str] = Field(
-        None,
-        title='URI',
-        description='URI to bootstrap the pipeline code'
+    events = relationship(
+        'Event', back_populates='agent'
     )

@@ -18,18 +18,30 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pydantic import BaseModel, Field
-from typing import Optional
+import sqlalchemy
+from sqlalchemy import (
+    Column, Integer, String, DateTime, ForeignKey
+)
+from sqlalchemy.orm import relationship
 
-class Pipeline(BaseModel):
-    name: str = Field(
-        None,
-        title='Pipeline Name',
-        description='A user-controlled name for the pipeline'
+from .base import Base
+
+class Event(Base):
+    '''
+    A sequence of time-stamped state changes for each Task for
+    reporting and metrics purposes.
+    '''
+    __tablename__ = 'event'
+    event_id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(Integer, ForeignKey('task.task_id'))
+    time = Column(DateTime, default=sqlalchemy.sql.functions.now())
+    set_by = Column(Integer, ForeignKey('agent.agent_id'))
+    change = Column(String)
+
+    task = relationship(
+        'Task'
     )
-    version: Optional[str] = 'latest'
-    uri: Optional[str] = Field(
-        None,
-        title='URI',
-        description='URI to bootstrap the pipeline code'
+
+    agent = relationship(
+        'Agent', back_populates='events'
     )
