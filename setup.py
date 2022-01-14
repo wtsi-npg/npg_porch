@@ -29,6 +29,7 @@ setup(
         'uvicorn'
     ],
     tests_require=[
-        'pytest'
+        'pytest',
+        'pytest-asyncio'
     ]
 )
