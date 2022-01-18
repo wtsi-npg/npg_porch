@@ -1,11 +1,14 @@
 from collections import UserList
 import pytest
 import pytest_asyncio
+from starlette.testclient import TestClient
 
 from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
     Pipeline, Task, Event, Agent
 )
+import npg.porchdb.data_access
+from main import app
 
 @pytest.fixture
 def minimum_data():
@@ -63,3 +66,20 @@ async def async_minimum(async_session, minimum_data):
     async_session.add_all(minimum_data)
     await async_session.commit()
     return async_session
+
+
+@pytest_asyncio.fixture()
+async def fastapi_testclient(async_session) -> TestClient:
+    '''
+    Provides an uvicorn TestClient wrapping the application
+
+    No data: Combine with another fixture to have test data, e.g.
+    `def my_test(data_fixture, fastapi_testclient)`
+    '''
+    async with async_session.begin():
+
+        def _get_db_override():
+            return npg.porchdb.data_access.AsyncDbAccessor(async_session)
+
+        app.dependency_overrides[npg.porchdb.data_access.get_DbAccessor] = _get_db_override
+        yield TestClient(app)
