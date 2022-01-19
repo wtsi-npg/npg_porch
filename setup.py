@@ -22,7 +22,7 @@ setup(
         'asyncpg',
         'fastapi',
         'pydantic',
-        'pysqlite',
+        'pysqlite3',
         'psycopg2-binary',
         'sqlalchemy>=1.4.29',
         'ujson',
@@ -30,6 +30,7 @@ setup(
     ],
     tests_require=[
         'pytest',
-        'pytest-asyncio'
+        'pytest-asyncio',
+        'requests'
     ]
 )
