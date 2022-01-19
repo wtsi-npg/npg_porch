@@ -19,6 +19,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import PositiveInt
 from typing import List
 
 from npg.porch.models.pipeline import Pipeline
@@ -91,7 +92,7 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
 )
 async def claim_task(
     pipeline: Pipeline,
-    num_tasks: int=1,
+    num_tasks: PositiveInt=1,
     db_accessor=Depends(get_DbAccessor)
 ) -> List[Task]:
     """

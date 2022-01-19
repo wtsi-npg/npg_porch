@@ -21,6 +21,3 @@
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
-# Set the postgres schema name here
-# Probably needs a condition to avoid confusing sqlite?
-Base.metadata.schema = 'npg_porch'

@@ -25,16 +25,18 @@ from sqlalchemy.orm import contains_eager, sessionmaker, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from typing import Optional, Dict, List
 
-from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Agent, Event
+from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Agent, Event, Base
 from npg.porch.models import Task, Pipeline
 
 config = {
-    'DB_URL': os.environ.get('DB_URL')
+    'DB_URL': os.environ.get('DB_URL'),
+    'DB_SCHEMA': os.environ.get('DB_SCHEMA') if os.environ.get('DB_SCHEMA') else 'npg_porch'
 }
 
 engine = create_async_engine(
     config['DB_URL'], future=True
 )
+Base.metadata.schema = config['DB_SCHEMA']
 session_factory = sessionmaker(
     engine, expire_on_commit=False, class_=AsyncSession
 )
