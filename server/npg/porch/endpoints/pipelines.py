@@ -22,7 +22,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
 from npg.porch.models.pipeline import Pipeline
-from npg.porchdb.data_access import get_DbAccessor
+from main_config import get_DbAccessor
 
 router = APIRouter(
     prefix="/pipelines",
