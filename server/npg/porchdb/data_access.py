@@ -199,7 +199,6 @@ class AsyncDbAccessor:
             # Might be the same as the old one, but save and log nevertheless
             # in case we have some heart beat status in future.
             og_task.state(new_status)
-            session.add(og_task)
             event = Event(
                     change=f'Task changed, new status {new_status}',
                            token_id=token_id, task=task)
