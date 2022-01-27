@@ -155,7 +155,7 @@ class AsyncDbAccessor:
             .execution_options(populate_existing=True)
         )
 
-        claimed_tasks = potential_tasks.scalars().all();
+        claimed_tasks = potential_tasks.scalars().all()
         try:
             for task in claimed_tasks:
                 task.state = 'CLAIMED'
