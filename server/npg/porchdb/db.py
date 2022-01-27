@@ -27,7 +27,8 @@ from npg.porchdb.data_access import AsyncDbAccessor
 
 config = {
     'DB_URL': os.environ.get('DB_URL'),
-    'DB_SCHEMA': os.environ.get('DB_SCHEMA') if os.environ.get('DB_SCHEMA') else 'npg_porch'
+    'DB_SCHEMA': os.environ.get('DB_SCHEMA') if os.environ.get('DB_SCHEMA') else 'npg_porch',
+    'TEST': os.environ.get('TEST')
 }
 
 if config['DB_URL'] is None or config['DB_URL'] == '':

@@ -22,7 +22,6 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from npg.porch.endpoints import pipelines, tasks
-import main_config
 
 #https://fastapi.tiangolo.com/tutorial/bigger-applications/
 #https://fastapi.tiangolo.com/tutorial/metadata

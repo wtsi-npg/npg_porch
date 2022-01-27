@@ -25,7 +25,7 @@ from typing import List
 from npg.porch.models.pipeline import Pipeline
 from npg.porch.models.task import Task
 
-from main_config import get_DbAccessor
+from npg.porchdb.db import get_DbAccessor
 
 router = APIRouter(
     prefix="/tasks",

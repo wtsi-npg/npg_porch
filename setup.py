@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 from distutils.util import convert_path
 
 version_path = convert_path('server/npg/version.py')

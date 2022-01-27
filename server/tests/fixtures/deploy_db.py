@@ -8,8 +8,8 @@ from npg.porchdb.models import (
     Pipeline, Task, Event, Agent
 )
 import npg.porchdb.data_access
+import npg.porchdb.db
 from main import app
-import main_config
 
 @pytest.fixture
 def minimum_data():
@@ -82,5 +82,5 @@ async def fastapi_testclient(async_session) -> TestClient:
         def _get_db_override():
             return npg.porchdb.data_access.AsyncDbAccessor(async_session)
 
-        app.dependency_overrides[main_config.get_DbAccessor] = _get_db_override
+        app.dependency_overrides[npg.porchdb.db.get_DbAccessor] = _get_db_override
         yield TestClient(app)
