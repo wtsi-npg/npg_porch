@@ -26,7 +26,8 @@ setup(
         'psycopg2-binary',
         'sqlalchemy>=1.4.29',
         'ujson',
-        'uvicorn'
+        'uvicorn',
+        'uuid'
     ],
     tests_require=[
         'pytest',

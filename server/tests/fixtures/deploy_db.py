@@ -5,27 +5,29 @@ from starlette.testclient import TestClient
 
 from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
-    Pipeline, Task, Event, Agent
+    Pipeline, Task, Event, Token
 )
 import npg.porchdb.data_access
 from main import app
 
 @pytest.fixture
 def minimum_data():
-    'Provides one of everything'
+    'Provides one or two of everything'
 
     pipeline = Pipeline(
         repository_uri='pipeline-test.com',
         version='0.3.14'
     )
-    job_finder = Agent(
-        name='job_finder'
+    job_finder_token = Token(
+        pipeline=pipeline,
+        description='OpenStack host, job finder'
     )
-    job_runner = Agent(
-        name='job_runner'
+    job_runner_token = Token(
+        pipeline=pipeline,
+        description='Seqfarm host, job runner'
     )
     b_event = a_event = Event(
-        agent=job_finder,
+        token=job_finder_token,
         change='Created'
     )
     tasks = [
@@ -48,7 +50,8 @@ def minimum_data():
             }
         )
     ]
-    entities = UserList([pipeline, job_finder, job_runner, b_event, a_event])
+    entities = UserList(
+            [pipeline, job_finder_token, job_runner_token, b_event, a_event])
     for t in tasks:
         entities.append(t)
     return entities

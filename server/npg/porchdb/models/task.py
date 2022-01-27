@@ -35,7 +35,6 @@ class Task(Base):
     '''
     __tablename__ = 'task'
     task_id = Column(Integer, primary_key=True, autoincrement=True)
-    claimed_by = Column(Integer, ForeignKey('agent.agent_id'))
     pipeline_id = Column(Integer, ForeignKey('pipeline.pipeline_id'))
     job_descriptor = Column(String, unique=True)
     # This is the serialisation of Dict representing the JSON
@@ -58,9 +57,6 @@ class Task(Base):
     )
     events = relationship(
         'Event', back_populates='task'
-    )
-    agent = relationship(
-        'Agent', back_populates='claimed_tasks'
     )
 
     def convert_to_model(self) -> ModelledTask:

@@ -1,5 +1,5 @@
 from .base import Base
-from .agent import Agent
+from .token import Token
 from .pipeline import Pipeline
 from .task import Task
 from .event import Event

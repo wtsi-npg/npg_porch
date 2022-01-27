@@ -35,13 +35,15 @@ class Event(Base):
     event_id = Column(Integer, primary_key=True, autoincrement=True)
     task_id = Column(Integer, ForeignKey('task.task_id'))
     time = Column(DateTime, default=sqlalchemy.sql.functions.now())
-    set_by = Column(Integer, ForeignKey('agent.agent_id'))
     change = Column(String)
+    token_id = Column(Integer, ForeignKey('token.token_id'), nullable=False)
 
     task = relationship(
         'Task'
     )
 
-    agent = relationship(
-        'Agent', back_populates='events'
+    # Consider adding 'order_by=Token.token_id'
+    token = relationship(
+        'Token', back_populates='events'
     )
+
