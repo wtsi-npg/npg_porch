@@ -67,7 +67,7 @@ async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     Errors if task status is not PENDING.
     """
     # Needs error handling when creating a clashing unique task
-    return await db_accessor.create_task(agent_id=1, task=task)
+    return await db_accessor.create_task(token_id=1, task=task)
 
 @router.put(
     "/",
@@ -82,7 +82,7 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     should exist. If it does not exist, return status 404 'Not found' and
     an error.
     """
-    return await db_accessor.update_task(task)
+    return await db_accessor.update_task(token_id=1, task=task)
 
 @router.post(
     "/claim",
@@ -122,7 +122,7 @@ async def claim_task(
     # more attributes defined (uri, the specific version).
 
     tasks = await db_accessor.claim_tasks(
-        agent_id=1,
+        token_id=1,
         pipeline=pipeline,
         claim_limit=num_tasks
     )

@@ -25,7 +25,7 @@ from sqlalchemy.orm import contains_eager, sessionmaker, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from typing import Optional, Dict, List
 
-from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Agent, Event, Base
+from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event, Base
 from npg.porch.models import Task, Pipeline
 
 config = {
@@ -113,14 +113,9 @@ class AsyncDbAccessor:
         return pipe.convert_to_model()
 
 
-    async def create_task(self, agent_id: str, task: Task) -> Task:
+    async def create_task(self, token_id: int, task: Task) -> Task:
 
         session = self.session
-        agent_result = await session.execute(
-            select(Agent)
-            .filter_by(agent_id=agent_id)
-        )
-        agent = agent_result.scalar_one()
         pipeline_result = await session.execute(
             select(DbPipeline)
             .filter_by(repository_uri=task.pipeline.uri)
@@ -134,7 +129,7 @@ class AsyncDbAccessor:
 
         event = Event(
             task=t,
-            agent=agent,
+            token_id = token_id,
             change='Created'
         )
         t.events.append(event)
@@ -144,17 +139,11 @@ class AsyncDbAccessor:
         return t.convert_to_model()
 
     async def claim_tasks(
-        self, agent_id: int, pipeline: Pipeline, claim_limit: Optional[int] = 1
+        self, token_id: int, pipeline: Pipeline, claim_limit: Optional[int] = 1
     ) -> List[Task]:
         session = self.session
 
-        agent_result = await session.execute(
-            select(Agent)
-            .filter_by(agent_id=agent_id)
-        )
-        agent = agent_result.scalar_one()
-
-        potential_runs = await session.execute(
+        potential_tasks = await session.execute(
             select(DbTask)
             .join(DbTask.pipeline)
             .where(DbPipeline.repository_uri == pipeline.uri)
@@ -166,12 +155,12 @@ class AsyncDbAccessor:
             .execution_options(populate_existing=True)
         )
 
-        runs = potential_runs.scalars().all()
+        claimed_tasks = potential_tasks.scalars().all();
         try:
-            for run in runs:
-                run.agent = agent
-                run.state = 'CLAIMED'
-                event = Event(change='Run claimed', agent=agent, task=run)
+            for task in claimed_tasks:
+                task.state = 'CLAIMED'
+                event = Event(
+                        change='Task claimed', token_id=token_id, task=task)
                 session.add(event)
             await session.commit()
         except IntegrityError as e:
@@ -180,15 +169,17 @@ class AsyncDbAccessor:
             return []
 
         work = []
-        for run in runs:
-            work.append(run.convert_to_model())
+        for task in claimed_tasks:
+            work.append(task.convert_to_model())
         return work
 
-    async def update_task(self, task: Task) -> Task:
+    async def update_task(self, token_id: int, task: Task) -> Task:
         '''
         Allows the modification of state of a task.
         Other fields cannot be changed
         '''
+
+        session = self.session
         # Get the matching task from the DB
         pipeline_result = await self.get_pipeline(task.pipeline)
         db_pipe = pipeline_result.scalar_one()
@@ -200,10 +191,20 @@ class AsyncDbAccessor:
         og_task = task_result.scalar_one()
         # Check that the updated state is a valid change
         if (og_task):
+            # TODO - any rollback?
             comparable_task = og_task.convert_to_model()
             if (comparable_task.task_input_id != task.task_input_id):
                 raise Exception('Cannot change task definition. Submit a new task instead')
-            og_task.state(task.status)
+            new_status = task.status
+            # Might be the same as the old one, but save and log nevertheless
+            # in case we have some heart beat status in future.
+            og_task.state(new_status)
+            session.add(og_task)
+            event = Event(
+                    change=f'Task changed, new status {new_status}',
+                           token_id=token_id, task=task)
+            session.add(event)
+            await session.commit()
         else:
             raise Exception('Could not find task to update it')
 

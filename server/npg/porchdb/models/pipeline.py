@@ -41,6 +41,8 @@ class Pipeline(Base):
 
     tasks = relationship('Task', back_populates='pipeline')
 
+    tokens = relationship('Token', back_populates='pipeline')
+
     def convert_to_model(self):
         'Convert sqlalchemy object to npg_porch format'
         return ModeledPipeline(
