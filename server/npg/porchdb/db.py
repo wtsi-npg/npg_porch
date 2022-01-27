@@ -28,8 +28,11 @@ from npg.porchdb.data_access import AsyncDbAccessor
 config = {
     'DB_URL': os.environ.get('DB_URL'),
     'DB_SCHEMA': os.environ.get('DB_SCHEMA') if os.environ.get('DB_SCHEMA') else 'npg_porch',
-    'TEST': os.environ.get('TEST')
+    'TEST': os.environ.get('NPG_PORCH_MODE')
 }
+
+if config['TEST']:
+    config['DB_URL'] = 'sqlite+aiosqlite:///:memory:'
 
 if config['DB_URL'] is None or config['DB_URL'] == '':
     raise Exception("ENV['DB_URL'] must be set with a database URL")
@@ -47,3 +50,11 @@ async def get_DbAccessor():
     async with session_factory() as session:
         async with session.begin():
             yield AsyncDbAccessor(session)
+
+
+async def deploy_schema():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+async def close_engine():
+    await engine.dispose()

@@ -1,18 +1,21 @@
+import os
 import pytest
 import pytest_asyncio
 import sqlalchemy
 import sqlalchemy.orm
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from npg.porchdb.models import Base
+from npg.porchdb.db import session_factory, deploy_schema, close_engine
 
 
 @pytest.fixture
 def sync_session():
-    'A synchronous sqlalchemy scoped session, connected to sqlite'
+    '''
+    A synchronous sqlalchemy scoped session, connected to sqlite
+    Use for tests that don't need a running npg_porch server
+    '''
 
     sqlite_url = 'sqlite+pysqlite:///:memory:'
-
     engine = sqlalchemy.create_engine(sqlite_url, future=True)
     Base.metadata.create_all(engine)
     SessionFactory = sqlalchemy.orm.sessionmaker(bind=engine)
@@ -36,19 +39,11 @@ async def async_session():
         ...
     ```
     '''
+    if os.environ.get('NPG_PORCH_MODE') is None:
+        raise Exception('Do not run async tests without setting $ENV{NPG_PORCH_MODE}')
+    await deploy_schema()
+    session = session_factory()
 
-    sqlite_url = 'sqlite+aiosqlite:///:memory:'
-
-    engine = create_async_engine(
-        sqlite_url, future=True
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    SesssionFactory = sqlalchemy.orm.sessionmaker(
-        engine, expire_on_commit=False, class_=AsyncSession
-    )
-    session = SesssionFactory()
     yield session
     await session.close()
-    await engine.dispose()
+    await close_engine()

@@ -20,8 +20,11 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
 and open your browser at `http://localhost:8080` to see links to the docs.
 
+The server will not start without `DB_URL` in the environment
+
 ## Testing
 
+`export NPG_PORCH_MODE=TEST`
 Use `pytest` from the package root
 
 Individual tests are run in the form `pytest server/tests/init_test.py`
@@ -31,7 +34,7 @@ Individual tests are run in the form `pytest server/tests/init_test.py`
 Fixtures reside under `server/tests/fixtures` and are registered in `server/tests/conftest.py`
 They can also be listed by invoking `pytest --fixtures`
 
-Any fixtures that are not imported in conftest.py will not be detected.
+Any fixtures that are not imported in `conftest.py` will not be detected.
 
 ## Deployment of schema from ORM
 
