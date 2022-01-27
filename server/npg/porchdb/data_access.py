@@ -38,25 +38,25 @@ class AsyncDbAccessor:
         self.session = session
 
     async def get_pipeline(self, pipeline: Pipeline):
-        if pipeline.name:
 
-            pipeline_result = await self.session.execute(
-                select(DbPipeline)
-                .filter_by(name=pipeline.name)
-            )
-        else:
-            pipeline_result = await self.session.execute(
-                select(DbPipeline)
-                .filter(repository_uri=pipeline.uri)
-            )
-        return pipeline_result.scalar_one().convert_to_model()
+        pipeline = await self._get_pipeline_db_object(pipeline)
+        return pipeline.convert_to_model()
 
-    async def get_all_pipelines(self, name: Optional[str]=None) -> List[Pipeline]:
+    async def _get_pipeline_db_object(self, pipeline: Pipeline):
+
+        pipeline_result = await self.session.execute(
+            select(DbPipeline)
+            .filter_by(name=pipeline.name)
+        )
+        return pipeline_result.scalar_one()
+
+    async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
+
         pipelines = []
-        if name:
+        if uri:
             pipelines = await self.session.execute(
                 select(DbPipeline)
-                .filter_by(name=name)
+                .filter_by(repository_uri=uri)
             )
         else:
             pipelines = await self.session.execute(
@@ -65,18 +65,6 @@ class AsyncDbAccessor:
 
         return [pipe.convert_to_model() for pipe in pipelines.scalars().all()]
 
-    async def get_pipeline_tasks(self, state: str) -> List[Task]:
-        if (state):
-            tasks = await self.session.execute(
-                select(DbTask)
-                .filter(state=state)
-            )
-        else:
-            tasks = await self.session.execute(
-                select(DbTask)
-            )
-
-        return [t.convert_to_model() for t in tasks.scalars().all()]
 
     async def create_pipeline(self, pipeline) -> Pipeline:
         session = self.session
@@ -97,7 +85,7 @@ class AsyncDbAccessor:
         session = self.session
         pipeline_result = await session.execute(
             select(DbPipeline)
-            .filter_by(repository_uri=task.pipeline.uri)
+            .filter_by(name=task.pipeline.name)
         )
         db_pipeline = pipeline_result.scalar_one()
         # Check they exist and so on
@@ -125,7 +113,7 @@ class AsyncDbAccessor:
         potential_tasks = await session.execute(
             select(DbTask)
             .join(DbTask.pipeline)
-            .where(DbPipeline.repository_uri == pipeline.uri)
+            .where(DbPipeline.name == pipeline.name)
             .where(DbTask.state == 'PENDING')
             .order_by(DbTask.created)
             .options(contains_eager(DbTask.pipeline))
@@ -155,13 +143,12 @@ class AsyncDbAccessor:
     async def update_task(self, token_id: int, task: Task) -> Task:
         '''
         Allows the modification of state of a task.
-        Other fields cannot be changed
+        Other fields cannot be changed.
         '''
 
         session = self.session
         # Get the matching task from the DB
-        pipeline_result = await self.get_pipeline(task.pipeline)
-        db_pipe = pipeline_result.scalar_one()
+        db_pipe = await self._get_pipeline_db_object(task.pipeline)
         task_result = await self.session.execute(
             select(DbTask)
             .filter(pipeline=db_pipe)

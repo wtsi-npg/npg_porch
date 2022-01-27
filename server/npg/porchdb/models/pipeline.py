@@ -33,11 +33,9 @@ class Pipeline(Base):
     '''
     __tablename__ = 'pipeline'
     pipeline_id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
-    repository_uri = Column(String)
-    version = Column(String)
-
-    UniqueConstraint('repository_uri', 'version', name='unique_pipeline')
+    name = Column(String, unique=True, nullable=False)
+    repository_uri = Column(String, nullable=False)
+    version = Column(String, nullable=False)
 
     tasks = relationship('Task', back_populates='pipeline')
 
