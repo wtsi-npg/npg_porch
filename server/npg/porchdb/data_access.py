@@ -37,18 +37,18 @@ class AsyncDbAccessor:
     def __init__(self, session):
         self.session = session
 
-    async def get_pipeline(self, pipeline: Pipeline):
+    async def get_pipeline(self, name: str) -> Pipeline:
 
-        pipeline = await self._get_pipeline_db_object(pipeline)
+        pipeline = await self._get_pipeline_db_object(name)
         return pipeline.convert_to_model()
 
-    async def _get_pipeline_db_object(self, pipeline: Pipeline):
+    async def _get_pipeline_db_object(self, name: str):
 
         pipeline_result = await self.session.execute(
             select(DbPipeline)
-            .filter_by(name=pipeline.name)
+            .filter_by(name=name)
         )
-        return pipeline_result.scalar_one()
+        return pipeline_result.one() # errors if no rows
 
     async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
 
@@ -83,11 +83,7 @@ class AsyncDbAccessor:
     async def create_task(self, token_id: int, task: Task) -> Task:
 
         session = self.session
-        pipeline_result = await session.execute(
-            select(DbPipeline)
-            .filter_by(name=task.pipeline.name)
-        )
-        db_pipeline = pipeline_result.scalar_one()
+        db_pipeline = self._get_pipeline_db_object(task.pipeline.name)
         # Check they exist and so on
         task.status = 'PENDING'
 
@@ -148,30 +144,26 @@ class AsyncDbAccessor:
 
         session = self.session
         # Get the matching task from the DB
-        db_pipe = await self._get_pipeline_db_object(task.pipeline)
+        db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
         task_result = await self.session.execute(
             select(DbTask)
             .filter(pipeline=db_pipe)
             .filter(job_descriptor=task.generate_task_id())
         )
-        og_task = task_result.scalar_one()
+        og_task = task_result.one() # raises exception if no rows
         # Check that the updated state is a valid change
-        if (og_task):
-            # TODO - any rollback?
-            comparable_task = og_task.convert_to_model()
-            if (comparable_task.task_input_id != task.task_input_id):
-                raise Exception('Cannot change task definition. Submit a new task instead')
-            new_status = task.status
-            # Might be the same as the old one, but save and log nevertheless
-            # in case we have some heart beat status in future.
-            og_task.state(new_status)
-            event = Event(
-                    change=f'Task changed, new status {new_status}',
-                           token_id=token_id, task=task)
-            session.add(event)
-            await session.commit()
-        else:
-            raise Exception('Could not find task to update it')
+        comparable_task = og_task.convert_to_model()
+        if (comparable_task.task_input_id != task.task_input_id):
+            raise Exception(
+                    'Cannot change task definition. Submit a new task instead')
+        new_status = task.status
+        # Might be the same as the old one, but save and log nevertheless
+        # in case we have some heart beat status in future.
+        og_task.state(new_status)
+        event = Event(change=f'Task changed, new status {new_status}',
+                             token_id=token_id, task=task)
+        session.add(event)
+        await session.commit()
 
         return og_task.convert_to_model()
 

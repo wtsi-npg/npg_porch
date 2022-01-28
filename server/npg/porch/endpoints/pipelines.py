@@ -20,6 +20,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
+from sqlalchemy.exc import NoResultFound
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porchdb.connection import get_DbAccessor
@@ -44,11 +45,15 @@ async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
     responses={404: {"description": "Not found"}},
     summary="Get information about one pipeline.",
 )
-async def get_pipeline(pipeline_name: str, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
-    pipelines = await db_accessor.get_all_pipelines(name=pipeline_name)
-    if len(pipelines) == 0:
-        raise HTTPException(status_code=404, detail=f"Pipeline {pipeline_name} not found")
-    return pipelines
+async def get_pipeline(pipeline_name: str,
+                       db_accessor=Depends(get_DbAccessor)) -> Pipeline:
+    pipeline= None
+    try:
+        pipeline = await db_accessor.get_pipeline(name=pipeline_name)
+    except NoResultFound:
+        raise HTTPException(status_code=404,
+                            detail=f"Pipeline {pipeline_name} not found")
+    return pipeline
 
 @router.post(
     "/",
