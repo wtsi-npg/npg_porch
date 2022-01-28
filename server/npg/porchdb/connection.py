@@ -48,6 +48,8 @@ session_factory = sessionmaker(
 async def get_DbAccessor():
     'Provides a hook for fastapi to Depend on a DB session in each route'
     async with session_factory() as session:
+        # Starting a transaction that finished automatically when the returned
+        # object drops out of scope
         async with session.begin():
             yield AsyncDbAccessor(session)
 

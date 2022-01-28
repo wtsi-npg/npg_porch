@@ -7,7 +7,6 @@ from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
     Pipeline, Task, Event, Agent
 )
-import npg.porchdb.db
 from main import app
 
 @pytest.fixture
