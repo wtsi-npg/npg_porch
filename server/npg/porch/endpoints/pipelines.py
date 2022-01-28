@@ -47,7 +47,7 @@ async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
 )
 async def get_pipeline(pipeline_name: str,
                        db_accessor=Depends(get_DbAccessor)) -> Pipeline:
-    pipeline= None
+    pipeline = None
     try:
         pipeline = await db_accessor.get_pipeline(name=pipeline_name)
     except NoResultFound:
