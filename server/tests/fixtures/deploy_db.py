@@ -14,6 +14,7 @@ def minimum_data():
     'Provides one or two of everything'
 
     pipeline = Pipeline(
+        name='ptest one',
         repository_uri='pipeline-test.com',
         version='0.3.14'
     )

@@ -53,11 +53,11 @@ async def get_tasks(db_accessor=Depends(get_DbAccessor)):
 @router.post(
     "/",
     response_model=Task,
-    summary="Create one task."
+    summary="Creates one task."
 )
 async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
-    Given a Task object, creats a database record for it and returns
+    Given a Task object, creates a database record for it and returns
     the same object with status 201 'Created'
 
     The pipeline specified by the `pipeline` attribute of the Task object
@@ -102,24 +102,16 @@ async def claim_task(
     Return an error and status 404 'Not Found' if the pipeline with the
     given name does not exist.
 
-    Do not accept requests for non-current pipelines or their versions,
-    check for the up-to-date db value. Return an error and status 406
-    'Not acceptable' or 409 'Conflict'.
-
-    If the version is specified as `latest`, retrieve tasks for
-    the latest version, otherwise, retrieve tasks for the specified
-    version.
-
     It is possible that no tasks that satisfy the given criteria and
     are unclaimed are found. Return status 200 and an empty array.
 
     If any tasks are claimed, return an array of these Task objects and
     status 200.
-    """
 
-    # The pipeline object returned within the Task should be consistent
-    # with the pipeline object in the payload, but, typically, will have
-    # more attributes defined (uri, the specific version).
+    The pipeline object returned within the Task should be consistent
+    with the pipeline object in the payload, but, typically, will have
+    more attributes defined (uri, the specific version).
+    """
 
     tasks = await db_accessor.claim_tasks(
         token_id=1,

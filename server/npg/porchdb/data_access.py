@@ -37,26 +37,26 @@ class AsyncDbAccessor:
     def __init__(self, session):
         self.session = session
 
-    async def get_pipeline(self, pipeline: Pipeline):
-        if pipeline.name:
+    async def get_pipeline(self, name: str) -> Pipeline:
 
-            pipeline_result = await self.session.execute(
-                select(DbPipeline)
-                .filter_by(name=pipeline.name)
-            )
-        else:
-            pipeline_result = await self.session.execute(
-                select(DbPipeline)
-                .filter(repository_uri=pipeline.uri)
-            )
-        return pipeline_result.scalar_one().convert_to_model()
+        pipeline = await self._get_pipeline_db_object(name)
+        return pipeline.convert_to_model()
 
-    async def get_all_pipelines(self, name: Optional[str]=None) -> List[Pipeline]:
+    async def _get_pipeline_db_object(self, name: str):
+
+        pipeline_result = await self.session.execute(
+            select(DbPipeline)
+            .filter_by(name=name)
+        )
+        return pipeline_result.one() # errors if no rows
+
+    async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
+
         pipelines = []
-        if name:
+        if uri:
             pipelines = await self.session.execute(
                 select(DbPipeline)
-                .filter_by(name=name)
+                .filter_by(repository_uri=uri)
             )
         else:
             pipelines = await self.session.execute(
@@ -65,18 +65,6 @@ class AsyncDbAccessor:
 
         return [pipe.convert_to_model() for pipe in pipelines.scalars().all()]
 
-    async def get_pipeline_tasks(self, state: str) -> List[Task]:
-        if (state):
-            tasks = await self.session.execute(
-                select(DbTask)
-                .filter(state=state)
-            )
-        else:
-            tasks = await self.session.execute(
-                select(DbTask)
-            )
-
-        return [t.convert_to_model() for t in tasks.scalars().all()]
 
     async def create_pipeline(self, pipeline) -> Pipeline:
         session = self.session
@@ -95,11 +83,7 @@ class AsyncDbAccessor:
     async def create_task(self, token_id: int, task: Task) -> Task:
 
         session = self.session
-        pipeline_result = await session.execute(
-            select(DbPipeline)
-            .filter_by(repository_uri=task.pipeline.uri)
-        )
-        db_pipeline = pipeline_result.scalar_one()
+        db_pipeline = self._get_pipeline_db_object(task.pipeline.name)
         # Check they exist and so on
         task.status = 'PENDING'
 
@@ -125,7 +109,7 @@ class AsyncDbAccessor:
         potential_tasks = await session.execute(
             select(DbTask)
             .join(DbTask.pipeline)
-            .where(DbPipeline.repository_uri == pipeline.uri)
+            .where(DbPipeline.name == pipeline.name)
             .where(DbTask.state == 'PENDING')
             .order_by(DbTask.created)
             .options(contains_eager(DbTask.pipeline))
@@ -155,36 +139,31 @@ class AsyncDbAccessor:
     async def update_task(self, token_id: int, task: Task) -> Task:
         '''
         Allows the modification of state of a task.
-        Other fields cannot be changed
+        Other fields cannot be changed.
         '''
 
         session = self.session
         # Get the matching task from the DB
-        pipeline_result = await self.get_pipeline(task.pipeline)
-        db_pipe = pipeline_result.scalar_one()
+        db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
         task_result = await self.session.execute(
             select(DbTask)
             .filter(pipeline=db_pipe)
             .filter(job_descriptor=task.generate_task_id())
         )
-        og_task = task_result.scalar_one()
+        og_task = task_result.one() # raises exception if no rows
         # Check that the updated state is a valid change
-        if (og_task):
-            # TODO - any rollback?
-            comparable_task = og_task.convert_to_model()
-            if (comparable_task.task_input_id != task.task_input_id):
-                raise Exception('Cannot change task definition. Submit a new task instead')
-            new_status = task.status
-            # Might be the same as the old one, but save and log nevertheless
-            # in case we have some heart beat status in future.
-            og_task.state(new_status)
-            event = Event(
-                    change=f'Task changed, new status {new_status}',
-                           token_id=token_id, task=task)
-            session.add(event)
-            await session.commit()
-        else:
-            raise Exception('Could not find task to update it')
+        comparable_task = og_task.convert_to_model()
+        if (comparable_task.task_input_id != task.task_input_id):
+            raise Exception(
+                    'Cannot change task definition. Submit a new task instead')
+        new_status = task.status
+        # Might be the same as the old one, but save and log nevertheless
+        # in case we have some heart beat status in future.
+        og_task.state(new_status)
+        event = Event(change=f'Task changed, new status {new_status}',
+                             token_id=token_id, task=task)
+        session.add(event)
+        await session.commit()
 
         return og_task.convert_to_model()
 

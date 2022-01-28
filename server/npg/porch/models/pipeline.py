@@ -23,13 +23,18 @@ from typing import Optional
 
 class Pipeline(BaseModel):
     name: str = Field(
-        None,
+        default = None,
         title='Pipeline Name',
         description='A user-controlled name for the pipeline'
     )
-    version: Optional[str] = 'latest'
     uri: Optional[str] = Field(
-        None,
+        default = None,
         title='URI',
         description='URI to bootstrap the pipeline code'
     )
+    version: Optional[str] = Field(
+        default = None,
+        title='Version',
+        description='Pipeline version to use with URI'
+    )
+
