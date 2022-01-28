@@ -7,7 +7,6 @@ from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
     Pipeline, Task, Event, Token
 )
-import npg.porchdb.data_access
 from main import app
 
 @pytest.fixture
@@ -80,9 +79,4 @@ async def fastapi_testclient(async_session) -> TestClient:
     `def my_test(data_fixture, fastapi_testclient)`
     '''
     async with async_session.begin():
-
-        def _get_db_override():
-            return npg.porchdb.data_access.AsyncDbAccessor(async_session)
-
-        app.dependency_overrides[npg.porchdb.data_access.get_DbAccessor] = _get_db_override
         yield TestClient(app)
