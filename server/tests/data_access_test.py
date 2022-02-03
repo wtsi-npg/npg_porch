@@ -1,11 +1,13 @@
-from typing import Sequence
 import pytest
 from pydantic import ValidationError
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import select
+from typing import List
 
 from .fixtures.orm_session import async_session
 from .fixtures.deploy_db import db_accessor
 from npg.porchdb.data_access import AsyncDbAccessor
+from npg.porchdb.models import Event, Task as DbTask
 from npg.porch.models import Pipeline as ModelledPipeline, Task
 
 
@@ -15,6 +17,7 @@ def give_me_a_pipeline():
         version='2',
         uri='file:///team117/test_pipeline'
     )
+
 
 async def store_me_a_pipeline(dac: AsyncDbAccessor) -> ModelledPipeline:
     return await dac.create_pipeline(give_me_a_pipeline())
@@ -88,6 +91,10 @@ async def test_create_task(db_accessor):
     assert saved_task.pipeline.name == 'ptest two'
     assert saved_task.task_input_id, 'Input ID is created automatically'
 
+    events = await db_accessor.get_events_for_task(saved_task)
+    assert len(events) == 1, 'An event was created with a successful task creation'
+    assert events[0].change == 'Created', 'Message set'
+
 @pytest.mark.asyncio
 async def test_claim_tasks(db_accessor):
     # Claim on a missing pipeline
@@ -120,6 +127,10 @@ async def test_claim_tasks(db_accessor):
     assert tasks[0].task_input == {'number': 1}
     assert tasks[0].task_input_id, 'unique ID set'
 
+    events = await db_accessor.get_events_for_task(tasks[0])
+    assert len(events) == 2, 'Event for task creation, event for claiming'
+    assert events[1].change == 'Task claimed'
+
     tasks = await db_accessor.claim_tasks(1, pipeline, 8)
     assert len(tasks) == 8, 'Lots of tasks claimed successfully'
     assert tasks[0].task_input == {'number': 2}, 'Tasks claimed sequentially'
@@ -147,6 +158,10 @@ async def test_update_tasks(db_accessor):
     modified_task = await db_accessor.update_task(1, saved_task)
 
     assert modified_task == saved_task
+
+    events = await db_accessor.get_events_for_task(modified_task)
+    assert len(events) == 2, 'Task was created, and then updated'
+    events[1].change == 'Task changed, new status DONE'
 
     # Try to change a task that doesn't exist
     with pytest.raises(NoResultFound):

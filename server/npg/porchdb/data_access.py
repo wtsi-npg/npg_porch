@@ -197,3 +197,11 @@ class AsyncDbAccessor:
             definition=task.task_input,
             state=task.status
         )
+
+    async def get_events_for_task(self, task: Task) -> List[Event]:
+        events = await self.session.execute(
+            select(Event)
+            .join(Event.task)
+            .where(DbTask.job_descriptor == task.task_input_id)
+        )
+        return events.scalars().all()
