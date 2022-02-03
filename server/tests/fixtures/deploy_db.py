@@ -7,6 +7,7 @@ from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
     Pipeline, Task, Event, Token
 )
+from npg.porchdb.data_access import AsyncDbAccessor
 from main import app
 
 @pytest.fixture
@@ -81,3 +82,8 @@ async def fastapi_testclient(async_session) -> TestClient:
     '''
     async with async_session.begin():
         yield TestClient(app)
+
+
+@pytest_asyncio.fixture()
+async def db_accessor(async_minimum):
+    yield AsyncDbAccessor(async_minimum)

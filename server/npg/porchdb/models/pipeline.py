@@ -19,7 +19,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from sqlalchemy import (
-    Column, Integer, String, UniqueConstraint
+    Column, Integer, String
 )
 from sqlalchemy.orm import relationship
 
