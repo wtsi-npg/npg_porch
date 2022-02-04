@@ -86,4 +86,8 @@ async def fastapi_testclient(async_session) -> TestClient:
 
 @pytest_asyncio.fixture()
 async def db_accessor(async_minimum):
+    '''
+    Provides an instance of AsyncDbAccessor with a live session
+    and data provided by the minimum_data fixture
+    '''
     yield AsyncDbAccessor(async_minimum)

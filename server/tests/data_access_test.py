@@ -1,26 +1,23 @@
 import pytest
 from pydantic import ValidationError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy import select
-from typing import List
 
 from .fixtures.orm_session import async_session
 from .fixtures.deploy_db import db_accessor
 from npg.porchdb.data_access import AsyncDbAccessor
-from npg.porchdb.models import Event, Task as DbTask
 from npg.porch.models import Pipeline as ModelledPipeline, Task
 
 
-def give_me_a_pipeline():
+def give_me_a_pipeline(number: int = 1):
     return ModelledPipeline(
-        name='ptest two',
-        version='2',
-        uri='file:///team117/test_pipeline'
+        name=f'ptest {number}',
+        version=str(number),
+        uri=f'file:///team117/test_pipeline{number}'
     )
 
 
-async def store_me_a_pipeline(dac: AsyncDbAccessor) -> ModelledPipeline:
-    return await dac.create_pipeline(give_me_a_pipeline())
+async def store_me_a_pipeline(dac: AsyncDbAccessor, number: int = 1) -> ModelledPipeline:
+    return await dac.create_pipeline(give_me_a_pipeline(number))
 
 @pytest.mark.asyncio
 def test_data_accessor_setup(async_session):
@@ -88,7 +85,7 @@ async def test_create_task(db_accessor):
     )
 
     assert saved_task.status == 'PENDING', 'State automatically set to PENDING'
-    assert saved_task.pipeline.name == 'ptest two'
+    assert saved_task.pipeline.name == 'ptest 1'
     assert saved_task.task_input_id, 'Input ID is created automatically'
 
     events = await db_accessor.get_events_for_task(saved_task)
@@ -140,8 +137,39 @@ async def test_claim_tasks(db_accessor):
     assert len(tasks) == 1, 'Cannot claim more tasks than are available'
     assert tasks[0].task_input == {'number': 10}, 'Last task is present'
 
-    # Test to ensure no cross-talk between multiple pipelines and tasks?
-    # Test that claim events were set?
+@pytest.mark.asyncio
+async def test_multi_claim_tasks(db_accessor):
+    'Test to ensure no cross-talk between multiple pipelines and tasks'
+
+    pipeline = await store_me_a_pipeline(db_accessor)
+    other_pipeline = await store_me_a_pipeline(db_accessor, 2)
+
+    for i in range(3):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={'number': i+1},
+                pipeline=pipeline
+            )
+        )
+        await db_accessor.create_task(
+            token_id=2,
+            task=Task(
+                task_input={'number': i+1},
+                pipeline=other_pipeline
+            )
+        )
+
+    tasks = await db_accessor.claim_tasks(1, pipeline, 3)
+    for i, t in enumerate(tasks, 1):
+        assert t.pipeline == pipeline
+        assert t.task_input == {'number': i}
+
+    tasks = await db_accessor.claim_tasks(1, other_pipeline, 3)
+    for i, t in enumerate(tasks, 1):
+        assert t.pipeline == other_pipeline
+        assert t.task_input == {'number': i}
+
 
 @pytest.mark.asyncio
 async def test_update_tasks(db_accessor):

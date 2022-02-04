@@ -36,7 +36,7 @@ class Task(Base):
     __tablename__ = 'task'
     task_id = Column(Integer, primary_key=True, autoincrement=True)
     pipeline_id = Column(Integer, ForeignKey('pipeline.pipeline_id'))
-    job_descriptor = Column(String, unique=True)
+    job_descriptor = Column(String)
     # This is the serialisation of Dict representing the JSON
     # provided by the workflow - we don't want to get into serialising
     # and deserialising from job_descriptor above, so we keep the original
