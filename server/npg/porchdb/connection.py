@@ -39,7 +39,7 @@ if config['DB_URL'] is None or config['DB_URL'] == '':
     raise Exception("ENV['DB_URL'] must be set with a database URL")
 
 engine = create_async_engine(
-    config['DB_URL'], future=True, echo=True
+    config['DB_URL'], future=True
 )
 Base.metadata.schema = config['DB_SCHEMA']
 session_factory = sessionmaker(
