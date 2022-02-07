@@ -33,6 +33,7 @@ config = {
 
 if config['TEST']:
     config['DB_URL'] = 'sqlite+aiosqlite:///:memory:'
+    # config['DB_URL'] = 'sqlite+aiosqlite:///test.db'
 
 if config['DB_URL'] is None or config['DB_URL'] == '':
     raise Exception("ENV['DB_URL'] must be set with a database URL")
@@ -59,4 +60,8 @@ async def deploy_schema():
         await conn.run_sync(Base.metadata.create_all)
 
 async def close_engine():
+    'Currently only needed when testing to force fixtures to refresh'
     await engine.dispose()
+    # Delete the data here for stateless testing if not in-memory
+    # if config['TEST']:
+        # os.remove('test.db')

@@ -21,6 +21,7 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm.exc import NoResultFound
 from typing import Optional, List
 
 from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event, Base
@@ -48,7 +49,7 @@ class AsyncDbAccessor:
             select(DbPipeline)
             .filter_by(name=name)
         )
-        return pipeline_result.one() # errors if no rows
+        return pipeline_result.scalar_one() # errors if no rows
 
     async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
 
@@ -66,8 +67,9 @@ class AsyncDbAccessor:
         return [pipe.convert_to_model() for pipe in pipelines.scalars().all()]
 
 
-    async def create_pipeline(self, pipeline) -> Pipeline:
+    async def create_pipeline(self, pipeline: Pipeline) -> Pipeline:
         session = self.session
+        assert isinstance(pipeline, Pipeline)
 
         pipe = DbPipeline(
             name=pipeline.name,
@@ -83,7 +85,7 @@ class AsyncDbAccessor:
     async def create_task(self, token_id: int, task: Task) -> Task:
 
         session = self.session
-        db_pipeline = self._get_pipeline_db_object(task.pipeline.name)
+        db_pipeline = await self._get_pipeline_db_object(task.pipeline.name)
         # Check they exist and so on
         task.status = 'PENDING'
 
@@ -105,6 +107,15 @@ class AsyncDbAccessor:
         self, token_id: int, pipeline: Pipeline, claim_limit: Optional[int] = 1
     ) -> List[Task]:
         session = self.session
+
+        try:
+            pipeline_result = await session.execute(
+                select(DbPipeline)
+                .filter_by(name=pipeline.name)
+            )
+            pipeline = pipeline_result.scalar_one()
+        except NoResultFound:
+            raise NoResultFound('Pipeline not found')
 
         potential_tasks = await session.execute(
             select(DbTask)
@@ -147,10 +158,10 @@ class AsyncDbAccessor:
         db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
         task_result = await self.session.execute(
             select(DbTask)
-            .filter(pipeline=db_pipe)
-            .filter(job_descriptor=task.generate_task_id())
+            .filter_by(pipeline=db_pipe)
+            .filter_by(job_descriptor=task.generate_task_id())
         )
-        og_task = task_result.one() # raises exception if no rows
+        og_task = task_result.scalar_one() # raises exception if no rows
         # Check that the updated state is a valid change
         comparable_task = og_task.convert_to_model()
         if (comparable_task.task_input_id != task.task_input_id):
@@ -159,9 +170,9 @@ class AsyncDbAccessor:
         new_status = task.status
         # Might be the same as the old one, but save and log nevertheless
         # in case we have some heart beat status in future.
-        og_task.state(new_status)
+        og_task.state = new_status
         event = Event(change=f'Task changed, new status {new_status}',
-                             token_id=token_id, task=task)
+                             token_id=token_id, task=og_task)
         session.add(event)
         await session.commit()
 
@@ -186,3 +197,11 @@ class AsyncDbAccessor:
             definition=task.task_input,
             state=task.status
         )
+
+    async def get_events_for_task(self, task: Task) -> List[Event]:
+        events = await self.session.execute(
+            select(Event)
+            .join(Event.task)
+            .where(DbTask.job_descriptor == task.task_input_id)
+        )
+        return events.scalars().all()
