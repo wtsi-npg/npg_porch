@@ -49,7 +49,10 @@ class Task(Base):
     prefix = Column(String)
     created = Column(DateTime, default=now())
 
-    UniqueConstraint('pipeline_id', 'job_descriptor', name='unique_tasks')
+    # Set unique this way so that SQLite creates the constraint
+    __table_args__ = (UniqueConstraint('pipeline_id', 'job_descriptor', name='unique_tasks'),)
+
+    # Index('idx_unique_tasks', pipeline_id, job_descriptor, unique=True)
     Index('idx_ordered_tasks', pipeline_id, created)
 
     pipeline = relationship(

@@ -1,5 +1,7 @@
 import pytest
 from pydantic import ValidationError
+import re
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from .fixtures.orm_session import async_session
@@ -60,6 +62,11 @@ async def test_create_pipeline(db_accessor):
 
     with pytest.raises(AssertionError):
         saved_pipeline = await db_accessor.create_pipeline({})
+    with pytest.raises(IntegrityError) as exception:
+        # Making duplicate provides a useful error
+        await db_accessor.create_pipeline(pipeline)
+
+        assert re.match('UNIQUE constraint failed', exception.value)
 
 @pytest.mark.asyncio
 async def test_create_task(db_accessor):
@@ -91,6 +98,11 @@ async def test_create_task(db_accessor):
     events = await db_accessor.get_events_for_task(saved_task)
     assert len(events) == 1, 'An event was created with a successful task creation'
     assert events[0].change == 'Created', 'Message set'
+
+    with pytest.raises(IntegrityError) as exception:
+        await db_accessor.create_task(1, task)
+
+        assert re.match('UNIQUE constraint failed', exception.value)
 
 @pytest.mark.asyncio
 async def test_claim_tasks(db_accessor):
