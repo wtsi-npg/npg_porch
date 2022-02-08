@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
@@ -25,7 +26,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from typing import Optional, List
 
 from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event, Base
-from npg.porch.models import Task, Pipeline
+from npg.porch.models import Task, Pipeline, TaskStateEnum
 
 
 class AsyncDbAccessor:
@@ -37,6 +38,7 @@ class AsyncDbAccessor:
 
     def __init__(self, session):
         self.session = session
+        self.logger = logging.getLogger(__name__)
 
     async def get_pipeline(self, name: str) -> Pipeline:
 
@@ -83,11 +85,11 @@ class AsyncDbAccessor:
 
 
     async def create_task(self, token_id: int, task: Task) -> Task:
-
+        self.logger.debug('CREATE TASK: ' + str(task))
         session = self.session
         db_pipeline = await self._get_pipeline_db_object(task.pipeline.name)
         # Check they exist and so on
-        task.status = 'PENDING'
+        task.status = TaskStateEnum.PENDING
 
         t = self.convert_task_to_db(task, db_pipeline)
         session.add(t)
@@ -121,7 +123,7 @@ class AsyncDbAccessor:
             select(DbTask)
             .join(DbTask.pipeline)
             .where(DbPipeline.name == pipeline.name)
-            .where(DbTask.state == 'PENDING')
+            .where(DbTask.state == TaskStateEnum.PENDING)
             .order_by(DbTask.created)
             .options(contains_eager(DbTask.pipeline))
             .with_for_update()
@@ -132,7 +134,7 @@ class AsyncDbAccessor:
         claimed_tasks = potential_tasks.scalars().all()
         try:
             for task in claimed_tasks:
-                task.state = 'CLAIMED'
+                task.state = TaskStateEnum.CLAIMED
                 event = Event(
                         change='Task claimed', token_id=token_id, task=task)
                 session.add(event)
@@ -165,6 +167,7 @@ class AsyncDbAccessor:
         # Check that the updated state is a valid change
         comparable_task = og_task.convert_to_model()
         if (comparable_task.task_input_id != task.task_input_id):
+            # Needs a custom exception, this is too general
             raise Exception(
                     'Cannot change task definition. Submit a new task instead')
         new_status = task.status
@@ -191,6 +194,8 @@ class AsyncDbAccessor:
 
     @staticmethod
     def convert_task_to_db(task: Task, pipeline: DbPipeline) -> DbTask:
+        assert task.status in TaskStateEnum
+
         return DbTask(
             pipeline=pipeline,
             job_descriptor=task.generate_task_id(),

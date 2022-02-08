@@ -21,6 +21,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import PositiveInt
 from typing import List
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porch.models.task import Task
@@ -53,7 +55,8 @@ async def get_tasks(db_accessor=Depends(get_DbAccessor)):
 @router.post(
     "/",
     response_model=Task,
-    summary="Creates one task."
+    summary="Creates one task.",
+    status_code=201
 )
 async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
@@ -66,8 +69,14 @@ async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
 
     Errors if task status is not PENDING.
     """
-    # Needs error handling when creating a clashing unique task
-    return await db_accessor.create_task(token_id=1, task=task)
+    created_task = None
+    try:
+        created_task = await db_accessor.create_task(token_id=1, task=task)
+    except IntegrityError as e:
+        raise HTTPException(status=404, detail='Unable to create task, as another like it already exists')
+    except NoResultFound as e:
+        raise HTTPException(status=404, detail='Failed to find pipeline for this task')
+    return created_task
 
 @router.put(
     "/",
@@ -82,7 +91,14 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     should exist. If it does not exist, return status 404 'Not found' and
     an error.
     """
-    return await db_accessor.update_task(token_id=1, task=task)
+    changed_task = None
+    try:
+        changed_task = await db_accessor.update_task(token_id=1, task=task)
+    except NoResultFound as e:
+        HTTPException(status_code=404, detail='Task to be modified could not be found')
+    except Exception as e:
+        HTTPException(status_code=409, detail=e.value)
+    return changed_task
 
 @router.post(
     "/claim",
@@ -113,9 +129,12 @@ async def claim_task(
     more attributes defined (uri, the specific version).
     """
 
-    tasks = await db_accessor.claim_tasks(
-        token_id=1,
-        pipeline=pipeline,
-        claim_limit=num_tasks
-    )
-    return tasks
+    try:
+        tasks = await db_accessor.claim_tasks(
+            token_id=1,
+            pipeline=pipeline,
+            claim_limit=num_tasks
+        )
+        return tasks
+    except NoResultFound as e:
+        HTTPException(status_code=404, detail=e.value)

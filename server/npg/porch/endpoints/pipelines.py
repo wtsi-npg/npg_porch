@@ -18,9 +18,11 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
+from os import stat
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porchdb.connection import get_DbAccessor
@@ -61,4 +63,9 @@ async def get_pipeline(pipeline_name: str,
     summary="Create one pipeline record.",
 )
 async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
-    return await db_accessor.create_pipeline(pipeline)
+    new_pipeline = None
+    try:
+        new_pipeline = await db_accessor.create_pipeline(pipeline)
+    except IntegrityError as e:
+        HTTPException(status_code=409, detail='Pipeline already exists')
+    return new_pipeline
