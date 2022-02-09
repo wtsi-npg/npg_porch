@@ -18,12 +18,21 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
+from enum import Enum
 import hashlib
 import ujson
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
 
 from npg.porch.models.pipeline import Pipeline
+
+class TaskStateEnum(str, Enum):
+    PENDING = 'PENDING'
+    CLAIMED = 'CLAIMED'
+    RUNNING = 'RUNNING'
+    DONE = 'DONE'
+    FAILED = 'FAILED'
+    CANCELLED = 'CANCELLED'
 
 class Task(BaseModel):
     pipeline: Pipeline
@@ -37,7 +46,7 @@ class Task(BaseModel):
         title='Task Input',
         description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline'
     )
-    status: Optional[str]
+    status: Optional[TaskStateEnum]
 
     def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()

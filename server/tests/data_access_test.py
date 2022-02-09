@@ -7,7 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from .fixtures.orm_session import async_session
 from .fixtures.deploy_db import db_accessor
 from npg.porchdb.data_access import AsyncDbAccessor
-from npg.porch.models import Pipeline as ModelledPipeline, Task
+from npg.porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
 
 
 def give_me_a_pipeline(number: int = 1):
@@ -91,7 +91,7 @@ async def test_create_task(db_accessor):
         task=task
     )
 
-    assert saved_task.status == 'PENDING', 'State automatically set to PENDING'
+    assert saved_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
     assert saved_task.pipeline.name == 'ptest 1'
     assert saved_task.task_input_id, 'Input ID is created automatically'
 
@@ -132,7 +132,7 @@ async def test_claim_tasks(db_accessor):
 
     tasks = await db_accessor.claim_tasks(1, pipeline)
     assert len(tasks) == 1, 'One task claimed successfully'
-    assert tasks[0].status == 'CLAIMED'
+    assert tasks[0].status == TaskStateEnum.CLAIMED
     assert tasks[0].task_input == {'number': 1}
     assert tasks[0].task_input_id, 'unique ID set'
 
@@ -194,7 +194,7 @@ async def test_update_tasks(db_accessor):
         )
     )
 
-    saved_task.status = 'DONE'
+    saved_task.status = TaskStateEnum.DONE
     modified_task = await db_accessor.update_task(1, saved_task)
 
     assert modified_task == saved_task
