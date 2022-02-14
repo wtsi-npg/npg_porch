@@ -18,11 +18,10 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from os import stat
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from typing import List, Optional
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import NoResultFound
+from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porchdb.connection import get_DbAccessor
@@ -43,29 +42,35 @@ async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
 
 @router.get(
     "/{pipeline_name}",
-    response_model=Pipeline,
+    response_model=List[Pipeline],
     responses={404: {"description": "Not found"}},
-    summary="Get information about one pipeline.",
+    summary="Get information about versions of one pipeline.",
 )
 async def get_pipeline(pipeline_name: str,
-                       db_accessor=Depends(get_DbAccessor)) -> Pipeline:
-    pipeline = None
-    try:
-        pipeline = await db_accessor.get_pipeline(name=pipeline_name)
-    except NoResultFound:
+                       pipeline_version: Optional[str]=None,
+                       db_accessor=Depends(get_DbAccessor)
+) -> List[Pipeline]:
+
+    pipelines = await db_accessor.get_pipeline_by_name(name=pipeline_name, version=pipeline_version)
+    if len(pipelines) == 0:
         raise HTTPException(status_code=404,
-                            detail=f"Pipeline {pipeline_name} not found")
-    return pipeline
+                            detail=f"Pipeline '{pipeline_name}' not found")
+    return pipelines
 
 @router.post(
     "/",
     response_model=Pipeline,
     summary="Create one pipeline record.",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"description": "Pipeline was created"},
+        409: {"description": "Pipeline already exists"}
+    }
 )
 async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
     new_pipeline = None
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
     except IntegrityError as e:
-        HTTPException(status_code=409, detail='Pipeline already exists')
+        raise HTTPException(status_code=409, detail='Pipeline already exists')
     return new_pipeline

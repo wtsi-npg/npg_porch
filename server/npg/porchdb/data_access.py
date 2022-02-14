@@ -25,7 +25,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from typing import Optional, List
 
-from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event, Base
+from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event
 from npg.porch.models import Task, Pipeline, TaskStateEnum
 
 
@@ -40,18 +40,38 @@ class AsyncDbAccessor:
         self.session = session
         self.logger = logging.getLogger(__name__)
 
-    async def get_pipeline(self, name: str) -> Pipeline:
+    async def get_pipeline_by_name(self, name: str, version: Optional[str]) -> List[Pipeline]:
 
-        pipeline = await self._get_pipeline_db_object(name)
-        return pipeline.convert_to_model()
+        pipelines = await self._get_pipeline_db_objects(name, version, uri=None)
+        return [p.convert_to_model() for p in pipelines]
 
-    async def _get_pipeline_db_object(self, name: str):
+    async def _get_pipeline_db_object(self, name: str, version: str) -> Pipeline:
 
         pipeline_result = await self.session.execute(
             select(DbPipeline)
             .filter_by(name=name)
+            .filter_by(version=version)
         )
         return pipeline_result.scalar_one() # errors if no rows
+
+    async def _get_pipeline_db_objects(
+        self,
+        name: Optional[str]=None,
+        version: Optional[str]=None,
+        uri: Optional[str]=None
+    ) -> List[Pipeline]:
+        assert name or uri, 'Required pipeline name/uri at minimum'
+
+        query = select(DbPipeline)
+        if name:
+            query = query.filter_by(name=name)
+        if version:
+            query = query.filter_by(version=version)
+        if uri:
+            query = query.filter_by(repository_uri=version)
+
+        pipeline_result = await self.session.execute(query)
+        return pipeline_result.scalars().all()
 
     async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
 
@@ -87,7 +107,9 @@ class AsyncDbAccessor:
     async def create_task(self, token_id: int, task: Task) -> Task:
         self.logger.debug('CREATE TASK: ' + str(task))
         session = self.session
-        db_pipeline = await self._get_pipeline_db_object(task.pipeline.name)
+        db_pipeline = await self._get_pipeline_db_object(
+            task.pipeline.name, task.pipeline.version
+        )
         # Check they exist and so on
         task.status = TaskStateEnum.PENDING
 
@@ -157,7 +179,7 @@ class AsyncDbAccessor:
 
         session = self.session
         # Get the matching task from the DB
-        db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
+        db_pipe = await self._get_pipeline_db_object(task.pipeline.name, task.pipeline.version)
         task_result = await self.session.execute(
             select(DbTask)
             .filter_by(pipeline=db_pipe)

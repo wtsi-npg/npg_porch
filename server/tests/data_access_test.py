@@ -32,14 +32,17 @@ def test_data_accessor_setup(async_session):
 @pytest.mark.asyncio
 async def test_get_pipeline(db_accessor):
     with pytest.raises(TypeError):
-        db_accessor.get_pipeline()
+        db_accessor.get_pipeline_by_name()
 
-    with pytest.raises(NoResultFound):
-        await db_accessor.get_pipeline('not here')
+    pipelines = await db_accessor.get_pipeline_by_name('not here', 'v1')
+    assert len(pipelines) == 0
+    pipelines = await db_accessor.get_pipeline_by_name('ptest one', 'v1')
+    assert len(pipelines) == 0, 'Right pipeline, wrong version'
 
-    pipeline = await db_accessor.get_pipeline('ptest one')
-    assert pipeline.name == 'ptest one'
-    assert pipeline.version == '0.3.14'
+    pipelines = await db_accessor.get_pipeline_by_name('ptest one', '0.3.14')
+    assert len(pipelines) == 1, 'One and only one pipeline matches'
+    assert pipelines[0].name == 'ptest one'
+    assert pipelines[0].version == '0.3.14'
 
 @pytest.mark.asyncio
 async def test_get_all_pipelines(db_accessor):
