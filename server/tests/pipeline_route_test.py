@@ -73,3 +73,19 @@ def test_create_pipeline(fastapi_testclient):
     )
     assert response.status_code == 200
     assert response.json() == [desired_pipeline, second_desired_pipeline]
+
+    # Create a very poorly provenanced pipeline
+    third_desired_pipeline = Pipeline(
+        name='ptest three and a half',
+        uri='http://anothertest.com',
+        version=None
+    )
+
+    response = fastapi_testclient.post(
+        '/pipelines',
+        json=third_desired_pipeline.dict(),
+        allow_redirects=True
+    )
+
+    print(response.json())
+    assert response.status_code == 400

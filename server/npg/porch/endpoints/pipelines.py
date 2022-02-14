@@ -19,7 +19,9 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from fastapi import APIRouter, HTTPException, Depends
+import logging
 from typing import List, Optional
+import re
 from sqlalchemy.exc import IntegrityError
 from starlette import status
 
@@ -72,5 +74,9 @@ async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
     except IntegrityError as e:
-        raise HTTPException(status_code=409, detail='Pipeline already exists')
+        logging.error(str(e))
+        if (re.search('NOT NULL', str(e))):
+            raise HTTPException(status_code=400, detail='Pipeline must specify a name and URI and version')
+        else:
+            raise HTTPException(status_code=409, detail='Pipeline already exists')
     return new_pipeline
