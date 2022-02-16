@@ -45,7 +45,7 @@ async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
 @router.get(
     "/{pipeline_name}",
     response_model=List[Pipeline],
-    responses={404: {"description": "Not found"}},
+    responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
     summary="Get information about versions of one pipeline.",
 )
 async def get_pipeline(pipeline_name: str,
@@ -65,8 +65,9 @@ async def get_pipeline(pipeline_name: str,
     summary="Create one pipeline record.",
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"description": "Pipeline was created"},
-        409: {"description": "Pipeline already exists"}
+        status.HTTP_201_CREATED: {"description": "Pipeline was created"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Insufficient pipeline properties provided"},
+        status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"}
     }
 )
 async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
@@ -76,7 +77,7 @@ async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor
     except IntegrityError as e:
         logging.error(str(e))
         if (re.search('NOT NULL', str(e))):
-            raise HTTPException(status_code=400, detail='Pipeline must specify a name and URI and version')
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Pipeline must specify a name and URI and version')
         else:
-            raise HTTPException(status_code=409, detail='Pipeline already exists')
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Pipeline already exists')
     return new_pipeline

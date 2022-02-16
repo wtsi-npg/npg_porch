@@ -1,9 +1,11 @@
+from starlette import status
+
 from .fixtures.deploy_db import async_minimum, fastapi_testclient
 from npg.porch.models import Pipeline
 
 def test_pipeline_get(async_minimum, fastapi_testclient):
     response = fastapi_testclient.get('/pipelines')
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     pipeline = Pipeline.parse_obj(response.json()[0])
     assert pipeline, 'Response fits into the over-the-wire model'
     assert pipeline.name == 'ptest one'
@@ -11,7 +13,7 @@ def test_pipeline_get(async_minimum, fastapi_testclient):
 
 def test_get_known_pipeline(async_minimum, fastapi_testclient):
     response = fastapi_testclient.get('/pipelines/ptest one')
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()) == 1, 'All one pipelines returned'
 
     pipeline = Pipeline.parse_obj(response.json()[0])
@@ -20,7 +22,7 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
     assert pipeline.version == '0.3.14'
 
     response = fastapi_testclient.get('/pipelines/not here')
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()['detail'] == "Pipeline 'not here' not found"
 
 def test_create_pipeline(fastapi_testclient):
@@ -37,7 +39,7 @@ def test_create_pipeline(fastapi_testclient):
         allow_redirects=True
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     pipeline = Pipeline.parse_obj(response.json())
     assert pipeline == desired_pipeline, 'Got back what we put in'
 
@@ -48,7 +50,7 @@ def test_create_pipeline(fastapi_testclient):
         allow_redirects=True
     )
 
-    assert response.status_code == 409, 'ptest two already in DB, must be unique'
+    assert response.status_code == status.HTTP_409_CONFLICT, 'ptest two already in DB, must be unique'
     assert response.json()['detail'] == 'Pipeline already exists'
 
     # Create a different pipeline
@@ -64,14 +66,14 @@ def test_create_pipeline(fastapi_testclient):
         allow_redirects=True
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
 
     # Retrieve the same pipelines
 
     response = fastapi_testclient.get(
         '/pipelines'
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == [desired_pipeline, second_desired_pipeline]
 
     # Create a very poorly provenanced pipeline
@@ -87,5 +89,4 @@ def test_create_pipeline(fastapi_testclient):
         allow_redirects=True
     )
 
-    print(response.json())
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
