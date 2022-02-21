@@ -105,7 +105,7 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     try:
         changed_task = await db_accessor.update_task(token_id=1, task=task)
     except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     return changed_task
 
 @router.post(
@@ -145,4 +145,4 @@ async def claim_task(
         )
         return tasks
     except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=e.value)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.value)
