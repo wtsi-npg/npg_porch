@@ -1,7 +1,6 @@
 import pytest
 from sqlalchemy import select
 
-from .fixtures.deploy_db import async_minimum
 from npg.porchdb.models import Token
 
 @pytest.mark.asyncio

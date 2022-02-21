@@ -1,7 +1,6 @@
 import pytest
 from sqlalchemy import select
 
-from .fixtures.deploy_db import sync_minimum, async_minimum
 from npg.porchdb.models import Pipeline
 
 

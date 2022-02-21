@@ -1,6 +1,5 @@
 from starlette import status
 
-from .fixtures.deploy_db import async_minimum, fastapi_testclient
 from npg.porch.models import Pipeline
 
 def test_pipeline_get(async_minimum, fastapi_testclient):

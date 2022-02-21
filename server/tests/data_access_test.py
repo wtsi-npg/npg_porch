@@ -4,8 +4,6 @@ import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-from .fixtures.orm_session import async_session
-from .fixtures.deploy_db import db_accessor
 from npg.porchdb.data_access import AsyncDbAccessor
 from npg.porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
 

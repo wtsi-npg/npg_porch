@@ -1,6 +1,5 @@
 from starlette import status
 
-from .fixtures.deploy_db import async_minimum, fastapi_testclient
 from npg.porch.models import Task, TaskStateEnum
 
 # Not testing get-all-tasks as this method will ultimately go

@@ -5,5 +5,6 @@ from .fixtures.deploy_db import (
     minimum_data,
     lots_of_tasks,
     fastapi_testclient,
-    async_tasks
+    async_tasks,
+    db_accessor
 )

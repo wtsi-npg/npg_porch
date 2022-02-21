@@ -3,7 +3,6 @@ import pytest
 import pytest_asyncio
 from starlette.testclient import TestClient
 
-from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
     Pipeline, Task, Event, Token
 )
