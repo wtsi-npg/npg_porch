@@ -50,3 +50,37 @@ class Task(BaseModel):
 
     def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()
+
+    def __eq__(self, other):
+        '''
+        Allow instances of Task to be compared with ==
+
+        The pipeline and task_input_ids can partially differ and it still be a
+        valid comparison. Clients do not get to create task_input_ids and may
+        not fully specify a pipeline. Status is also optional
+
+        Automatically attempts to cast a dict into a Task, and therefore
+        ignores any properties not valid for a Task
+
+        '''
+        if not isinstance(other, Task):
+            if isinstance(other, dict):
+                other = Task.parse_obj(other)
+            else:
+                return False
+
+        truths = []
+        for k,v in self.dict().items():
+            other_d = other.dict()
+            if k == 'pipeline':
+                truths.append(v['name'] == other_d[k]['name'])
+            elif k == 'task_input_id':
+                break
+            elif k == 'status':
+                break # or maybe compare?
+            else:
+                truths.append(v == other_d[k])
+        if all(truths):
+            return True
+        else:
+            return False

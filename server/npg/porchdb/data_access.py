@@ -45,12 +45,11 @@ class AsyncDbAccessor:
         pipelines = await self._get_pipeline_db_objects(name, version, uri=None)
         return [p.convert_to_model() for p in pipelines]
 
-    async def _get_pipeline_db_object(self, name: str, version: str) -> Pipeline:
+    async def _get_pipeline_db_object(self, name: str) -> Pipeline:
 
         pipeline_result = await self.session.execute(
             select(DbPipeline)
             .filter_by(name=name)
-            .filter_by(version=version)
         )
         return pipeline_result.scalar_one() # errors if no rows
 
@@ -108,7 +107,7 @@ class AsyncDbAccessor:
         self.logger.debug('CREATE TASK: ' + str(task))
         session = self.session
         db_pipeline = await self._get_pipeline_db_object(
-            task.pipeline.name, task.pipeline.version
+            task.pipeline.name
         )
         # Check they exist and so on
         task.status = TaskStateEnum.PENDING
@@ -162,7 +161,7 @@ class AsyncDbAccessor:
                 session.add(event)
             await session.commit()
         except IntegrityError as e:
-            print(e)
+            self.logger.info(e)
             await session.rollback()
             return []
 
@@ -176,22 +175,23 @@ class AsyncDbAccessor:
         Allows the modification of state of a task.
         Other fields cannot be changed.
         '''
-
         session = self.session
         # Get the matching task from the DB
-        db_pipe = await self._get_pipeline_db_object(task.pipeline.name, task.pipeline.version)
-        task_result = await self.session.execute(
-            select(DbTask)
-            .filter_by(pipeline=db_pipe)
-            .filter_by(job_descriptor=task.generate_task_id())
-        )
-        og_task = task_result.scalar_one() # raises exception if no rows
-        # Check that the updated state is a valid change
-        comparable_task = og_task.convert_to_model()
-        if (comparable_task.task_input_id != task.task_input_id):
-            # Needs a custom exception, this is too general
-            raise Exception(
-                    'Cannot change task definition. Submit a new task instead')
+        try:
+            db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
+        except NoResultFound:
+            raise NoResultFound('Pipeline not found')
+
+        try:
+            task_result = await session.execute(
+                select(DbTask)
+                .filter_by(pipeline=db_pipe)
+                .filter_by(job_descriptor=task.generate_task_id())
+            )
+            og_task = task_result.scalar_one() # Doesn't raise exception if no rows?!
+        except NoResultFound:
+            raise NoResultFound('Task to be modified could not be found')
+
         new_status = task.status
         # Might be the same as the old one, but save and log nevertheless
         # in case we have some heart beat status in future.

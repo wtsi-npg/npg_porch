@@ -25,6 +25,11 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()['detail'] == "Pipeline 'not here' not found"
 
+    # Get a versioned pipeline
+    response = fastapi_testclient.get('/pipelines/ptest one?pipeline_version=0.3.14')
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()) == 1, 'All one pipelines returned'
+
 def test_create_pipeline(fastapi_testclient):
     # Create a pipeline
     desired_pipeline = Pipeline(
