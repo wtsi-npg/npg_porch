@@ -112,7 +112,11 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     "/claim",
     response_model=List[Task],
     summary="Claim tasks.",
-    description="Claim tasks for a particular pipeline."
+    description="Claim tasks for a particular pipeline.",
+    responses={
+        status.HTTP_200_OK: {"description": "Receive a list of tasks that have been claimed"},
+        status.HTTP_404_NOT_FOUND: {"description": "Cannot find the pipeline submitted with the claim"}
+    }
 )
 async def claim_task(
     pipeline: Pipeline,
