@@ -40,10 +40,10 @@ class AsyncDbAccessor:
         self.session = session
         self.logger = logging.getLogger(__name__)
 
-    async def get_pipeline_by_name(self, name: str, version: Optional[str]) -> List[Pipeline]:
+    async def get_pipeline_by_name(self, name: str) -> Pipeline:
 
-        pipelines = await self._get_pipeline_db_objects(name, version, uri=None)
-        return [p.convert_to_model() for p in pipelines]
+        pipeline = await self._get_pipeline_db_object(name)
+        return pipeline.convert_to_model()
 
     async def _get_pipeline_db_object(self, name: str) -> Pipeline:
 
@@ -59,8 +59,6 @@ class AsyncDbAccessor:
         version: Optional[str]=None,
         uri: Optional[str]=None
     ) -> List[Pipeline]:
-        assert name or uri, 'Required pipeline name/uri at minimum'
-
         query = select(DbPipeline)
         if name:
             query = query.filter_by(name=name)
@@ -73,19 +71,9 @@ class AsyncDbAccessor:
         return pipeline_result.scalars().all()
 
     async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
-
         pipelines = []
-        if uri:
-            pipelines = await self.session.execute(
-                select(DbPipeline)
-                .filter_by(repository_uri=uri)
-            )
-        else:
-            pipelines = await self.session.execute(
-                select(DbPipeline)
-            )
-
-        return [pipe.convert_to_model() for pipe in pipelines.scalars().all()]
+        pipelines = await self._get_pipeline_db_objects(uri=uri)
+        return [pipe.convert_to_model() for pipe in pipelines]
 
 
     async def create_pipeline(self, pipeline: Pipeline) -> Pipeline:

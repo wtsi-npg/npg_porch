@@ -92,10 +92,10 @@ def test_task_update(async_minimum, fastapi_testclient):
     assert response.json() == {'detail': 'Pipeline not found'}
 
 def test_task_claim(async_tasks, fastapi_testclient):
-    response = fastapi_testclient.get('/pipelines/ptest one?pipeline_version=0.3.14')
-    print(response.json())
+    response = fastapi_testclient.get('/pipelines/ptest one')
+
     assert response.status_code == status.HTTP_200_OK
-    pipeline = response.json()[0]
+    pipeline = response.json()
 
     tasks_seen = []
 

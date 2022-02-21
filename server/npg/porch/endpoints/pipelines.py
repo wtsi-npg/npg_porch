@@ -23,6 +23,7 @@ import logging
 from typing import List, Optional
 import re
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
@@ -44,20 +45,19 @@ async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
 
 @router.get(
     "/{pipeline_name}",
-    response_model=List[Pipeline],
+    response_model=Pipeline,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
     summary="Get information about versions of one pipeline.",
 )
 async def get_pipeline(pipeline_name: str,
-                       pipeline_version: Optional[str]=None,
-                       db_accessor=Depends(get_DbAccessor)
-) -> List[Pipeline]:
-
-    pipelines = await db_accessor.get_pipeline_by_name(name=pipeline_name, version=pipeline_version)
-    if len(pipelines) == 0:
+                       db_accessor=Depends(get_DbAccessor)):
+    pipeline = None
+    try:
+        pipeline = await db_accessor.get_pipeline_by_name(name=pipeline_name)
+    except NoResultFound:
         raise HTTPException(status_code=404,
                             detail=f"Pipeline '{pipeline_name}' not found")
-    return pipelines
+    return pipeline
 
 @router.post(
     "/",
