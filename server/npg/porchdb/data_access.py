@@ -25,7 +25,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from typing import Optional, List
 
-from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event, Base
+from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event
 from npg.porch.models import Task, Pipeline, TaskStateEnum
 
 
@@ -40,12 +40,12 @@ class AsyncDbAccessor:
         self.session = session
         self.logger = logging.getLogger(__name__)
 
-    async def get_pipeline(self, name: str) -> Pipeline:
+    async def get_pipeline_by_name(self, name: str) -> Pipeline:
 
         pipeline = await self._get_pipeline_db_object(name)
         return pipeline.convert_to_model()
 
-    async def _get_pipeline_db_object(self, name: str):
+    async def _get_pipeline_db_object(self, name: str) -> Pipeline:
 
         pipeline_result = await self.session.execute(
             select(DbPipeline)
@@ -53,20 +53,31 @@ class AsyncDbAccessor:
         )
         return pipeline_result.scalar_one() # errors if no rows
 
-    async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
-
-        pipelines = []
+    async def _get_pipeline_db_objects(
+        self,
+        name: Optional[str]=None,
+        version: Optional[str]=None,
+        uri: Optional[str]=None
+    ) -> List[Pipeline]:
+        query = select(DbPipeline)
+        if name:
+            query = query.filter_by(name=name)
+        if version:
+            query = query.filter_by(version=version)
         if uri:
-            pipelines = await self.session.execute(
-                select(DbPipeline)
-                .filter_by(repository_uri=uri)
-            )
-        else:
-            pipelines = await self.session.execute(
-                select(DbPipeline)
-            )
+            query = query.filter_by(repository_uri=uri)
 
-        return [pipe.convert_to_model() for pipe in pipelines.scalars().all()]
+        pipeline_result = await self.session.execute(query)
+        return pipeline_result.scalars().all()
+
+    async def get_all_pipelines(
+        self,
+        uri: Optional[str] = None,
+        version: Optional[str] = None
+    ) -> List[Pipeline]:
+        pipelines = []
+        pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
+        return [pipe.convert_to_model() for pipe in pipelines]
 
 
     async def create_pipeline(self, pipeline: Pipeline) -> Pipeline:
@@ -87,7 +98,9 @@ class AsyncDbAccessor:
     async def create_task(self, token_id: int, task: Task) -> Task:
         self.logger.debug('CREATE TASK: ' + str(task))
         session = self.session
-        db_pipeline = await self._get_pipeline_db_object(task.pipeline.name)
+        db_pipeline = await self._get_pipeline_db_object(
+            task.pipeline.name
+        )
         # Check they exist and so on
         task.status = TaskStateEnum.PENDING
 
@@ -140,7 +153,7 @@ class AsyncDbAccessor:
                 session.add(event)
             await session.commit()
         except IntegrityError as e:
-            print(e)
+            self.logger.info(e)
             await session.rollback()
             return []
 
@@ -154,22 +167,23 @@ class AsyncDbAccessor:
         Allows the modification of state of a task.
         Other fields cannot be changed.
         '''
-
         session = self.session
         # Get the matching task from the DB
-        db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
-        task_result = await self.session.execute(
-            select(DbTask)
-            .filter_by(pipeline=db_pipe)
-            .filter_by(job_descriptor=task.generate_task_id())
-        )
-        og_task = task_result.scalar_one() # raises exception if no rows
-        # Check that the updated state is a valid change
-        comparable_task = og_task.convert_to_model()
-        if (comparable_task.task_input_id != task.task_input_id):
-            # Needs a custom exception, this is too general
-            raise Exception(
-                    'Cannot change task definition. Submit a new task instead')
+        try:
+            db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
+        except NoResultFound:
+            raise NoResultFound('Pipeline not found')
+
+        try:
+            task_result = await session.execute(
+                select(DbTask)
+                .filter_by(pipeline=db_pipe)
+                .filter_by(job_descriptor=task.generate_task_id())
+            )
+            og_task = task_result.scalar_one() # Doesn't raise exception if no rows?!
+        except NoResultFound:
+            raise NoResultFound('Task to be modified could not be found')
+
         new_status = task.status
         # Might be the same as the old one, but save and log nevertheless
         # in case we have some heart beat status in future.

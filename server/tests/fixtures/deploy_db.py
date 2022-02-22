@@ -3,11 +3,11 @@ import pytest
 import pytest_asyncio
 from starlette.testclient import TestClient
 
-from .orm_session import sync_session, async_session
 from npg.porchdb.models import (
     Pipeline, Task, Event, Token
 )
 from npg.porchdb.data_access import AsyncDbAccessor
+from npg.porch.models import Task as ModelledTask, TaskStateEnum
 from main import app
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def minimum_data():
         Task(
             pipeline=pipeline,
             events=[a_event],
-            job_descriptor='aaaaaaaaa',
+            job_descriptor='8cb72a9439dc643d67e859ceca424b9327a9c1abf9c772525df299f656137c22',
             definition={
                 'to_do': 'stuff',
                 'why': 'reasons'
@@ -44,15 +44,56 @@ def minimum_data():
         Task(
             pipeline=pipeline,
             events=[b_event],
-            job_descriptor='bbbbbbbbb',
+            # Probably wrong job_descriptor
+            job_descriptor='4994ef1668bc9614bf0a8f199da50345e85e8b714ab91e95cf619c74af7d3eda',
             definition={
-                'to_do': 'stuff',
+                'to_do': 'more stuff',
                 'why': 'reasons'
             }
         )
     ]
     entities = UserList(
             [pipeline, job_finder_token, job_runner_token, b_event, a_event])
+    for t in tasks:
+        entities.append(t)
+    return entities
+
+
+@pytest.fixture
+def lots_of_tasks():
+    'A good supply of tasks for testing claims'
+
+    pipeline = Pipeline(
+        name='ptest one',
+        repository_uri='pipeline-test.com',
+        version='0.3.14'
+    )
+    job_finder_token = Token(
+        pipeline=pipeline,
+        description='OpenStack host, job finder'
+    )
+
+    tasks = []
+    for i in range(0, 10):
+        # A convoluted way of running generate_task_id() so we can set it
+        # correctly in the DB without going through the API
+        t = ModelledTask(
+            pipeline={'name': 'does not matter'},
+            task_input={
+                'input': i+1
+            },
+            status=TaskStateEnum.PENDING
+        )
+        t_db = Task(
+            pipeline=pipeline,
+            job_descriptor=t.generate_task_id(),
+            state=t.status,
+            definition=t.task_input
+        )
+        tasks.append(t_db)
+
+    entities = UserList(
+            [pipeline, job_finder_token])
     for t in tasks:
         entities.append(t)
     return entities
@@ -68,6 +109,13 @@ def sync_minimum(sync_session, minimum_data):
 @pytest_asyncio.fixture
 async def async_minimum(async_session, minimum_data):
     async_session.add_all(minimum_data)
+    await async_session.commit()
+    return async_session
+
+
+@pytest_asyncio.fixture
+async def async_tasks(async_session, lots_of_tasks):
+    async_session.add_all(lots_of_tasks)
     await async_session.commit()
     return async_session
 

@@ -23,6 +23,7 @@ from pydantic import PositiveInt
 from typing import List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porch.models.task import Task
@@ -56,7 +57,12 @@ async def get_tasks(db_accessor=Depends(get_DbAccessor)):
     "/",
     response_model=Task,
     summary="Creates one task.",
-    status_code=201
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"description": "Task creation was successful"},
+        status.HTTP_404_NOT_FOUND: {"description": "The pipeline for this task is invalid"},
+        status.HTTP_409_CONFLICT: {"description": "A task with the same signature already exists"}
+    }
 )
 async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
@@ -72,16 +78,20 @@ async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     created_task = None
     try:
         created_task = await db_accessor.create_task(token_id=1, task=task)
-    except IntegrityError as e:
-        raise HTTPException(status=404, detail='Unable to create task, as another like it already exists')
-    except NoResultFound as e:
-        raise HTTPException(status=404, detail='Failed to find pipeline for this task')
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail='Unable to create task, as another like it already exists')
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail='Failed to find pipeline for this task')
     return created_task
 
 @router.put(
     "/",
     response_model=Task,
-    summary="Update one task."
+    summary="Update one task.",
+    responses={
+        status.HTTP_200_OK: {"description": "Task was modified"},
+        status.HTTP_404_NOT_FOUND: {"description": "The pipeline or task in the request is invalid"},
+    }
 )
 async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     """
@@ -95,16 +105,18 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     try:
         changed_task = await db_accessor.update_task(token_id=1, task=task)
     except NoResultFound as e:
-        HTTPException(status_code=404, detail='Task to be modified could not be found')
-    except Exception as e:
-        HTTPException(status_code=409, detail=e.value)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     return changed_task
 
 @router.post(
     "/claim",
     response_model=List[Task],
     summary="Claim tasks.",
-    description="Claim tasks for a particular pipeline."
+    description="Claim tasks for a particular pipeline.",
+    responses={
+        status.HTTP_200_OK: {"description": "Receive a list of tasks that have been claimed"},
+        status.HTTP_404_NOT_FOUND: {"description": "Cannot find the pipeline submitted with the claim"}
+    }
 )
 async def claim_task(
     pipeline: Pipeline,
@@ -137,4 +149,4 @@ async def claim_task(
         )
         return tasks
     except NoResultFound as e:
-        HTTPException(status_code=404, detail=e.value)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.value)

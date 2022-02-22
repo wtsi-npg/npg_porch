@@ -18,11 +18,13 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from os import stat
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+import logging
+from typing import List, Optional
+import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porchdb.connection import get_DbAccessor
@@ -36,36 +38,50 @@ router = APIRouter(
     "/",
     response_model=List[Pipeline],
     summary="Get information about all pipelines.",
-    description="Get all pipelines as a list. A uri filter can be used."
+    description="Get all pipelines as a list. A uri and/or version filter can be used."
 )
-async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
-    return await db_accessor.get_all_pipelines()
+async def get_pipelines(
+    uri: Optional[str] = None,
+    version: Optional[str] = None,
+    db_accessor=Depends(get_DbAccessor)
+) -> List[Pipeline]:
+    return await db_accessor.get_all_pipelines(uri, version)
 
 @router.get(
     "/{pipeline_name}",
     response_model=Pipeline,
-    responses={404: {"description": "Not found"}},
+    responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
     summary="Get information about one pipeline.",
 )
 async def get_pipeline(pipeline_name: str,
-                       db_accessor=Depends(get_DbAccessor)) -> Pipeline:
+                       db_accessor=Depends(get_DbAccessor)):
     pipeline = None
     try:
-        pipeline = await db_accessor.get_pipeline(name=pipeline_name)
+        pipeline = await db_accessor.get_pipeline_by_name(name=pipeline_name)
     except NoResultFound:
         raise HTTPException(status_code=404,
-                            detail=f"Pipeline {pipeline_name} not found")
+                            detail=f"Pipeline '{pipeline_name}' not found")
     return pipeline
 
 @router.post(
     "/",
     response_model=Pipeline,
     summary="Create one pipeline record.",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"description": "Pipeline was created"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Insufficient pipeline properties provided"},
+        status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"}
+    }
 )
 async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
     new_pipeline = None
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
     except IntegrityError as e:
-        HTTPException(status_code=409, detail='Pipeline already exists')
+        logging.error(str(e))
+        if (re.search('NOT NULL', str(e))):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Pipeline must specify a name and URI and version')
+        else:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Pipeline already exists')
     return new_pipeline

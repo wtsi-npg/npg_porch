@@ -4,8 +4,6 @@ import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-from .fixtures.orm_session import async_session
-from .fixtures.deploy_db import db_accessor
 from npg.porchdb.data_access import AsyncDbAccessor
 from npg.porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
 
@@ -32,12 +30,13 @@ def test_data_accessor_setup(async_session):
 @pytest.mark.asyncio
 async def test_get_pipeline(db_accessor):
     with pytest.raises(TypeError):
-        db_accessor.get_pipeline()
+        db_accessor.get_pipeline_by_name()
 
     with pytest.raises(NoResultFound):
-        await db_accessor.get_pipeline('not here')
+        pipeline = await db_accessor.get_pipeline_by_name('not here')
 
-    pipeline = await db_accessor.get_pipeline('ptest one')
+    pipeline = await db_accessor.get_pipeline_by_name('ptest one')
+    assert pipeline
     assert pipeline.name == 'ptest one'
     assert pipeline.version == '0.3.14'
 
@@ -48,6 +47,23 @@ async def test_get_all_pipelines(db_accessor):
     assert len(pipes) == 1
 
     assert pipes[0].name == 'ptest one'
+
+    # Make a second pipeline with the same version and different uri as the one in the fixture
+    await db_accessor.create_pipeline(ModelledPipeline(
+        name='ptest two',
+        version='0.3.14',
+        uri='test-the-other-one.com'
+    ))
+
+    pipes = await db_accessor.get_all_pipelines(version='0.3.14')
+    assert len(pipes) == 2
+
+    pipes = await db_accessor.get_all_pipelines(uri='test-the-other-one.com')
+    assert len(pipes) == 1
+
+    pipes = await db_accessor.get_all_pipelines(version='0.3.14', uri='pipeline-test.com')
+    assert len(pipes) == 1, 'Both parameters work together, even if it does not reduce the results'
+
 
 @pytest.mark.asyncio
 async def test_create_pipeline(db_accessor):
