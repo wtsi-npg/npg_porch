@@ -1,6 +1,13 @@
+import pytest
 from starlette import status
 
 from npg.porch.models import Pipeline
+
+
+def http_create_pipeline(fastapi_testclient, pipeline):
+    response = fastapi_testclient.post('/pipelines', json=pipeline.dict(), allow_redirects=True)
+    assert response.status_code == status.HTTP_201_CREATED
+    return response.json()
 
 def test_pipeline_get(async_minimum, fastapi_testclient):
     response = fastapi_testclient.get('/pipelines')
@@ -9,6 +16,35 @@ def test_pipeline_get(async_minimum, fastapi_testclient):
     assert pipeline, 'Response fits into the over-the-wire model'
     assert pipeline.name == 'ptest one'
     assert pipeline.version == '0.3.14'
+
+def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
+
+    second_pipeline = Pipeline(
+        name='ptest two',
+        uri='http://test.com',
+        version='0.3.14'
+    )
+
+    third_pipeline = Pipeline(
+        name='ptest three',
+        uri='http://other-test.com',
+        version='0.3.14'
+    )
+
+    http_create_pipeline(fastapi_testclient, second_pipeline)
+    http_create_pipeline(fastapi_testclient, third_pipeline)
+
+    response = fastapi_testclient.get('/pipelines?version=0.3.14')
+    assert response.status_code == status.HTTP_200_OK
+    pipes = response.json()
+    assert len(pipes) == 3, 'All three pipelines have the same version'
+
+    response = fastapi_testclient.get('/pipelines?uri=http://test.com')
+    assert response.status_code == status.HTTP_200_OK
+    pipes = response.json()
+    assert len(pipes) == 1, 'Only one pipeline matches the uri'
+    assert pipes[0] == second_pipeline
+
 
 def test_get_known_pipeline(async_minimum, fastapi_testclient):
     response = fastapi_testclient.get('/pipelines/ptest one')
@@ -31,14 +67,8 @@ def test_create_pipeline(fastapi_testclient):
         version='1'
     )
 
-    response = fastapi_testclient.post(
-        '/pipelines',
-        json=desired_pipeline.dict(),
-        allow_redirects=True
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
-    pipeline = Pipeline.parse_obj(response.json())
+    response = http_create_pipeline(fastapi_testclient, desired_pipeline)
+    pipeline = Pipeline.parse_obj(response)
     assert pipeline == desired_pipeline, 'Got back what we put in'
 
     # Create the same pipeline
@@ -58,13 +88,7 @@ def test_create_pipeline(fastapi_testclient):
         version='1'
     )
 
-    response = fastapi_testclient.post(
-        '/pipelines',
-        json=second_desired_pipeline.dict(),
-        allow_redirects=True
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
+    response = http_create_pipeline(fastapi_testclient, second_desired_pipeline)
 
     # Retrieve the same pipelines
 

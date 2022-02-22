@@ -38,16 +38,20 @@ router = APIRouter(
     "/",
     response_model=List[Pipeline],
     summary="Get information about all pipelines.",
-    description="Get all pipelines as a list. A uri filter can be used."
+    description="Get all pipelines as a list. A uri and/or version filter can be used."
 )
-async def get_pipelines(db_accessor=Depends(get_DbAccessor)) -> List[Pipeline]:
-    return await db_accessor.get_all_pipelines()
+async def get_pipelines(
+    uri: Optional[str] = None,
+    version: Optional[str] = None,
+    db_accessor=Depends(get_DbAccessor)
+) -> List[Pipeline]:
+    return await db_accessor.get_all_pipelines(uri, version)
 
 @router.get(
     "/{pipeline_name}",
     response_model=Pipeline,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
-    summary="Get information about versions of one pipeline.",
+    summary="Get information about of one pipeline.",
 )
 async def get_pipeline(pipeline_name: str,
                        db_accessor=Depends(get_DbAccessor)):

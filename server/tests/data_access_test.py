@@ -48,6 +48,23 @@ async def test_get_all_pipelines(db_accessor):
 
     assert pipes[0].name == 'ptest one'
 
+    # Make a second pipeline with the same version and different uri as the one in the fixture
+    await db_accessor.create_pipeline(ModelledPipeline(
+        name='ptest two',
+        version='0.3.14',
+        uri='test-the-other-one.com'
+    ))
+
+    pipes = await db_accessor.get_all_pipelines(version='0.3.14')
+    assert len(pipes) == 2
+
+    pipes = await db_accessor.get_all_pipelines(uri='test-the-other-one.com')
+    assert len(pipes) == 1
+
+    pipes = await db_accessor.get_all_pipelines(version='0.3.14', uri='pipeline-test.com')
+    assert len(pipes) == 1, 'Both parameters work together, even if it does not reduce the results'
+
+
 @pytest.mark.asyncio
 async def test_create_pipeline(db_accessor):
     pipeline = give_me_a_pipeline()

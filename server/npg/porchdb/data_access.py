@@ -65,14 +65,18 @@ class AsyncDbAccessor:
         if version:
             query = query.filter_by(version=version)
         if uri:
-            query = query.filter_by(repository_uri=version)
+            query = query.filter_by(repository_uri=uri)
 
         pipeline_result = await self.session.execute(query)
         return pipeline_result.scalars().all()
 
-    async def get_all_pipelines(self, uri: Optional[str]=None) -> List[Pipeline]:
+    async def get_all_pipelines(
+        self,
+        uri: Optional[str] = None,
+        version: Optional[str] = None
+    ) -> List[Pipeline]:
         pipelines = []
-        pipelines = await self._get_pipeline_db_objects(uri=uri)
+        pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
         return [pipe.convert_to_model() for pipe in pipelines]
 
 
