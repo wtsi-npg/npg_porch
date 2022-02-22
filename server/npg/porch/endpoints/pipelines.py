@@ -51,7 +51,7 @@ async def get_pipelines(
     "/{pipeline_name}",
     response_model=Pipeline,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
-    summary="Get information about of one pipeline.",
+    summary="Get information about one pipeline.",
 )
 async def get_pipeline(pipeline_name: str,
                        db_accessor=Depends(get_DbAccessor)):
