@@ -24,8 +24,12 @@ The server will not start without `DB_URL` in the environment
 
 ## Testing
 
-`export NPG_PORCH_MODE=TEST`
-Use `pytest` from the package root
+```bash
+export NPG_PORCH_MODE=TEST
+# Only do this as needed
+pip install -e .[test]
+pytest
+```
 
 Individual tests are run in the form `pytest server/tests/init_test.py`
 
