@@ -29,9 +29,11 @@ setup(
         'uvicorn',
         'uuid'
     ],
-    tests_require=[
-        'pytest',
-        'pytest-asyncio',
-        'requests'
-    ]
+    extras_require={
+        'test': [
+            'pytest',
+            'pytest-asyncio',
+            'requests'
+        ]
+    }
 )
