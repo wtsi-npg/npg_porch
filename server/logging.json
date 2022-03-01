@@ -1,0 +1,60 @@
+{
+    "version": 1,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(levelprefix)s %(message)s",
+            "use_colors": null
+        },
+        "access": {
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": "%(levelprefix)s %(client_addr)s - \"%(request_line)s\" %(status_code)s"
+        }
+    },
+    "handlers": {
+        "stderr": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr"
+        },
+        "access": {
+            "formatter": "access",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout"
+        },
+        "accessfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "access.log",
+            "mode": "w",
+            "formatter": "access"
+        },
+        "logfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "error.log",
+            "mode": "w",
+            "formatter": "default",
+            "backupCount": 10
+        }
+    },
+    "loggers": {
+        "uvicorn": {
+            "handlers": ["stderr", "logfile"],
+            "level": "INFO"
+        },
+        "uvicorn.error": {
+            "level": "ERROR"
+        },
+        "fastapi": {
+            "level": "DEBUG"
+        },
+        "uvicorn.access": {
+            "handlers": ["access", "accessfile"],
+            "level": "INFO",
+            "propagate": false
+        }
+    },
+    "root": {
+        "handlers": ["stderr"],
+        "level": "INFO"
+    }
+}
