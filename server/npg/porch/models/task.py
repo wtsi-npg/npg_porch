@@ -39,14 +39,12 @@ class Task(BaseModel):
     task_input_id: Optional[str] = Field(
         None,
         title='Task Input ID',
-        description=('A stringified unique identifier for a piece of work. ',
-                     'Set by the npg_porch server, not the client')
+        description='A stringified unique identifier for a piece of work. Set by the npg_porch server, not the client' # noqa: E501
     )
     task_input: Dict = Field(
         None,
         title='Task Input',
-        description=('A structured parameter set that uniquely identifies a',
-                     ' piece of work, and enables an iteration of a pipeline')
+        description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline' # noqa: E501
     )
     status: Optional[TaskStateEnum]
 
