@@ -39,12 +39,14 @@ class Task(BaseModel):
     task_input_id: Optional[str] = Field(
         None,
         title='Task Input ID',
-        description='A stringified unique identifier for a piece of work. Set by the npg_porch server, not the client'
+        description=('A stringified unique identifier for a piece of work. ',
+                     'Set by the npg_porch server, not the client')
     )
     task_input: Dict = Field(
         None,
         title='Task Input',
-        description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline'
+        description=('A structured parameter set that uniquely identifies a',
+                     ' piece of work, and enables an iteration of a pipeline')
     )
     status: Optional[TaskStateEnum]
 
@@ -70,7 +72,7 @@ class Task(BaseModel):
                 return False
 
         truths = []
-        for k,v in self.dict().items():
+        for k, v in self.dict().items():
             other_d = other.dict()
             if k == 'pipeline':
                 truths.append(v['name'] == other_d[k]['name'])

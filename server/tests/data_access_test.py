@@ -141,7 +141,7 @@ async def test_claim_tasks(db_accessor):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
-                task_input={'number': i+1},
+                task_input={'number': i + 1},
                 pipeline=pipeline
             )
         )
@@ -176,14 +176,14 @@ async def test_multi_claim_tasks(db_accessor):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
-                task_input={'number': i+1},
+                task_input={'number': i + 1},
                 pipeline=pipeline
             )
         )
         await db_accessor.create_task(
             token_id=2,
             task=Task(
-                task_input={'number': i+1},
+                task_input={'number': i + 1},
                 pipeline=other_pipeline
             )
         )

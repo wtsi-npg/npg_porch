@@ -46,4 +46,3 @@ class Event(Base):
     token = relationship(
         'Token', back_populates='events'
     )
-

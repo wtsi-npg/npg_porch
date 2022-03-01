@@ -58,5 +58,4 @@ class Token(Base):
 
     def __repr__(self):
         return "<Token(token_id='%i', description='%s', pipeline='%s')>" % (
-                self.token_id, self.description, self.pipeline.name)
-
+               self.token_id, self.description, self.pipeline.name)
