@@ -31,7 +31,7 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         # Too keen to enable this yet without changes and a linting configuration
-        # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --statistics
     - name: Test with pytest
       run: |
         export NPG_PORCH_MODE=TEST
