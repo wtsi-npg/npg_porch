@@ -24,13 +24,13 @@
         },
         "accessfile": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "access.log",
+            "filename": "logs/access.log",
             "mode": "w",
             "formatter": "access"
         },
         "logfile": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "error.log",
+            "filename": "logs/error.log",
             "mode": "w",
             "formatter": "default",
             "backupCount": 10
@@ -38,23 +38,26 @@
     },
     "loggers": {
         "uvicorn": {
-            "handlers": ["stderr", "logfile"],
+            "handlers": ["logfile"],
             "level": "INFO"
         },
         "uvicorn.error": {
+            "propagate": false,
+            "handlers": ["stderr","logfile"],
             "level": "INFO"
         },
         "fastapi": {
+            "handlers": ["logfile"],
             "level": "ERROR"
         },
         "uvicorn.access": {
-            "handlers": ["access", "accessfile"],
+            "handlers": ["accessfile"],
             "level": "INFO",
             "propagate": false
         }
     },
     "root": {
-        "handlers": ["stderr"],
-        "level": "INFO"
+        "handlers": ["logfile"],
+        "level": "ERROR"
     }
 }
