@@ -42,10 +42,10 @@
             "level": "INFO"
         },
         "uvicorn.error": {
-            "level": "ERROR"
+            "level": "INFO"
         },
         "fastapi": {
-            "level": "DEBUG"
+            "level": "ERROR"
         },
         "uvicorn.access": {
             "handlers": ["access", "accessfile"],
