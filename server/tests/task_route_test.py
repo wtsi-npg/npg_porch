@@ -109,7 +109,7 @@ def test_task_claim(async_tasks, fastapi_testclient):
     tasks_seen.append(t['task_input_id'])
 
     response = fastapi_testclient.post('/tasks/claim?num_tasks=0', json=pipeline)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY, 'Not allowed to use invalid numbers of tasks'
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY, 'Not allowed to use invalid numbers of tasks' # noqa: E501
 
     response = fastapi_testclient.post('/tasks/claim?num_tasks=2', json=pipeline)
     assert response.status_code == status.HTTP_200_OK

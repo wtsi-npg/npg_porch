@@ -37,4 +37,3 @@ class Pipeline(BaseModel):
         title='Version',
         description='Pipeline version to use with URI'
     )
-

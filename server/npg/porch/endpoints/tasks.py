@@ -79,7 +79,10 @@ async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     try:
         created_task = await db_accessor.create_task(token_id=1, task=task)
     except IntegrityError:
-        raise HTTPException(status_code=409, detail='Unable to create task, as another like it already exists')
+        raise HTTPException(
+            status_code=409,
+            detail='Unable to create task, as another like it already exists'
+        )
     except NoResultFound:
         raise HTTPException(status_code=404, detail='Failed to find pipeline for this task')
     return created_task
@@ -90,7 +93,9 @@ async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     summary="Update one task.",
     responses={
         status.HTTP_200_OK: {"description": "Task was modified"},
-        status.HTTP_404_NOT_FOUND: {"description": "The pipeline or task in the request is invalid"},
+        status.HTTP_404_NOT_FOUND: {
+            "description": "The pipeline or task in the request is invalid"
+        },
     }
 )
 async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
@@ -115,12 +120,14 @@ async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
     description="Claim tasks for a particular pipeline.",
     responses={
         status.HTTP_200_OK: {"description": "Receive a list of tasks that have been claimed"},
-        status.HTTP_404_NOT_FOUND: {"description": "Cannot find the pipeline submitted with the claim"}
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Cannot find the pipeline submitted with the claim"
+        }
     }
 )
 async def claim_task(
     pipeline: Pipeline,
-    num_tasks: PositiveInt=1,
+    num_tasks: PositiveInt = 1,
     db_accessor=Depends(get_DbAccessor)
 ) -> List[Task]:
     """

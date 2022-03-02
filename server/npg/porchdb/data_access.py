@@ -55,9 +55,9 @@ class AsyncDbAccessor:
 
     async def _get_pipeline_db_objects(
         self,
-        name: Optional[str]=None,
-        version: Optional[str]=None,
-        uri: Optional[str]=None
+        name: Optional[str] = None,
+        version: Optional[str] = None,
+        uri: Optional[str] = None
     ) -> List[Pipeline]:
         query = select(DbPipeline)
         if name:
@@ -79,7 +79,6 @@ class AsyncDbAccessor:
         pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
         return [pipe.convert_to_model() for pipe in pipelines]
 
-
     async def create_pipeline(self, pipeline: Pipeline) -> Pipeline:
         session = self.session
         assert isinstance(pipeline, Pipeline)
@@ -93,7 +92,6 @@ class AsyncDbAccessor:
         session.add(pipe)
         await session.commit()
         return pipe.convert_to_model()
-
 
     async def create_task(self, token_id: int, task: Task) -> Task:
         self.logger.debug('CREATE TASK: ' + str(task))
@@ -149,7 +147,8 @@ class AsyncDbAccessor:
             for task in claimed_tasks:
                 task.state = TaskStateEnum.CLAIMED
                 event = Event(
-                        change='Task claimed', token_id=token_id, task=task)
+                    change='Task claimed', token_id=token_id, task=task
+                )
                 session.add(event)
             await session.commit()
         except IntegrityError as e:

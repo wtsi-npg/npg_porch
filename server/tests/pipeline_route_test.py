@@ -1,4 +1,3 @@
-import pytest
 from starlette import status
 
 from npg.porch.models import Pipeline
@@ -78,7 +77,7 @@ def test_create_pipeline(fastapi_testclient):
         allow_redirects=True
     )
 
-    assert response.status_code == status.HTTP_409_CONFLICT, 'ptest two already in DB, must be unique'
+    assert response.status_code == status.HTTP_409_CONFLICT, 'ptest two already in DB'
     assert response.json()['detail'] == 'Pipeline already exists'
 
     # Create a different pipeline

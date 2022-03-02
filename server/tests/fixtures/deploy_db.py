@@ -53,7 +53,7 @@ def minimum_data():
         )
     ]
     entities = UserList(
-            [pipeline, job_finder_token, job_runner_token, b_event, a_event])
+        [pipeline, job_finder_token, job_runner_token, b_event, a_event])
     for t in tasks:
         entities.append(t)
     return entities
@@ -80,7 +80,7 @@ def lots_of_tasks():
         t = ModelledTask(
             pipeline={'name': 'does not matter'},
             task_input={
-                'input': i+1
+                'input': i + 1
             },
             status=TaskStateEnum.PENDING
         )
@@ -92,8 +92,7 @@ def lots_of_tasks():
         )
         tasks.append(t_db)
 
-    entities = UserList(
-            [pipeline, job_finder_token])
+    entities = UserList([pipeline, job_finder_token])
     for t in tasks:
         entities.append(t)
     return entities

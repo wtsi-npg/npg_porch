@@ -33,7 +33,8 @@ setup(
         'test': [
             'pytest',
             'pytest-asyncio',
-            'requests'
+            'requests',
+            'flake8'
         ]
     }
 )

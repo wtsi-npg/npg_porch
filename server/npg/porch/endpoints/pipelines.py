@@ -81,7 +81,13 @@ async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor
     except IntegrityError as e:
         logging.error(str(e))
         if (re.search('NOT NULL', str(e))):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Pipeline must specify a name and URI and version')
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Pipeline must specify a name and URI and version'
+            )
         else:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Pipeline already exists')
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail='Pipeline already exists'
+            )
     return new_pipeline
