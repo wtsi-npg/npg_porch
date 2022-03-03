@@ -90,8 +90,13 @@ def test_task_update(async_minimum, fastapi_testclient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {'detail': 'Pipeline not found'}
 
-def test_task_claim(async_tasks, fastapi_testclient):
-    response = fastapi_testclient.get('/pipelines/ptest one')
+def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
+    headers = {
+        'Authorization': 'Bearer cac0533d5599489d9a3d998028a79fe8',
+        'accept': 'application/json'
+    }
+    response = fastapi_testclient.get(
+        '/pipelines/ptest some', headers = headers)
 
     assert response.status_code == status.HTTP_200_OK
     pipeline = response.json()

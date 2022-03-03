@@ -28,6 +28,7 @@ from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porchdb.connection import get_DbAccessor
+from npg.porch.auth.token import validate
 
 router = APIRouter(
     prefix="/pipelines",
@@ -43,8 +44,10 @@ router = APIRouter(
 async def get_pipelines(
     uri: Optional[str] = None,
     version: Optional[str] = None,
-    db_accessor=Depends(get_DbAccessor)
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
 ) -> List[Pipeline]:
+
     return await db_accessor.get_all_pipelines(uri, version)
 
 @router.get(
@@ -53,8 +56,12 @@ async def get_pipelines(
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
     summary="Get information about one pipeline.",
 )
-async def get_pipeline(pipeline_name: str,
-                       db_accessor=Depends(get_DbAccessor)):
+async def get_pipeline(
+    pipeline_name: str,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> Pipeline:
+
     pipeline = None
     try:
         pipeline = await db_accessor.get_pipeline_by_name(name=pipeline_name)
@@ -74,7 +81,12 @@ async def get_pipeline(pipeline_name: str,
         status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"}
     }
 )
-async def create_pipeline(pipeline: Pipeline, db_accessor=Depends(get_DbAccessor)) -> Pipeline:
+async def create_pipeline(
+    pipeline: Pipeline,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> Pipeline:
+
     new_pipeline = None
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)

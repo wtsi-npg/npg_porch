@@ -2,14 +2,27 @@ from starlette import status
 
 from npg.porch.models import Pipeline
 
+headers = {
+    'Authorization': 'Bearer cac0533d5599489d9a3d998028a79fe8',
+    'accept': 'application/json'
+}
 
 def http_create_pipeline(fastapi_testclient, pipeline):
-    response = fastapi_testclient.post('/pipelines', json=pipeline.dict(), allow_redirects=True)
+    response = fastapi_testclient.post(
+        '/pipelines', json=pipeline.dict(), allow_redirects=True
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    response = fastapi_testclient.post(
+        '/pipelines', json=pipeline.dict(), allow_redirects=True,
+        headers=headers
+    )
     assert response.status_code == status.HTTP_201_CREATED
     return response.json()
 
 def test_pipeline_get(async_minimum, fastapi_testclient):
     response = fastapi_testclient.get('/pipelines')
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    response = fastapi_testclient.get('/pipelines', headers=headers)
     assert response.status_code == status.HTTP_200_OK
     pipeline = Pipeline.parse_obj(response.json()[0])
     assert pipeline, 'Response fits into the over-the-wire model'
@@ -33,12 +46,16 @@ def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
     http_create_pipeline(fastapi_testclient, second_pipeline)
     http_create_pipeline(fastapi_testclient, third_pipeline)
 
-    response = fastapi_testclient.get('/pipelines?version=0.3.14')
+    response = fastapi_testclient.get(
+        '/pipelines?version=0.3.14', headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
     pipes = response.json()
     assert len(pipes) == 3, 'All three pipelines have the same version'
 
-    response = fastapi_testclient.get('/pipelines?uri=http://test.com')
+    response = fastapi_testclient.get(
+        '/pipelines?uri=http://test.com', headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
     pipes = response.json()
     assert len(pipes) == 1, 'Only one pipeline matches the uri'
@@ -46,7 +63,9 @@ def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
 
 
 def test_get_known_pipeline(async_minimum, fastapi_testclient):
-    response = fastapi_testclient.get('/pipelines/ptest one')
+    response = fastapi_testclient.get(
+        '/pipelines/ptest one', headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
 
     pipeline = Pipeline.parse_obj(response.json())
@@ -54,11 +73,13 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
     assert pipeline.name == 'ptest one'
     assert pipeline.version == '0.3.14'
 
-    response = fastapi_testclient.get('/pipelines/not here')
+    response = fastapi_testclient.get(
+        '/pipelines/not here', headers=headers
+    )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()['detail'] == "Pipeline 'not here' not found"
 
-def test_create_pipeline(fastapi_testclient):
+def test_create_pipeline(async_minimum, fastapi_testclient):
     # Create a pipeline
     desired_pipeline = Pipeline(
         name='ptest two',
@@ -74,7 +95,8 @@ def test_create_pipeline(fastapi_testclient):
     response = fastapi_testclient.post(
         '/pipelines',
         json=desired_pipeline.dict(),
-        allow_redirects=True
+        allow_redirects=True,
+        headers=headers
     )
 
     assert response.status_code == status.HTTP_409_CONFLICT, 'ptest two already in DB'
@@ -92,10 +114,10 @@ def test_create_pipeline(fastapi_testclient):
     # Retrieve the same pipelines
 
     response = fastapi_testclient.get(
-        '/pipelines'
+        '/pipelines', headers=headers
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == [desired_pipeline, second_desired_pipeline]
+    assert response.json()[1:] == [desired_pipeline, second_desired_pipeline]
 
     # Create a very poorly provenanced pipeline
     third_desired_pipeline = Pipeline(
@@ -107,7 +129,8 @@ def test_create_pipeline(fastapi_testclient):
     response = fastapi_testclient.post(
         '/pipelines',
         json=third_desired_pipeline.dict(),
-        allow_redirects=True
+        allow_redirects=True,
+        headers=headers
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST

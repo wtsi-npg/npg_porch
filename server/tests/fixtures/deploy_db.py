@@ -21,6 +21,7 @@ def minimum_data():
     )
     tokens = [
         Token(
+            token='cac0533d5599489d9a3d998028a79fe8',
             pipeline=pipeline,
             description='OpenStack host, job finder'
         ),
@@ -70,7 +71,7 @@ def lots_of_tasks():
     'A good supply of tasks for testing claims'
 
     pipeline = Pipeline(
-        name='ptest one',
+        name='ptest some',
         repository_uri='pipeline-test.com',
         version='0.3.14'
     )

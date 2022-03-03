@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from npg.porchdb.models import Base
 from npg.porchdb.data_access import AsyncDbAccessor
+from npg.porchdb.auth import Validator
 
 config = {
     'DB_URL': os.environ.get('DB_URL'),
@@ -47,13 +48,28 @@ session_factory = sessionmaker(
 )
 
 async def get_DbAccessor():
-    'Provides a hook for fastapi to Depend on a DB session in each route'
+    '''
+    Provides a hook for fastapi to Depend on a DB session in each route.
+
+    Yields an instance of AsyncDbAccessor class, which provides an API
+    for access to data.
+
+    Starts a transaction that finished automatically when the returned
+    object drops out of scope.
+    '''
     async with session_factory() as session:
-        # Starting a transaction that finished automatically when the returned
-        # object drops out of scope
         async with session.begin():
             yield AsyncDbAccessor(session)
 
+async def get_CredentialsValidator():
+    '''
+    Similar to get_DbAccessor, but yields an instance of the Validator class,
+    which provides methods for validating credentials submitted with the
+    request.
+    '''
+    async with session_factory() as session:
+        async with session.begin():
+            yield Validator(session)
 
 async def deploy_schema():
     async with engine.begin() as conn:
