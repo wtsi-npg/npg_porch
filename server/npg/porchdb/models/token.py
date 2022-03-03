@@ -44,8 +44,11 @@ class Token(Base):
     token_id = Column(Integer, primary_key=True, autoincrement=True)
     token = Column(String(length=32), unique=True, default=random_token)
     description = Column(String, nullable=False)
+    # Nullable foreign key into the pipeline table to accommodate
+    # admin tokens that are not linked to any particular pipeline.
+    # Example: endpoint for creating a new pipeline record.
     pipeline_id = Column(Integer, ForeignKey('pipeline.pipeline_id'),
-                         nullable=False)
+                         nullable=True)
     date_issued = Column(DateTime, default=sqlalchemy.sql.functions.now())
     date_revoked = Column(DateTime, nullable=True)
 

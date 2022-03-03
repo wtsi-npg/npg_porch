@@ -19,16 +19,21 @@ def minimum_data():
         repository_uri='pipeline-test.com',
         version='0.3.14'
     )
-    job_finder_token = Token(
-        pipeline=pipeline,
-        description='OpenStack host, job finder'
-    )
-    job_runner_token = Token(
-        pipeline=pipeline,
-        description='Seqfarm host, job runner'
-    )
+    tokens = [
+        Token(
+            pipeline=pipeline,
+            description='OpenStack host, job finder'
+        ),
+        Token(
+            pipeline=pipeline,
+            description='Seqfarm host, job runner'
+        ),
+        Token(
+            description='Seqfarm host, admin'
+        )
+    ]
     b_event = a_event = Event(
-        token=job_finder_token,
+        token=tokens[0],
         change='Created'
     )
     tasks = [
@@ -52,10 +57,11 @@ def minimum_data():
             }
         )
     ]
-    entities = UserList(
-        [pipeline, job_finder_token, job_runner_token, b_event, a_event])
-    for t in tasks:
-        entities.append(t)
+
+    entities = UserList([pipeline, b_event, a_event])
+    entities.extend(tokens)
+    entities.extend(tasks)
+
     return entities
 
 
