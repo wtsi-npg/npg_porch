@@ -37,6 +37,7 @@ To run the server, please execute the following from the root directory:
 bash
 pip3 install -e .
 cd server
+mkdir -p logs
 export DB_URL=postgresql+asyncpg://npg_rw:$PASS@npg_porch_db:$PORT/$DATABASE
 export DB_SCHEMA='non_default'
 uvicorn main:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
