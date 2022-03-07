@@ -36,7 +36,9 @@ if config['TEST']:
     # config['DB_URL'] = 'sqlite+aiosqlite:///test.db'
 
 if config['DB_URL'] is None or config['DB_URL'] == '':
-    raise Exception("ENV['DB_URL'] must be set with a database URL")
+    raise Exception(
+        "ENV['DB_URL'] must be set with a database URL, or NPG_PORCH_MODE must be set for testing"
+    )
 
 engine = create_async_engine(
     config['DB_URL'], future=True
