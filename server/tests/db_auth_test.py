@@ -1,10 +1,9 @@
 import pytest
 import datetime
 from sqlalchemy import select
-from fastapi.exceptions import HTTPException
 
 from npg.porchdb.models import Token, Pipeline
-from npg.porchdb.auth import Validator
+from npg.porchdb.auth import Validator, CredentialsValidationException
 import npg.porch.models.permission
 import npg.porch.models.pipeline
 
@@ -13,20 +12,23 @@ async def test_token_string_is_valid(async_minimum):
 
     v = Validator(session = async_minimum)
     assert isinstance(v, (npg.porchdb.auth.Validator))
-    # This token is an empty string.
-    with pytest.raises(HTTPException):
+
+    with pytest.raises(CredentialsValidationException,
+                       match=r'The token should be 32 chars long'):
         await v.token2permission("")
-    # This token is too short.
-    with pytest.raises(HTTPException):
+    with pytest.raises(CredentialsValidationException,
+                       match=r'The token should be 32 chars long'):
         await v.token2permission('aaaa')
-    # This token is too long.
-    with pytest.raises(HTTPException):
+    with pytest.raises(CredentialsValidationException,
+                       match=r'The token should be 32 chars long'):
         await v.token2permission('AAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
     # This token contains punctuation characters.
-    with pytest.raises(HTTPException):
+    with pytest.raises(CredentialsValidationException,
+                       match=r'Token failed character validation'):
         await v.token2permission('7dc1457531e3495?9bd5:bcda579c1c6')
     # This token contains characters beyong F.
-    with pytest.raises(HTTPException):
+    with pytest.raises(CredentialsValidationException,
+                       match=r'Token failed character validation'):
         await v.token2permission('7dc1457531e3495P9bd5Kbcda579c1c6')
 
 @pytest.mark.asyncio
@@ -35,8 +37,9 @@ async def test_token_is_known_and_valid(async_minimum):
     v = Validator(session = async_minimum)
 
     # This token does not exist.
-    with pytest.raises(HTTPException):
-        await v.token2permission('doesnotexist11111111111111111111')
+    with pytest.raises(CredentialsValidationException,
+                       match=r'An unknown token is used'):
+        await v.token2permission('aaaaaaaBBaaa11111111111111111111')
 
     # Mark one of the tokens as revoked.
     result = await async_minimum.execute(
@@ -49,7 +52,8 @@ async def test_token_is_known_and_valid(async_minimum):
     async_minimum.add(token_row)
     await async_minimum.commit()
 
-    with pytest.raises(HTTPException):
+    with pytest.raises(CredentialsValidationException,
+                       match=r'A revoked token is used'):
         await v.token2permission(token_string)
 
 @pytest.mark.asyncio

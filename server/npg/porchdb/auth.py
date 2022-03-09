@@ -18,12 +18,10 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import re
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.exc import NoResultFound
-from fastapi import HTTPException
 
 from npg.porchdb.models import Token
 from npg.porch.models.permission import Permission, RolesEnum
@@ -31,6 +29,11 @@ from npg.porch.models.permission import Permission, RolesEnum
 __AUTH_TOKEN_LENGTH__ = 32
 __AUTH_TOKEN_REGEXP__ = re.compile(
     r'\A[0-9A-F]+\Z', flags = re.ASCII | re.IGNORECASE)
+
+class CredentialsValidationException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
 
 class Validator:
     '''
@@ -41,40 +44,36 @@ class Validator:
 
     def __init__(self, session):
         self.session = session
-        self.logger = logging.getLogger(__name__)
 
     async def token2permission(self, token: str):
 
-        message = None
-
         if len(token) != __AUTH_TOKEN_LENGTH__:
-            message = f"The auth token should be {__AUTH_TOKEN_LENGTH__} chars long"
+            raise CredentialsValidationException(
+                f"The token should be {__AUTH_TOKEN_LENGTH__} chars long"
+            )
         elif __AUTH_TOKEN_REGEXP__.match(token) is None:
-            message = 'Token failed character validation'
+            raise CredentialsValidationException(
+                'Token failed character validation'
+            )
 
         valid_token_row = None
-        if message is None:
-            try:
-                # Using 'outerjoin' to get the left join for token, pipeline.
-                # We need to retrieve all token rows, regardless of whether
-                # they are linked the pipeline table or not (we are using a
-                # nullable foreign key to allow for no link).
-                result = await self.session.execute(
-                    select(Token)
-                    .filter_by(token=token)
-                    .outerjoin(Token.pipeline)
-                    .options(contains_eager(Token.pipeline))
-                )
-                valid_token_row = result.scalar_one()
-            except NoResultFound:
-                message = 'An unknown token is used'
+        try:
+            # Using 'outerjoin' to get the left join for token, pipeline.
+            # We need to retrieve all token rows, regardless of whether
+            # they are linked the pipeline table or not (we are using a
+            # nullable foreign key to allow for no link).
+            result = await self.session.execute(
+                select(Token)
+                .filter_by(token=token)
+                .outerjoin(Token.pipeline)
+                .options(contains_eager(Token.pipeline))
+            )
+            valid_token_row = result.scalar_one()
+        except NoResultFound:
+            raise CredentialsValidationException('An unknown token is used')
 
         if (valid_token_row is not None) and (valid_token_row.date_revoked is not None):
-            message = 'A revoked token is used'
-
-        if message:
-            self.logger.warning(message)
-            raise HTTPException(status_code=403, detail="Invalid token")
+            raise CredentialsValidationException('A revoked token is used')
 
         permission = None
         pipeline = valid_token_row.pipeline
