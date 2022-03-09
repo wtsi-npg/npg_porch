@@ -28,7 +28,9 @@ from fastapi import HTTPException
 from npg.porchdb.models import Token
 from npg.porch.models.permission import Permission, RolesEnum
 
-AUTH_TOKEN_LENGTH = 32
+__AUTH_TOKEN_LENGTH__ = 32
+__AUTH_TOKEN_REGEXP__ = re.compile(
+    r'\A[0-9A-F]+\Z', flags = re.ASCII | re.IGNORECASE)
 
 class Validator:
     '''
@@ -45,12 +47,10 @@ class Validator:
 
         message = None
 
-        if len(token) != AUTH_TOKEN_LENGTH:
-            message = f"The auth token should be {AUTH_TOKEN_LENGTH} chars long"
-        else:
-            prog = re.compile(r'\w{32}', flags=re.ASCII)
-            if prog.match(token) is None:
-                message = 'Token failed character validation'
+        if len(token) != __AUTH_TOKEN_LENGTH__:
+            message = f"The auth token should be {__AUTH_TOKEN_LENGTH__} chars long"
+        elif __AUTH_TOKEN_REGEXP__.match(token) is None:
+            message = 'Token failed character validation'
 
         valid_token_row = None
         if message is None:

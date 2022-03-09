@@ -13,19 +13,28 @@ async def test_token_string_is_valid(async_minimum):
 
     v = Validator(session = async_minimum)
     assert isinstance(v, (npg.porchdb.auth.Validator))
+    # This token is an empty string.
     with pytest.raises(HTTPException):
         await v.token2permission("")
+    # This token is too short.
     with pytest.raises(HTTPException):
         await v.token2permission('aaaa')
+    # This token is too long.
     with pytest.raises(HTTPException):
         await v.token2permission('AAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    # This token contains punctuation characters.
     with pytest.raises(HTTPException):
         await v.token2permission('7dc1457531e3495?9bd5:bcda579c1c6')
+    # This token contains characters beyong F.
+    with pytest.raises(HTTPException):
+        await v.token2permission('7dc1457531e3495P9bd5Kbcda579c1c6')
 
 @pytest.mark.asyncio
 async def test_token_is_known_and_valid(async_minimum):
 
     v = Validator(session = async_minimum)
+
+    # This token does not exist.
     with pytest.raises(HTTPException):
         await v.token2permission('doesnotexist11111111111111111111')
 
