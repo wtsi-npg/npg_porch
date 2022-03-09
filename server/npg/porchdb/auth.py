@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2022 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -55,10 +55,14 @@ class Validator:
         valid_token_row = None
         if message is None:
             try:
+                # Using 'outerjoin' to get the left join for token, pipeline.
+                # We need to retrieve all token rows, regardless of whether
+                # they are linked the pipeline table or not (we are using a
+                # nullable foreign key to allow for no link).
                 result = await self.session.execute(
                     select(Token)
                     .filter_by(token=token)
-                    .join(Token.pipeline)
+                    .outerjoin(Token.pipeline)
                     .options(contains_eager(Token.pipeline))
                 )
                 valid_token_row = result.scalar_one()
