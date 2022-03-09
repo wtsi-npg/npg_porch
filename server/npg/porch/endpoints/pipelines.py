@@ -32,7 +32,11 @@ from npg.porch.auth.token import validate
 
 router = APIRouter(
     prefix="/pipelines",
-    tags=["pipelines"]
+    tags=["pipelines"],
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "Not authorised"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Unexpected error"}
+    }
 )
 
 @router.get(
