@@ -30,6 +30,7 @@ def minimum_data():
             description='Seqfarm host, job runner'
         ),
         Token(
+            token='4bab73544c834c6f86f9662e5de26d0d',
             description='Seqfarm host, admin'
         )
     ]

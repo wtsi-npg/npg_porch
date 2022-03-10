@@ -27,8 +27,10 @@ from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
+from npg.porch.models.permission import RolesEnum
 from npg.porchdb.connection import get_DbAccessor
 from npg.porch.auth.token import validate
+
 
 router = APIRouter(
     prefix="/pipelines",
@@ -39,11 +41,15 @@ router = APIRouter(
     }
 )
 
+
 @router.get(
     "/",
     response_model=List[Pipeline],
     summary="Get information about all pipelines.",
-    description="Get all pipelines as a list. A uri and/or version filter can be used."
+    description='''
+    Returns a list of pydantic Pipeline models.
+    A uri and/or version filter can be used.
+    A valid token issued for any pipeline is required for authorisation.'''
 )
 async def get_pipelines(
     uri: Optional[str] = None,
@@ -54,11 +60,15 @@ async def get_pipelines(
 
     return await db_accessor.get_all_pipelines(uri, version)
 
+
 @router.get(
     "/{pipeline_name}",
     response_model=Pipeline,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
     summary="Get information about one pipeline.",
+    description='''
+    Returns a single pydantic Pipeline model if found.
+    A valid token issued for any pipeline is required for authorisation.'''
 )
 async def get_pipeline(
     pipeline_name: str,
@@ -74,22 +84,30 @@ async def get_pipeline(
                             detail=f"Pipeline '{pipeline_name}' not found")
     return pipeline
 
+
 @router.post(
     "/",
     response_model=Pipeline,
-    summary="Create one pipeline record.",
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Pipeline was created"},
         status.HTTP_400_BAD_REQUEST: {"description": "Insufficient pipeline properties provided"},
         status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"}
-    }
+    },
+    summary="Create one pipeline record.",
+    description='''
+    Using JSON data in the request, creates a new pipeline record.
+    A valid special power user token is required for authorisation.'''
 )
 async def create_pipeline(
     pipeline: Pipeline,
     db_accessor=Depends(get_DbAccessor),
     permissions=Depends(validate)
 ) -> Pipeline:
+
+    if permissions.role != RolesEnum.POWER_USER:
+        logging.error(f"Role {RolesEnum.POWER_USER} is required")
+        raise HTTPException(status_code=403)
 
     new_pipeline = None
     try:

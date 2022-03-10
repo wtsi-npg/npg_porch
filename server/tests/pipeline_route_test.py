@@ -2,24 +2,41 @@ from starlette import status
 
 from npg.porch.models import Pipeline
 
+
 headers = {
     'Authorization': 'Bearer cac0533d5599489d9a3d998028a79fe8',
     'accept': 'application/json'
 }
+headers4power_user = {
+    'Authorization': 'Bearer 4bab73544c834c6f86f9662e5de26d0d',
+    'accept': 'application/json'
+}
+
 
 def http_create_pipeline(fastapi_testclient, pipeline):
+
     response = fastapi_testclient.post(
         '/pipelines', json=pipeline.dict(), allow_redirects=True
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
     response = fastapi_testclient.post(
         '/pipelines', json=pipeline.dict(), allow_redirects=True,
         headers=headers
     )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    response = fastapi_testclient.post(
+        '/pipelines', json=pipeline.dict(), allow_redirects=True,
+        headers=headers4power_user
+    )
     assert response.status_code == status.HTTP_201_CREATED
+
     return response.json()
 
+
 def test_pipeline_get(async_minimum, fastapi_testclient):
+
     response = fastapi_testclient.get('/pipelines')
     assert response.status_code == status.HTTP_403_FORBIDDEN
     response = fastapi_testclient.get('/pipelines', headers=headers)
@@ -28,6 +45,7 @@ def test_pipeline_get(async_minimum, fastapi_testclient):
     assert pipeline, 'Response fits into the over-the-wire model'
     assert pipeline.name == 'ptest one'
     assert pipeline.version == '0.3.14'
+
 
 def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
 
@@ -63,6 +81,7 @@ def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
 
 
 def test_get_known_pipeline(async_minimum, fastapi_testclient):
+
     response = fastapi_testclient.get(
         '/pipelines/ptest one', headers=headers
     )
@@ -79,7 +98,9 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()['detail'] == "Pipeline 'not here' not found"
 
+
 def test_create_pipeline(async_minimum, fastapi_testclient):
+
     # Create a pipeline
     desired_pipeline = Pipeline(
         name='ptest two',
@@ -96,9 +117,8 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         '/pipelines',
         json=desired_pipeline.dict(),
         allow_redirects=True,
-        headers=headers
+        headers=headers4power_user
     )
-
     assert response.status_code == status.HTTP_409_CONFLICT, 'ptest two already in DB'
     assert response.json()['detail'] == 'Pipeline already exists'
 
@@ -112,7 +132,6 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
     response = http_create_pipeline(fastapi_testclient, second_desired_pipeline)
 
     # Retrieve the same pipelines
-
     response = fastapi_testclient.get(
         '/pipelines', headers=headers
     )
@@ -130,7 +149,6 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         '/pipelines',
         json=third_desired_pipeline.dict(),
         allow_redirects=True,
-        headers=headers
+        headers=headers4power_user
     )
-
     assert response.status_code == status.HTTP_400_BAD_REQUEST
