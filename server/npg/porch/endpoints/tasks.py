@@ -27,13 +27,19 @@ from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
 from npg.porch.models.task import Task
-
 from npg.porchdb.connection import get_DbAccessor
+from npg.porch.auth.token import validate
+
 
 router = APIRouter(
     prefix="/tasks",
-    tags=["tasks"]
+    tags=["tasks"],
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "Not authorised"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Unexpected error"}
+    }
 )
+
 
 @router.get(
     "/",
@@ -41,43 +47,44 @@ router = APIRouter(
     summary="Returns all tasks.",
     description="Return all tasks. A filter will be applied if used in the query."
 )
-async def get_tasks(db_accessor=Depends(get_DbAccessor)):
+async def get_tasks(
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> List[Task]:
+
     return await db_accessor.get_tasks()
 
-#@router.get(
-#    "/{task_name}",
-#    response_model=Task,
-#    summary="Get one task.",
-#    description="Get one task using its unique name."
-#)
-#def get_task(task_name: str):
-#    return Task(name=task_name)
 
 @router.post(
     "/",
     response_model=Task,
-    summary="Creates one task.",
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Task creation was successful"},
         status.HTTP_404_NOT_FOUND: {"description": "The pipeline for this task is invalid"},
         status.HTTP_409_CONFLICT: {"description": "A task with the same signature already exists"}
-    }
-)
-async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
-    """
+    },
+    summary="Creates one task record.",
+    description='''
     Given a Task object, creates a database record for it and returns
-    the same object with status 201 'Created'
+    the same object, the response HTTP status is 201 'Created'. The
+    new task is assigned pending status, ie becomes awailable for claiming.
 
     The pipeline specified by the `pipeline` attribute of the Task object
-    should exist. If it does not exist, return status 404 'Not found' and
-    an error.
+    should exist. If it does not exist, return status 404 'Not found'.'''
+)
+async def create_task(
+    task: Task,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> Task:
 
-    Errors if task status is not PENDING.
-    """
     created_task = None
     try:
-        created_task = await db_accessor.create_task(token_id=1, task=task)
+        created_task = await db_accessor.create_task(
+            token_id=1,
+            task=task
+        )
     except IntegrityError:
         raise HTTPException(
             status_code=409,
@@ -85,52 +92,57 @@ async def create_task(task: Task, db_accessor=Depends(get_DbAccessor)):
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail='Failed to find pipeline for this task')
+
     return created_task
+
 
 @router.put(
     "/",
     response_model=Task,
-    summary="Update one task.",
     responses={
         status.HTTP_200_OK: {"description": "Task was modified"},
         status.HTTP_404_NOT_FOUND: {
             "description": "The pipeline or task in the request is invalid"
         },
-    }
-)
-async def update_task(task: Task, db_accessor=Depends(get_DbAccessor)):
-    """
-    Given a Task object, updates the status of the task in the database.
+    },
+    summary="Update one task.",
+    description='''
+    Given a Task object, updates the status of the task in the database
+    to the value of the status in this Task object.
 
     The pipeline specified by the `pipeline` attribute of the Task object
     should exist. If it does not exist, return status 404 'Not found' and
-    an error.
-    """
+    an error.'''
+)
+async def update_task(
+    task: Task,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> Task:
+
     changed_task = None
     try:
-        changed_task = await db_accessor.update_task(token_id=1, task=task)
+        changed_task = await db_accessor.update_task(
+            token_id=1,
+            task=task
+        )
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     return changed_task
+
 
 @router.post(
     "/claim",
     response_model=List[Task],
-    summary="Claim tasks.",
-    description="Claim tasks for a particular pipeline.",
     responses={
         status.HTTP_200_OK: {"description": "Receive a list of tasks that have been claimed"},
         status.HTTP_404_NOT_FOUND: {
             "description": "Cannot find the pipeline submitted with the claim"
         }
-    }
-)
-async def claim_task(
-    pipeline: Pipeline,
-    num_tasks: PositiveInt = 1,
-    db_accessor=Depends(get_DbAccessor)
-) -> List[Task]:
-    """
+    },
+    summary="Claim tasks for a particular pipeline.",
+    description='''
     Arguments - the Pipeline object and the maximum number of tasks
     to retrieve and claim, the latter defaults to 1 if not given.
 
@@ -145,15 +157,23 @@ async def claim_task(
 
     The pipeline object returned within the Task should be consistent
     with the pipeline object in the payload, but, typically, will have
-    more attributes defined (uri, the specific version).
-    """
+    more attributes defined (uri, the specific version).'''
+)
+async def claim_task(
+    pipeline: Pipeline,
+    num_tasks: PositiveInt = 1,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> List[Task]:
 
+    tasks = None
     try:
         tasks = await db_accessor.claim_tasks(
             token_id=1,
             pipeline=pipeline,
             claim_limit=num_tasks
         )
-        return tasks
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.value)
+
+    return tasks
