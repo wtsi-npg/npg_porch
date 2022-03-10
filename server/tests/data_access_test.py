@@ -19,7 +19,6 @@ def give_me_a_pipeline(number: int = 1):
 async def store_me_a_pipeline(dac: AsyncDbAccessor, number: int = 1) -> ModelledPipeline:
     return await dac.create_pipeline(give_me_a_pipeline(number))
 
-@pytest.mark.asyncio
 def test_data_accessor_setup(async_session):
     with pytest.raises(TypeError):
         dac = AsyncDbAccessor()

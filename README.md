@@ -47,6 +47,27 @@ and open your browser at `http://localhost:8080` to see links to the docs.
 
 The server will not start without `DB_URL` in the environment
 
+## Running in production
+
+When you want HTTPS, logging and all that jazz:
+
+```bash
+uvicorn main:app --workers 2 --host 0.0.0.0 --port 8080 --log-config ~/logging.json --ssl-keyfile ~/.ssh/key.pem --ssl-certfile ~/.ssh/cert.pem --ssl-ca-certs /usr/local/share/ca-certificates/institute_ca.crt
+```
+
+Consider running with nohup or similar.
+
+Some notes on arguments:
+--workers: How many pre-forks to run. Async should mean we don't need many. Directly increases memory consumption
+
+--host: 0.0.0.0 = bind to all network interfaces. Reliable but greedy in some situations
+
+--log-config: Refers to a JSON file for python logging library. An example file is found in /server/logging.json. Uvicorn provides its own logging configuration via `uvicorn.access` and `uvicorn.error`. These may behave undesirably, and can be overridden in the JSON file with an alternate config. Likewise, fastapi logs to `fastapi` if that needs filtering. For logging to files, set `use_colors = False` in the relevant handlers or shell colour settings will appear as garbage in the logs.
+
+--ssl-keyfile: A PEM format key for the server certificate
+--ssl-certfile: A PEM format certificate for signing HTTPS communications
+--ssl-ca-certs: A CRT format certificate authority file that pleases picky clients. Uvicorn does not automatically find the system certificates, or so it seems.
+
 ## Testing
 
 ```bash
