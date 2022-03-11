@@ -8,6 +8,10 @@ headers4ptest_one = {
     'Authorization': 'Bearer cac0533d5599489d9a3d998028a79fe8',
     'accept': 'application/json'
 }
+headers4ptest_some = {
+    'Authorization': 'Bearer ba53eaf7073d4c2b95ca47aeed41086c',
+    'accept': 'application/json'
+}
 
 def test_task_creation(async_minimum, fastapi_testclient):
 
@@ -47,14 +51,15 @@ def test_task_creation(async_minimum, fastapi_testclient):
             'number': 1
         }
     )
-
+    # The token is valid, but for a different pipeline. It is impossible
+    # to have a valid token for a pipeline that does not exist.
     response = fastapi_testclient.post(
         'tasks',
         json=task_two.dict(),
         allow_redirects=True,
         headers=headers4ptest_one
     )
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_task_update(async_minimum, fastapi_testclient):
@@ -87,7 +92,9 @@ def test_task_update(async_minimum, fastapi_testclient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {'detail': 'Task to be modified could not be found'}
 
-    # And change the reference pipeline to something wrong
+    # And change the reference pipeline to something wrong.
+    # This token is valid, but for a different pipeline. It is impossible
+    # to have a valid token for a pipeline that does not exist.
     modified_task.pipeline = {
         'name': 'ptest one thousand'
     }
@@ -97,24 +104,30 @@ def test_task_update(async_minimum, fastapi_testclient):
         allow_redirects=True,
         headers=headers4ptest_one
     )
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {'detail': 'Pipeline not found'}
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
 
     response = fastapi_testclient.get(
         '/pipelines/ptest some', headers=headers4ptest_one)
-
     assert response.status_code == status.HTTP_200_OK
 
     pipeline = response.json()
     tasks_seen = []
 
+    # Cannot claim with a token issued for a different pipeline.
     response = fastapi_testclient.post(
         '/tasks/claim',
         json=pipeline,
         headers=headers4ptest_one
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    response = fastapi_testclient.post(
+        '/tasks/claim',
+        json=pipeline,
+        headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
@@ -127,14 +140,14 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
     response = fastapi_testclient.post(
         '/tasks/claim?num_tasks=0',
         json=pipeline,
-        headers=headers4ptest_one
+        headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY, 'Not allowed to use invalid numbers of tasks' # noqa: E501
 
     response = fastapi_testclient.post(
         '/tasks/claim?num_tasks=2',
         json=pipeline,
-        headers=headers4ptest_one
+        headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
@@ -146,7 +159,7 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
     response = fastapi_testclient.post(
         '/tasks/claim?num_tasks=8',
         json=pipeline,
-        headers=headers4ptest_one
+        headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
@@ -157,7 +170,7 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
     response = fastapi_testclient.post(
         '/tasks/claim',
         json=pipeline,
-        headers=headers4ptest_one
+        headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
