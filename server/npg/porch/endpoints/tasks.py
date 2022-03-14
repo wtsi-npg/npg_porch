@@ -87,7 +87,7 @@ async def get_tasks(
     description='''
     Given a Task object, creates a database record for it and returns
     the same object, the response HTTP status is 201 'Created'. The
-    new task is assigned pending status, ie becomes awailable for claiming.
+    new task is assigned pending status, ie becomes available for claiming.
 
     The pipeline specified by the `pipeline` attribute of the Task object
     should exist. If it does not exist, return status 404 'Not found'.'''
