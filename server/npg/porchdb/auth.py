@@ -31,8 +31,7 @@ __AUTH_TOKEN_REGEXP__ = re.compile(
     r'\A[0-9A-F]+\Z', flags = re.ASCII | re.IGNORECASE)
 
 class CredentialsValidationException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    pass
 
 
 class Validator:

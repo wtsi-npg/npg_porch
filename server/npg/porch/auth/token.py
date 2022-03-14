@@ -39,7 +39,7 @@ async def validate(
         p = await validator.token2permission(token)
     except CredentialsValidationException as e:
         logger = logging.getLogger(__name__)
-        logger.warning(e)
+        logger.warning(str(e))
         raise HTTPException(status_code=403, detail="Invalid token")
 
     return p

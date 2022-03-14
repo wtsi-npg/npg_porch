@@ -24,11 +24,18 @@ from typing import Optional
 
 from npg.porch.models.pipeline import Pipeline
 
+
+class PermissionValidationException(Exception):
+    pass
+
+
 class RolesEnum(str, Enum):
     POWER_USER = 'power_user'
     REGULAR_USER = 'regular_user'
 
+
 class Permission(BaseModel):
+
     pipeline: Optional[Pipeline] = Field(
         None,
         title = 'An optional pipeline object',
@@ -44,7 +51,24 @@ class Permission(BaseModel):
 
     @validator('role')
     def no_pipeline4special_users(cls, v, values):
+
         if (v == RolesEnum.POWER_USER
                 and ('pipeline' in values and values['pipeline'] is not None)):
             raise ValueError('Power user cannot be associated with a pipeline')
+
         return v
+
+    def validate_pipeline(self, pipeline: Pipeline):
+
+        if self.role != RolesEnum.REGULAR_USER:
+            raise PermissionValidationException(
+                f"Operation is not valid for role {self.role}")
+        if not self.pipeline:
+            raise PermissionValidationException("No associated pipeline object")
+
+        if pipeline.name != self.pipeline.name:
+            raise PermissionValidationException(
+                "Token-request pipeline mismatch: "
+                + f"'{self.pipeline.name}' and '{pipeline.name}'")
+
+        pass

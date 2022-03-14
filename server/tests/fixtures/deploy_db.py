@@ -77,6 +77,7 @@ def lots_of_tasks():
         version='0.3.14'
     )
     job_finder_token = Token(
+        token='ba53eaf7073d4c2b95ca47aeed41086c',
         pipeline=pipeline,
         description='OpenStack host, job finder'
     )
