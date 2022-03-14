@@ -26,8 +26,8 @@ from npg.porch.models.pipeline import Pipeline
 
 
 class PermissionValidationException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    pass
+
 
 class RolesEnum(str, Enum):
     POWER_USER = 'power_user'
