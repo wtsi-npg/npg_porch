@@ -20,6 +20,14 @@ We have tried to make interactions with npg_porch as atomic as possible, so the 
 
 Security is necessary in order to prevent accidental misuse of npg_porch. An authorisation token can be provided to you by the maintainers, which you will then use to enable each request. Not implemented yet!
 
+A note on HTTPS: Client libraries like `requests`, certain GUIs and Firefox will try to verify the server certificate authority. System-administered software are already configured correctly. Others may need to be told where this certificate is, e.g. `/usr/share/ca-certificates/`
+
+### Step 0 - get issued security tokens
+
+Access to the service is loosely controlled with authorisation tokens. You will be issued with an admin token that enables you to register pipelines, and further tokens for pipeline-specific communication. Please do not share the tokens around and use them for purposes besides the specific pipeline. This will help us to monitor pipeline reliability and quality of service. Authorisation is achieved by HTTP Bearer Token:
+
+`curl -L -H "Authorization: Bearer $TOKEN" https://$SERVER:$PORT`
+
 ### Step 1 - register your pipeline with npg_porch
 
 *Schema: npg.porch.model.pipeline*
@@ -38,7 +46,7 @@ You can name your pipeline however you like, but the name must be unique, and be
 }
 ```
 
-`url='npg_porch_server.sanger.ac.uk/pipelines'; curl -L -XPOST ${url} -H "content-type: application/json" -w " %{http_code}" -d @pipeline-def.json`
+`url='$SERVER:$PORT/pipelines'; curl -L -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" -w " %{http_code}" -d @pipeline-def.json`
 
 Keep this pipeline definition with your data, as you will need it to tell npg_porch which pipeline you are acting on.
 
@@ -110,9 +118,9 @@ Note that it is possible to run the same `task_input` with a different `pipeline
 Now you want the pipeline to run once per specification, and so register the documents with npg_porch.
 
 ```bash
-url='npg_porch_server.sanger.ac.uk/tasks'
+url='$SERVER:$PORT/tasks'
 for DOC in *.json; do
-    response=$(curl -w '%{http_code}' -L -XPOST ${url} -H "content-type: application/json" -d @${DOC}`)
+    response=$(curl -w '%{http_code}' -L -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $TOKEN" -d @${DOC}`)
 
     # parsing the response is left as an exercise for the reader...
     if [[ "$response_code" ne 201]]; then
@@ -128,7 +136,7 @@ use HTTP::Request;
 use LWP::UserAgent;
 
 my $ua = LWP::UserAgent->new;
-my $request = HTTP::Request->new(POST => 'npg_porch_server.sanger.ac.uk/tasks');
+my $request = HTTP::Request->new(POST => '$SERVER:$PORT/tasks');
 $request->content_type('application/json');
 $request->header(Accept => 'application/json');
 $request->content($DOC);
@@ -180,8 +188,8 @@ Supposing there are new tasks created every 24 hours, we then also need a client
 Using the "claim" interface, you can ask npg_porch to earmark tasks that you intend to run. Others will remain unclaimed until this script or another claims them. Generally speaking, tasks are first-in first-out, so the first task you get if you claim one is the first unclaimed task npg_porch was told about.
 
 ```bash
-url='npg_porch_server.sanger.ac.uk/tasks/claim'
-response=$(curl -L -I -XPOST ${url} -H "content-type: application/json" -d @pipeline-def.json)
+url='$SERVER:$PORT/tasks/claim'
+response=$(curl -L -I -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $TOKEN" -d @pipeline-def.json)
 ```
 
 Response body:
@@ -216,9 +224,10 @@ or
 use JSON qw/decode_json/;
 
 my $ua = LWP::UserAgent->new;
-my $request = HTTP::Request->new(POST => 'npg_porch_server.sanger.ac.uk/tasks/claim');
+my $request = HTTP::Request->new(POST => '$SERVER:$PORT/tasks/claim');
 $request->content_type('application/json');
 $request->header(Accept => 'application/json');
+$request->header(Authorization => "Bearer $TOKEN")
 
 my $response = $ua->request($request);
 if ($response->is_success) {
