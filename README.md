@@ -40,7 +40,7 @@ cd server
 mkdir -p logs
 export DB_URL=postgresql+asyncpg://npg_rw:$PASS@npg_porch_db:$PORT/$DATABASE
 export DB_SCHEMA='non_default'
-uvicorn main:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
+uvicorn npg.main:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
 ```
 
 and open your browser at `http://localhost:8080` to see links to the docs.
