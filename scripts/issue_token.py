@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    '-h', '--host', help='Postgres host', required=True
+    '-H', '--host', help='Postgres host', required=True
 )
 parser.add_argument(
     '-d', '--database', help='Postgres database', default='npg_porch'
@@ -24,7 +24,7 @@ parser.add_argument(
     '-u', '--user', help='Postgres rw user', required=True
 )
 parser.add_argument(
-    '-p', '--pass', help='Postgres rw password', required=True
+    '-p', '--password', help='Postgres rw password', required=True
 )
 parser.add_argument(
     '-P', '--port', help='Postgres port', required=True
@@ -39,32 +39,32 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-db_url = f'postgresql+psycopg2://{args["user"]}:{args["pass"]}@{args["host"]}:{args["port"]}/{args["database"]}'
+db_url = f'postgresql+psycopg2://{args.user}:{args.password}@{args.host}:{args.port}/{args.database}'
 
-engine = create_engine(db_url)
+engine = create_engine(db_url, connect_args={'options': f'-csearch_path={args.schema}'})
 SessionFactory = sessionmaker(bind=engine)
 session = SessionFactory()
 
 token = None
 pipeline = None
 
-if args["pipeline"]:
+if args.pipeline:
     try:
         pipeline = session.execute(
             select(Pipeline)
-            .where(Pipeline.name == args["pipeline"])
+            .where(Pipeline.name == args.pipeline)
         ).scalar_one()
     except NoResultFound:
         raise Exception(
-            'Pipeline with name {} not found in database'.format(args["pipeline"])
+            'Pipeline with name {} not found in database'.format(args.pipeline)
         )
 
     token = Token(
         pipeline=pipeline,
-        description=args["description"]
+        description=args.description
     )
 else:
-    token = Token(description=args["description"])
+    token = Token(description=args.description)
 
 session.add(token)
 session.commit()

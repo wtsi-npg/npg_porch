@@ -10,7 +10,12 @@ schema_name = os.environ.get('DB_SCHEMA')
 if schema_name is None:
     schema_name = 'npg_porch'
 
-engine = sqlalchemy.create_engine(db_url)
+print(f'Deploying npg_porch tables to schema {schema_name}')
+
+engine = sqlalchemy.create_engine(
+    db_url,
+    connect_args={'options': f'-csearch_path={schema_name}'}
+)
 
 npg.porchdb.models.Base.metadata.schema = schema_name
 npg.porchdb.models.Base.metadata.create_all(engine)
