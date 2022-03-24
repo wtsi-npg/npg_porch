@@ -41,8 +41,20 @@ if config['DB_URL'] is None or config['DB_URL'] == '':
         "ENV['DB_URL'] must be set with a database URL, or NPG_PORCH_MODE must be set for testing"
     )
 
+
+# asyncpg driver receives options differently to psycopg
+# Embed them inside a server_settings dict
+connect_args = {}
+if config['TEST'] is None:
+    connect_args = {
+        'server_settings': {
+            'options': '-csearch_path={}'.format(config["DB_SCHEMA"])
+        }
+    }
 engine = create_async_engine(
-    config['DB_URL'], future=True
+    config['DB_URL'],
+    future=True,
+    connect_args=connect_args
 )
 Base.metadata.schema = config['DB_SCHEMA']
 session_factory = sessionmaker(
