@@ -46,7 +46,7 @@ You can name your pipeline however you like, but the name must be unique, and be
 }
 ```
 
-`url='$SERVER:$PORT/pipelines'; curl -L -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" -w " %{http_code}" -d @pipeline-def.json`
+`url='https://$SERVER:$PORT/pipelines'; curl -L -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" -w " %{http_code}" -d @pipeline-def.json`
 
 Keep this pipeline definition with your data, as you will need it to tell npg_porch which pipeline you are acting on.
 
@@ -118,7 +118,7 @@ Note that it is possible to run the same `task_input` with a different `pipeline
 Now you want the pipeline to run once per specification, and so register the documents with npg_porch.
 
 ```bash
-url='$SERVER:$PORT/tasks'
+url='https://$SERVER:$PORT/tasks'
 for DOC in *.json; do
     response=$(curl -w '%{http_code}' -L -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $TOKEN" -d @${DOC}`)
 
@@ -136,7 +136,7 @@ use HTTP::Request;
 use LWP::UserAgent;
 
 my $ua = LWP::UserAgent->new;
-my $request = HTTP::Request->new(POST => '$SERVER:$PORT/tasks');
+my $request = HTTP::Request->new(POST => 'https://$SERVER:$PORT/tasks');
 $request->content_type('application/json');
 $request->header(Accept => 'application/json');
 $request->content($DOC);
@@ -188,7 +188,7 @@ Supposing there are new tasks created every 24 hours, we then also need a client
 Using the "claim" interface, you can ask npg_porch to earmark tasks that you intend to run. Others will remain unclaimed until this script or another claims them. Generally speaking, tasks are first-in first-out, so the first task you get if you claim one is the first unclaimed task npg_porch was told about.
 
 ```bash
-url='$SERVER:$PORT/tasks/claim'
+url='https://$SERVER:$PORT/tasks/claim'
 response=$(curl -L -I -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $TOKEN" -d @pipeline-def.json)
 ```
 
@@ -224,7 +224,7 @@ or
 use JSON qw/decode_json/;
 
 my $ua = LWP::UserAgent->new;
-my $request = HTTP::Request->new(POST => '$SERVER:$PORT/tasks/claim');
+my $request = HTTP::Request->new(POST => 'https://$SERVER:$PORT/tasks/claim');
 $request->content_type('application/json');
 $request->header(Accept => 'application/json');
 $request->header(Authorization => "Bearer $TOKEN")
