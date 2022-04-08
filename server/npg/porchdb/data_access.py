@@ -194,14 +194,27 @@ class AsyncDbAccessor:
 
         return og_task.convert_to_model()
 
-    async def get_tasks(self) -> List[Task]:
+    async def get_tasks(
+        self,
+        pipeline_name: Optional[str] = None,
+        task_status: Optional[TaskStateEnum] = None
+    ) -> List[Task]:
         '''
-        Gets all the tasks. Going to be problematic without filtering
+        Gets all the tasks.
+
+        Can filter tasks by pipeline name and task status in order to be more useful.
         '''
-        task_result = await self.session.execute(
-            select(DbTask)
+        query = select(DbTask)\
+            .join(DbTask.pipeline)\
             .options(joinedload(DbTask.pipeline))
-        )
+
+        if pipeline_name:
+            query = query.where(DbPipeline.name == pipeline_name)
+
+        if task_status:
+            query = query.filter(DbTask.state == task_status)
+
+        task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 

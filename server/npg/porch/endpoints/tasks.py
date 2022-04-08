@@ -21,13 +21,13 @@
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import PositiveInt
-from typing import List
+from typing import List, Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
 from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.task import Task
+from npg.porch.models.task import Task, TaskStateEnum
 from npg.porch.models.permission import PermissionValidationException
 from npg.porchdb.connection import get_DbAccessor
 from npg.porch.auth.token import validate
@@ -62,17 +62,19 @@ router = APIRouter(
 @router.get(
     "/",
     response_model=List[Task],
-    summary="Returns all tasks.",
+    summary="Returns all tasks, and can be filtered to task status or pipeline name",
     description='''
-    Return all tasks. A filter will be applied if used in the query.
-    The filter feature is not yet implemented.'''
+    Return all tasks. The list of tasks can be filtered by supplying a pipeline
+    name and/or task status'''
 )
 async def get_tasks(
+    pipeline_name: Optional[str] = None,
+    status: Optional[TaskStateEnum] = None,
     db_accessor=Depends(get_DbAccessor),
     permission=Depends(validate)
 ) -> List[Task]:
-
-    return await db_accessor.get_tasks()
+    print(pipeline_name, status)
+    return await db_accessor.get_tasks(pipeline_name=pipeline_name, task_status=status)
 
 
 @router.post(
