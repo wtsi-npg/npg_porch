@@ -175,3 +175,42 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
     assert len(tasks) == 0, 'Tried to claim, did not get any tasks'
+
+def test_get_tasks(async_minimum, async_tasks, fastapi_testclient):
+    response = fastapi_testclient.get('/tasks')
+    assert response.status_code == status.HTTP_403_FORBIDDEN, 'Need a token to see any tasks'
+
+    response = fastapi_testclient.get('/tasks', headers=headers4ptest_one)
+    assert response.status_code == status.HTTP_200_OK, 'Authorised task fetching'
+    tasks = response.json()
+
+    unique_pipelines = {t['pipeline']['name'] for t in tasks}
+
+    assert 'ptest one' in unique_pipelines, 'Tasks for pipeline present with relevant token'
+    assert 'ptest some' in unique_pipelines, 'Tasks for other pipelines also present with token'
+
+    response = fastapi_testclient.get(
+        '/tasks?pipeline_name=ptest one',
+        headers=headers4ptest_one
+    )
+    assert response.status_code == status.HTTP_200_OK, 'One optional argument works'
+    tasks = response.json()
+    assert len(tasks) == 2, 'Most tasks now filtered'
+    assert {t['pipeline']['name'] for t in tasks} == {'ptest one'}, 'All tasks belong to pipeline'
+
+    response = fastapi_testclient.get(
+        '/tasks?status=PENDING',
+        headers=headers4ptest_one
+    )
+    assert response.status_code == status.HTTP_200_OK, 'Other optional argument works'
+    tasks = response.json()
+    assert len(tasks) == 10, 'Ten pending tasks selected'
+
+    response = fastapi_testclient.get(
+        '/tasks?pipeline_name="ptest one"&status=PENDING',
+        headers=headers4ptest_one
+    )
+    assert response.status_code == status.HTTP_200_OK, 'Both arguments together work'
+    print(response.text)
+    tasks = response.json()
+    assert len(tasks) == 0, 'but no tasks are returned that match status and pipeline'
