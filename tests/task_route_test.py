@@ -28,7 +28,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
     response = fastapi_testclient.post(
         'tasks',
         json=task_one.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -38,7 +38,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
     response = fastapi_testclient.post(
         'tasks',
         json=task_one.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -56,7 +56,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
     response = fastapi_testclient.post(
         'tasks',
         json=task_two.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -71,7 +71,7 @@ def test_task_update(async_minimum, fastapi_testclient):
     response = fastapi_testclient.put(
         '/tasks',
         json=task,
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_200_OK
@@ -86,7 +86,7 @@ def test_task_update(async_minimum, fastapi_testclient):
     response = fastapi_testclient.put(
         '/tasks',
         json=modified_task.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -101,7 +101,7 @@ def test_task_update(async_minimum, fastapi_testclient):
     response = fastapi_testclient.put(
         '/tasks',
         json=modified_task.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN

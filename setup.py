@@ -24,6 +24,7 @@ setup(
         'pydantic',
         'pysqlite3',
         'psycopg2-binary',
+        'starlette>=0.22.0',
         'sqlalchemy>=1.4.29',
         'ujson',
         'uvicorn',
@@ -34,7 +35,8 @@ setup(
             'pytest',
             'pytest-asyncio',
             'requests',
-            'flake8'
+            'flake8',
+            'httpx'
         ]
     }
 )
