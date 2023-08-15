@@ -16,18 +16,18 @@ headers4power_user = {
 def http_create_pipeline(fastapi_testclient, pipeline):
 
     response = fastapi_testclient.post(
-        '/pipelines', json=pipeline.dict(), allow_redirects=True
+        '/pipelines', json=pipeline.dict(), follow_redirects=True
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     response = fastapi_testclient.post(
-        '/pipelines', json=pipeline.dict(), allow_redirects=True,
+        '/pipelines', json=pipeline.dict(), follow_redirects=True,
         headers=headers
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     response = fastapi_testclient.post(
-        '/pipelines', json=pipeline.dict(), allow_redirects=True,
+        '/pipelines', json=pipeline.dict(), follow_redirects=True,
         headers=headers4power_user
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -116,7 +116,7 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
     response = fastapi_testclient.post(
         '/pipelines',
         json=desired_pipeline.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4power_user
     )
     assert response.status_code == status.HTTP_409_CONFLICT, 'ptest two already in DB'
@@ -148,7 +148,7 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
     response = fastapi_testclient.post(
         '/pipelines',
         json=third_desired_pipeline.dict(),
-        allow_redirects=True,
+        follow_redirects=True,
         headers=headers4power_user
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST

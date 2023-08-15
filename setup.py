@@ -21,11 +21,11 @@ setup(
         'aiosqlite',
         'asyncpg',
         'fastapi',
-        'httpx', # missing dep for another dep
         'pydantic<2',
         'pysqlite3',
         'psycopg2-binary',
         'sqlalchemy>=1.4.29,<2',
+        'starlette>=0.22.0',
         'ujson',
         'uvicorn',
         'uuid'
@@ -35,7 +35,8 @@ setup(
             'pytest',
             'pytest-asyncio',
             'requests',
-            'flake8'
+            'flake8',
+            'httpx'
         ]
     }
 )
