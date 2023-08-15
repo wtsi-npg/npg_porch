@@ -21,10 +21,11 @@ setup(
         'aiosqlite',
         'asyncpg',
         'fastapi',
-        'pydantic',
+        'httpx', # missing dep for another dep
+        'pydantic<2',
         'pysqlite3',
         'psycopg2-binary',
-        'sqlalchemy>=1.4.29',
+        'sqlalchemy>=1.4.29,<2',
         'ujson',
         'uvicorn',
         'uuid'
