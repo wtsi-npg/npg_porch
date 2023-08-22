@@ -23,9 +23,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[tools.setuptools]
-packages = "find:"
-
 [project.optional-dependencies]
 test = [
     "pytest",
