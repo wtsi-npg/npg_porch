@@ -16,7 +16,7 @@ dependencies = [
     "pydantic < 2.0.0",
     "pysqlite3",
     "psycopg2-binary",
-    "sqlalchemy >= 1.4.29, <2",
+    "sqlalchemy >2",
     "ujson",
     "uvicorn",
     "uuid"
