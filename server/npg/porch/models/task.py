@@ -65,13 +65,13 @@ class Task(BaseModel):
         '''
         if not isinstance(other, Task):
             if isinstance(other, dict):
-                other = Task.parse_obj(other)
+                other = Task.model_validate(other)
             else:
                 return False
 
         truths = []
-        for k, v in self.dict().items():
-            other_d = other.dict()
+        for k, v in self.model_dump().items():
+            other_d = other.model_dump()
             if k == 'pipeline':
                 truths.append(v['name'] == other_d[k]['name'])
             elif k == 'task_input_id':

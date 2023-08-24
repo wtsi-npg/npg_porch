@@ -1,6 +1,6 @@
 from starlette import status
 
-from npg.porch.models import Task, TaskStateEnum
+from npg.porch.models import Task, TaskStateEnum, Pipeline
 
 # Not testing get-all-tasks as this method will ultimately go
 
@@ -27,7 +27,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
 
     response = fastapi_testclient.post(
         'tasks',
-        json=task_one.dict(),
+        json=task_one.model_dump(),
         follow_redirects=True,
         headers=headers4ptest_one
     )
@@ -37,7 +37,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
     # Try again and expect to fail
     response = fastapi_testclient.post(
         'tasks',
-        json=task_one.dict(),
+        json=task_one.model_dump(),
         follow_redirects=True,
         headers=headers4ptest_one
     )
@@ -55,7 +55,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
     # to have a valid token for a pipeline that does not exist.
     response = fastapi_testclient.post(
         'tasks',
-        json=task_two.dict(),
+        json=task_two.model_dump(),
         follow_redirects=True,
         headers=headers4ptest_one
     )
@@ -76,7 +76,7 @@ def test_task_update(async_minimum, fastapi_testclient):
     )
     assert response.status_code == status.HTTP_200_OK
 
-    modified_task = Task.parse_obj(response.json())
+    modified_task = Task.model_validate(response.json())
     assert modified_task == task
 
     # Now invalidate the task by changing the signature
@@ -85,7 +85,7 @@ def test_task_update(async_minimum, fastapi_testclient):
     }
     response = fastapi_testclient.put(
         '/tasks',
-        json=modified_task.dict(),
+        json=modified_task.model_dump(),
         follow_redirects=True,
         headers=headers4ptest_one
     )
@@ -95,12 +95,12 @@ def test_task_update(async_minimum, fastapi_testclient):
     # And change the reference pipeline to something wrong.
     # This token is valid, but for a different pipeline. It is impossible
     # to have a valid token for a pipeline that does not exist.
-    modified_task.pipeline = {
+    modified_task.pipeline = Pipeline.model_validate({
         'name': 'ptest one thousand'
-    }
+    })
     response = fastapi_testclient.put(
         '/tasks',
-        json=modified_task.dict(),
+        json=modified_task.model_dump(),
         follow_redirects=True,
         headers=headers4ptest_one
     )
