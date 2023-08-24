@@ -77,7 +77,7 @@ def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
     assert response.status_code == status.HTTP_200_OK
     pipes = response.json()
     assert len(pipes) == 1, 'Only one pipeline matches the uri'
-    assert pipes[0] == second_pipeline
+    assert pipes[0] == second_pipeline.dict()
 
 
 def test_get_known_pipeline(async_minimum, fastapi_testclient):
@@ -136,7 +136,7 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         '/pipelines', headers=headers
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()[1:] == [desired_pipeline, second_desired_pipeline]
+    assert response.json()[1:] == [desired_pipeline.dict(), second_desired_pipeline.dict()]
 
     # Create a very poorly provenanced pipeline
     third_desired_pipeline = Pipeline(
