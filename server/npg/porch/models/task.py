@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2021, 2022, 2023 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -46,7 +46,7 @@ class Task(BaseModel):
         title='Task Input',
         description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline' # noqa: E501
     )
-    status: Optional[TaskStateEnum]
+    status: Optional[TaskStateEnum] = None
 
     def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()
@@ -65,13 +65,13 @@ class Task(BaseModel):
         '''
         if not isinstance(other, Task):
             if isinstance(other, dict):
-                other = Task.parse_obj(other)
+                other = Task.model_validate(other)
             else:
                 return False
 
         truths = []
-        for k, v in self.dict().items():
-            other_d = other.dict()
+        for k, v in self.model_dump().items():
+            other_d = other.model_dump()
             if k == 'pipeline':
                 truths.append(v['name'] == other_d[k]['name'])
             elif k == 'task_input_id':

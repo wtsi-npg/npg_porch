@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2021, 2022, 2023 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -173,7 +173,7 @@ async def update_task(
 )
 async def claim_task(
     pipeline: Pipeline,
-    num_tasks: PositiveInt = 1,
+    num_tasks: PositiveInt | None = 1,
     db_accessor=Depends(get_DbAccessor),
     permission=Depends(validate)
 ) -> List[Task]:
