@@ -16,7 +16,7 @@ def sync_session():
     '''
 
     sqlite_url = 'sqlite+pysqlite:///:memory:'
-    engine = sqlalchemy.create_engine(sqlite_url, future=True)
+    engine = sqlalchemy.create_engine(sqlite_url)
     Base.metadata.create_all(engine)
     SessionFactory = sqlalchemy.orm.sessionmaker(bind=engine)
     sess = sqlalchemy.orm.scoped_session(SessionFactory)

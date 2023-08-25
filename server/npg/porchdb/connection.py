@@ -53,7 +53,6 @@ if config['TEST'] is None:
     }
 engine = create_async_engine(
     config['DB_URL'],
-    future=True,
     connect_args=connect_args
 )
 Base.metadata.schema = config['DB_SCHEMA']
