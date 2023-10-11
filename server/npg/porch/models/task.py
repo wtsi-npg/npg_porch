@@ -22,7 +22,6 @@ from enum import Enum
 import hashlib
 import ujson
 from pydantic import BaseModel, Field
-from typing import Optional, Dict
 
 from npg.porch.models.pipeline import Pipeline
 
@@ -36,17 +35,17 @@ class TaskStateEnum(str, Enum):
 
 class Task(BaseModel):
     pipeline: Pipeline
-    task_input_id: Optional[str] = Field(
+    task_input_id: str | None = Field(
         None,
         title='Task Input ID',
         description='A stringified unique identifier for a piece of work. Set by the npg_porch server, not the client' # noqa: E501
     )
-    task_input: Dict = Field(
+    task_input: dict = Field(
         None,
         title='Task Input',
         description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline' # noqa: E501
     )
-    status: Optional[TaskStateEnum] = None
+    status: TaskStateEnum | None = None
 
     def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()

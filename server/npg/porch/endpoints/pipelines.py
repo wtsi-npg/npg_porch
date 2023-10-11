@@ -20,7 +20,6 @@
 
 from fastapi import APIRouter, HTTPException, Depends
 import logging
-from typing import List, Optional
 import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
@@ -44,7 +43,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Pipeline],
+    response_model=list[Pipeline],
     summary="Get information about all pipelines.",
     description='''
     Returns a list of pydantic Pipeline models.
@@ -52,11 +51,11 @@ router = APIRouter(
     A valid token issued for any pipeline is required for authorisation.'''
 )
 async def get_pipelines(
-    uri: Optional[str] = None,
-    version: Optional[str] = None,
+    uri: str | None = None,
+    version: str | None = None,
     db_accessor=Depends(get_DbAccessor),
     permissions=Depends(validate)
-) -> List[Pipeline]:
+) -> list[Pipeline]:
 
     return await db_accessor.get_all_pipelines(uri, version)
 
