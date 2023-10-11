@@ -19,18 +19,17 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import PositiveInt
-from typing import List, Optional
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from npg.porch.auth.token import validate
+from npg.porch.models.permission import PermissionValidationException
+from npg.porch.models.pipeline import Pipeline
+from npg.porch.models.task import Task, TaskStateEnum
+from npg.porchdb.connection import get_DbAccessor
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
-
-from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.task import Task, TaskStateEnum
-from npg.porch.models.permission import PermissionValidationException
-from npg.porchdb.connection import get_DbAccessor
-from npg.porch.auth.token import validate
 
 
 def _validate_request(permission, pipeline):
@@ -61,18 +60,18 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Task],
+    response_model=list[Task],
     summary="Returns all tasks, and can be filtered to task status or pipeline name",
     description='''
     Return all tasks. The list of tasks can be filtered by supplying a pipeline
     name and/or task status'''
 )
 async def get_tasks(
-    pipeline_name: Optional[str] = None,
-    status: Optional[TaskStateEnum] = None,
+    pipeline_name: str | None = None,
+    status: TaskStateEnum | None = None,
     db_accessor=Depends(get_DbAccessor),
     permission=Depends(validate)
-) -> List[Task]:
+) -> list[Task]:
     print(pipeline_name, status)
     return await db_accessor.get_tasks(pipeline_name=pipeline_name, task_status=status)
 
@@ -152,7 +151,7 @@ async def update_task(
 
 @router.post(
     "/claim",
-    response_model=List[Task],
+    response_model=list[Task],
     responses={
         status.HTTP_200_OK: {"description": "Receive a list of tasks that have been claimed"}
     },
@@ -173,10 +172,10 @@ async def update_task(
 )
 async def claim_task(
     pipeline: Pipeline,
-    num_tasks: PositiveInt | None = 1,
+    num_tasks: Annotated[int | None, Query(gt=0)] = 1,
     db_accessor=Depends(get_DbAccessor),
     permission=Depends(validate)
-) -> List[Task]:
+) -> list[Task]:
 
     _validate_request(permission, pipeline)
     tasks = await db_accessor.claim_tasks(

@@ -19,7 +19,6 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from pydantic import BaseModel, Field
-from typing import Optional
 
 class Pipeline(BaseModel):
     name: str = Field(
@@ -27,12 +26,12 @@ class Pipeline(BaseModel):
         title='Pipeline Name',
         description='A user-controlled name for the pipeline'
     )
-    uri: Optional[str] = Field(
+    uri: str | None = Field(
         default = None,
         title='URI',
         description='URI to bootstrap the pipeline code'
     )
-    version: Optional[str] = Field(
+    version: str | None = Field(
         default = None,
         title='Version',
         description='Pipeline version to use with URI'
