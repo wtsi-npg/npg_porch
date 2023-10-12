@@ -53,7 +53,8 @@ if config['TEST'] is None:
     }
 engine = create_async_engine(
     config['DB_URL'],
-    connect_args=connect_args
+    connect_args=connect_args,
+    pool_pre_ping=True
 )
 Base.metadata.schema = config['DB_SCHEMA']
 session_factory = sessionmaker(
