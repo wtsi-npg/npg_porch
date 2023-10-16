@@ -23,7 +23,6 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
-from typing import Optional, List
 
 from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event
 from npg.porch.models import Task, Pipeline, TaskStateEnum
@@ -55,10 +54,10 @@ class AsyncDbAccessor:
 
     async def _get_pipeline_db_objects(
         self,
-        name: Optional[str] = None,
-        version: Optional[str] = None,
-        uri: Optional[str] = None
-    ) -> List[Pipeline]:
+        name: str | None = None,
+        version: str | None = None,
+        uri: str | None = None
+    ) -> list[Pipeline]:
         query = select(DbPipeline)
         if name:
             query = query.filter_by(name=name)
@@ -72,9 +71,9 @@ class AsyncDbAccessor:
 
     async def get_all_pipelines(
         self,
-        uri: Optional[str] = None,
-        version: Optional[str] = None
-    ) -> List[Pipeline]:
+        uri: str | None = None,
+        version: str | None = None
+    ) -> list[Pipeline]:
         pipelines = []
         pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
         return [pipe.convert_to_model() for pipe in pipelines]
@@ -117,8 +116,8 @@ class AsyncDbAccessor:
         return t.convert_to_model()
 
     async def claim_tasks(
-        self, token_id: int, pipeline: Pipeline, claim_limit: Optional[int] = 1
-    ) -> List[Task]:
+        self, token_id: int, pipeline: Pipeline, claim_limit: int | None = 1
+    ) -> list[Task]:
         session = self.session
 
         try:
@@ -194,14 +193,27 @@ class AsyncDbAccessor:
 
         return og_task.convert_to_model()
 
-    async def get_tasks(self) -> List[Task]:
+    async def get_tasks(
+        self,
+        pipeline_name: str | None = None,
+        task_status: TaskStateEnum | None = None
+    ) -> list[Task]:
         '''
-        Gets all the tasks. Going to be problematic without filtering
+        Gets all the tasks.
+
+        Can filter tasks by pipeline name and task status in order to be more useful.
         '''
-        task_result = await self.session.execute(
-            select(DbTask)
+        query = select(DbTask)\
+            .join(DbTask.pipeline)\
             .options(joinedload(DbTask.pipeline))
-        )
+
+        if pipeline_name:
+            query = query.where(DbPipeline.name == pipeline_name)
+
+        if task_status:
+            query = query.filter(DbTask.state == task_status)
+
+        task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 
@@ -216,7 +228,7 @@ class AsyncDbAccessor:
             state=task.status
         )
 
-    async def get_events_for_task(self, task: Task) -> List[Event]:
+    async def get_events_for_task(self, task: Task) -> list[Event]:
         events = await self.session.execute(
             select(Event)
             .join(Event.task)

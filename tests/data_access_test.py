@@ -19,7 +19,6 @@ def give_me_a_pipeline(number: int = 1):
 async def store_me_a_pipeline(dac: AsyncDbAccessor, number: int = 1) -> ModelledPipeline:
     return await dac.create_pipeline(give_me_a_pipeline(number))
 
-@pytest.mark.asyncio
 def test_data_accessor_setup(async_session):
     with pytest.raises(TypeError):
         dac = AsyncDbAccessor()
@@ -228,3 +227,56 @@ async def test_update_tasks(db_accessor):
     with pytest.raises(Exception) as exception:
         await db_accessor.update_task(1, saved_task)
         assert exception.value == 'Cannot change task definition. Submit a new task instead'
+
+
+@pytest.mark.asyncio
+async def test_get_tasks(db_accessor):
+    all_tasks = await db_accessor.get_tasks()
+
+    assert len(all_tasks) == 2, 'All tasks currently includes two for one pipeline from the fixture'
+
+    tasks = await db_accessor.get_tasks(pipeline_name = 'ptest one')
+
+    assert tasks == all_tasks, 'Filtering by pipeline name gives the same result'
+
+    tasks = await db_accessor.get_tasks(task_status = TaskStateEnum.FAILED)
+    assert len(tasks) == 0, 'No failed tasks yet'
+
+    # Create an additional pipeline and tasks
+
+    pipeline = await store_me_a_pipeline(db_accessor, 2)
+
+    for i in range(3):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={'number': i + 1},
+                pipeline=pipeline
+            )
+        )
+
+    all_tasks = await db_accessor.get_tasks()
+    assert len(all_tasks) == 5, 'Now we have five tasks in two pipelines'
+
+    tasks = await db_accessor.get_tasks(pipeline_name = 'ptest one')
+    assert len(tasks) == 2, 'New tasks filtered out by pipeline name'
+    assert tasks[0].pipeline.name == 'ptest one'
+
+    # Change one task to another status
+    await db_accessor.update_task(
+        token_id = 1,
+        task=Task(
+            task_input={'number': 3},
+            pipeline=pipeline,
+            status=TaskStateEnum.DONE
+        )
+    )
+
+    tasks = await db_accessor.get_tasks(task_status = TaskStateEnum.DONE)
+    assert len(tasks) == 1, 'Not done tasks are filtered'
+    assert tasks[0].task_input == {'number': 3}, 'Leaving only one'
+
+    # Check interaction of both constraints
+
+    tasks = await db_accessor.get_tasks(pipeline_name='ptest one', task_status=TaskStateEnum.DONE)
+    assert len(tasks) == 0, 'Pipeline "ptest one" has no DONE tasks'

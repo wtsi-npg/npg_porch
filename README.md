@@ -40,12 +40,33 @@ cd server
 mkdir -p logs
 export DB_URL=postgresql+asyncpg://npg_rw:$PASS@npg_porch_db:$PORT/$DATABASE
 export DB_SCHEMA='non_default'
-uvicorn main:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
+uvicorn npg.main:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
 ```
 
 and open your browser at `http://localhost:8080` to see links to the docs.
 
 The server will not start without `DB_URL` in the environment
+
+## Running in production
+
+When you want HTTPS, logging and all that jazz:
+
+```bash
+uvicorn main:app --workers 2 --host 0.0.0.0 --port 8080 --log-config ~/logging.json --ssl-keyfile ~/.ssh/key.pem --ssl-certfile ~/.ssh/cert.pem --ssl-ca-certs /usr/local/share/ca-certificates/institute_ca.crt
+```
+
+Consider running with nohup or similar.
+
+Some notes on arguments:
+--workers: How many pre-forks to run. Async should mean we don't need many. Directly increases memory consumption
+
+--host: 0.0.0.0 = bind to all network interfaces. Reliable but greedy in some situations
+
+--log-config: Refers to a JSON file for python logging library. An example file is found in /server/logging.json. Uvicorn provides its own logging configuration via `uvicorn.access` and `uvicorn.error`. These may behave undesirably, and can be overridden in the JSON file with an alternate config. Likewise, fastapi logs to `fastapi` if that needs filtering. For logging to files, set `use_colors = False` in the relevant handlers or shell colour settings will appear as garbage in the logs.
+
+--ssl-keyfile: A PEM format key for the server certificate
+--ssl-certfile: A PEM format certificate for signing HTTPS communications
+--ssl-ca-certs: A CRT format certificate authority file that pleases picky clients. Uvicorn does not automatically find the system certificates, or so it seems.
 
 ## Testing
 
@@ -71,11 +92,15 @@ Create a schema on a postgres server:
 
 ```bash
 psql --host=npg_porch_db --port=$PORT --username=npg_admin --password -d postgres
-
-CREATE SCHEMA npg_porch
 ```
 
-Then run a script that deploys the ORM to this schema
+```sql
+CREATE SCHEMA npg_porch;
+SET search_path = npg_porch, public;
+GRANT USAGE ON SCHEMA npg_porch TO npgtest_ro, npgtest_rw;
+```
+
+The SET command ensures that the new schema is visible _for one session only_ in the `\d*` commands you might use in psql. Then run a script that deploys the ORM to this schema
 
 ```bash
 DB=npg_porch
@@ -89,7 +114,6 @@ psql --host=npg_porch_db --port=$PORT --username=npg_admin --password -d $DB
 Permissions must be granted to the npg_rw and npg_ro users to the newly created schema
 
 ```sql
-GRANT USAGE ON SCHEMA npg_porch TO npgtest_ro, npgtest_rw;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA npg_porch TO npgtest_rw;
 GRANT SELECT ON ALL TABLES IN SCHEMA npg_porch TO npgtest_ro;
 
@@ -97,7 +121,5 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA npg_porch TO npgtes
 ```
 
 Note that granting usage on sequences is required to allow autoincrement columns to work during an insert. This is a trick of newer Postgres versions.
-
-It may prove necessary to `GRANT` to specific named tables and sequences. Under specific circumstances the `ALL TABLES` qualifier doesn't work.
 
 Until token support is implemented, a row will need to be inserted manually into the token table. Otherwise none of the event logging works.

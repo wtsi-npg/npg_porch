@@ -8,7 +8,7 @@ from npg.porchdb.models import (
 )
 from npg.porchdb.data_access import AsyncDbAccessor
 from npg.porch.models import Task as ModelledTask, TaskStateEnum
-from main import app
+from npg.main import app
 
 @pytest.fixture
 def minimum_data():
@@ -21,6 +21,7 @@ def minimum_data():
     )
     tokens = [
         Token(
+            token='cac0533d5599489d9a3d998028a79fe8',
             pipeline=pipeline,
             description='OpenStack host, job finder'
         ),
@@ -29,6 +30,7 @@ def minimum_data():
             description='Seqfarm host, job runner'
         ),
         Token(
+            token='4bab73544c834c6f86f9662e5de26d0d',
             description='Seqfarm host, admin'
         )
     ]
@@ -70,11 +72,12 @@ def lots_of_tasks():
     'A good supply of tasks for testing claims'
 
     pipeline = Pipeline(
-        name='ptest one',
+        name='ptest some',
         repository_uri='pipeline-test.com',
         version='0.3.14'
     )
     job_finder_token = Token(
+        token='ba53eaf7073d4c2b95ca47aeed41086c',
         pipeline=pipeline,
         description='OpenStack host, job finder'
     )

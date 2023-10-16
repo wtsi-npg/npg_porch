@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2022 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -18,21 +18,28 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pydantic import BaseModel, Field
+import logging
+from fastapi import Depends
+from fastapi.security import HTTPBearer
+from fastapi import HTTPException
 
-class Pipeline(BaseModel):
-    name: str = Field(
-        default = None,
-        title='Pipeline Name',
-        description='A user-controlled name for the pipeline'
-    )
-    uri: str | None = Field(
-        default = None,
-        title='URI',
-        description='URI to bootstrap the pipeline code'
-    )
-    version: str | None = Field(
-        default = None,
-        title='Version',
-        description='Pipeline version to use with URI'
-    )
+from npg.porchdb.connection import get_CredentialsValidator
+from npg.porchdb.auth import CredentialsValidationException
+
+auth_scheme = HTTPBearer()
+
+async def validate(
+    creds = Depends(auth_scheme),
+    validator = Depends(get_CredentialsValidator)
+):
+
+    token = creds.credentials
+    p = None
+    try:
+        p = await validator.token2permission(token)
+    except CredentialsValidationException as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(str(e))
+        raise HTTPException(status_code=403, detail="Invalid token")
+
+    return p
