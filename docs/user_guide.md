@@ -30,7 +30,7 @@ Access to the service is loosely controlled with authorisation tokens. You will 
 
 ### Step 1 - register your pipeline with npg_porch
 
-*Schema: npg.porch.model.pipeline*
+*Schema: npg_porch.model.pipeline*
 
 Nothing in npg_porch can happen until there's a pipeline defined. For our purposes "pipeline" means "a thing you can run", and it may refer to specific code, or a wrapper that can run the pipeline in this particular way with some standard arguments.
 
@@ -50,7 +50,7 @@ You can name your pipeline however you like, but the name must be unique, and be
 
 Keep this pipeline definition with your data, as you will need it to tell npg_porch which pipeline you are acting on.
 
-When communicating with npg_porch (as with any HTTP server) you must inspect the response code and message after each communication. See `-w " %{http_code}" above. The API documentation lists the response codes you can expect to have to handle. In this case, the server may respond with 400 - BAD REQUEST if you leave out a name, or 409 - CONFLICT if you chose a name that is already created.
+As with any HTTP server, when communicating with npg_porch you must inspect the response code and message after each communication. See `-w " %{http_code}" above. The API documentation lists the response codes you can expect to have to handle. In this case, the server may respond with 400 - BAD REQUEST if you leave out a name, or 409 - CONFLICT if you chose a name that is already created.
 
 ### Step 2 - decide on the unique criteria for running the pipeline
 
@@ -58,7 +58,7 @@ e.g. Once per 24 hours, poll iRODS metadata for data relating to a study.
 
 We might create a cronjob that runs a script. It invokes `imeta` and retrieves a list of results. Now we turn each of those results into a JSON document to our own specification:
 
-*Schema: npg.porch.model.task*
+*Schema: npg_porch.model.task*
 
 **study-100-id-run-45925.json**
 
@@ -113,7 +113,7 @@ Note that it is possible to run the same `task_input` with a different `pipeline
 
 ### Step 3 - register the documents with npg_porch
 
-*Schema: npg.porch.model.task*
+*Schema: npg_porch.model.task*
 
 Now you want the pipeline to run once per specification, and so register the documents with npg_porch.
 

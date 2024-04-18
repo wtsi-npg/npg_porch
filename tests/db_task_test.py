@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from npg.porchdb.models import Task
+from npg_porch.db.models import Task
 
 @pytest.mark.asyncio
 async def test_task_creation(async_minimum):

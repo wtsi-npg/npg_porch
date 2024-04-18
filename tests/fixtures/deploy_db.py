@@ -3,12 +3,12 @@ import pytest
 import pytest_asyncio
 from starlette.testclient import TestClient
 
-from npg.porchdb.models import (
+from npg_porch.db.models import (
     Pipeline, Task, Event, Token
 )
-from npg.porchdb.data_access import AsyncDbAccessor
-from npg.porch.models import Task as ModelledTask, TaskStateEnum
-from npg.porch_server import app
+from npg_porch.db.data_access import AsyncDbAccessor
+from npg_porch.models import Task as ModelledTask, TaskStateEnum
+from npg_porch.server import app
 
 @pytest.fixture
 def minimum_data():

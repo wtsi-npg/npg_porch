@@ -40,7 +40,7 @@ cd src
 mkdir -p logs
 export DB_URL=postgresql+asyncpg://npg_rw:$PASS@npg_porch_db:$PORT/$DATABASE
 export DB_SCHEMA='non_default'
-uvicorn npg.porch_server:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
+uvicorn npg_porch.server:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
 ```
 
 and open your browser at `http://localhost:8080` to see links to the docs.
@@ -52,7 +52,7 @@ The server will not start without `DB_URL` in the environment
 When you want HTTPS, logging and all that jazz:
 
 ```bash
-uvicorn porch_server:app --workers 2 --host 0.0.0.0 --port 8080 --log-config ~/logging.json --ssl-keyfile ~/.ssh/key.pem --ssl-certfile ~/.ssh/cert.pem --ssl-ca-certs /usr/local/share/ca-certificates/institute_ca.crt
+uvicorn server:app --workers 2 --host 0.0.0.0 --port 8080 --log-config ~/logging.json --ssl-keyfile ~/.ssh/key.pem --ssl-certfile ~/.ssh/cert.pem --ssl-ca-certs /usr/local/share/ca-certificates/institute_ca.crt
 ```
 
 Consider running with nohup or similar.

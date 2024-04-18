@@ -4,8 +4,8 @@ import pytest_asyncio
 import sqlalchemy
 import sqlalchemy.orm
 
-from npg.porchdb.models import Base
-from npg.porchdb.connection import session_factory, deploy_schema, close_engine
+from npg_porch.db.models import Base
+from npg_porch.db.connection import session_factory, deploy_schema, close_engine
 
 
 @pytest.fixture

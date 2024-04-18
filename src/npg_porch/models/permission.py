@@ -22,7 +22,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator, FieldValidationInfo
 from typing import Optional
 
-from npg.porch.models.pipeline import Pipeline
+from npg_porch.models.pipeline import Pipeline
 
 
 class PermissionValidationException(Exception):

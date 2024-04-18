@@ -23,7 +23,7 @@ import hashlib
 import ujson
 from pydantic import BaseModel, Field
 
-from npg.porch.models.pipeline import Pipeline
+from npg_porch.models.pipeline import Pipeline
 
 class TaskStateEnum(str, Enum):
     PENDING = 'PENDING'

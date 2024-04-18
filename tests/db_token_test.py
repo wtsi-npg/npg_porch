@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from npg.porchdb.models import Token
+from npg_porch.db.models import Token
 
 @pytest.mark.asyncio
 async def test_token_creation(async_minimum):

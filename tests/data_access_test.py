@@ -4,8 +4,8 @@ import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-from npg.porchdb.data_access import AsyncDbAccessor
-from npg.porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
+from npg_porch.db.data_access import AsyncDbAccessor
+from npg_porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
 
 
 def give_me_a_pipeline(number: int = 1):

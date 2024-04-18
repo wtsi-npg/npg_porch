@@ -1,6 +1,6 @@
 from starlette import status
 
-from npg.porch.models import Task, TaskStateEnum, Pipeline
+from npg_porch.models import Task, TaskStateEnum, Pipeline
 
 # Not testing get-all-tasks as this method will ultimately go
 
