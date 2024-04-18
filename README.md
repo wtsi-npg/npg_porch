@@ -36,7 +36,7 @@ To run the server, please execute the following from the root directory:
 ```bash
 bash
 pip3 install -e .
-cd server
+cd src
 mkdir -p logs
 export DB_URL=postgresql+asyncpg://npg_rw:$PASS@npg_porch_db:$PORT/$DATABASE
 export DB_SCHEMA='non_default'
@@ -62,7 +62,7 @@ Some notes on arguments:
 
 --host: 0.0.0.0 = bind to all network interfaces. Reliable but greedy in some situations
 
---log-config: Refers to a JSON file for python logging library. An example file is found in /server/logging.json. Uvicorn provides its own logging configuration via `uvicorn.access` and `uvicorn.error`. These may behave undesirably, and can be overridden in the JSON file with an alternate config. Likewise, fastapi logs to `fastapi` if that needs filtering. For logging to files, set `use_colors = False` in the relevant handlers or shell colour settings will appear as garbage in the logs.
+--log-config: Refers to a JSON file for python logging library. An example file is found in /src/logging.json. Uvicorn provides its own logging configuration via `uvicorn.access` and `uvicorn.error`. These may behave undesirably, and can be overridden in the JSON file with an alternate config. Likewise, fastapi logs to `fastapi` if that needs filtering. For logging to files, set `use_colors = False` in the relevant handlers or shell colour settings will appear as garbage in the logs.
 
 --ssl-keyfile: A PEM format key for the server certificate
 --ssl-certfile: A PEM format certificate for signing HTTPS communications
@@ -77,11 +77,11 @@ pip install -e .[test]
 pytest
 ```
 
-Individual tests are run in the form `pytest server/tests/init_test.py`
+Individual tests are run in the form `pytest tests/init_test.py`
 
 ### Fixtures
 
-Fixtures reside under `server/tests/fixtures` and are registered in `server/tests/conftest.py`
+Fixtures reside under `tests/fixtures` and are registered in `tests/conftest.py`
 They can also be listed by invoking `pytest --fixtures`
 
 Any fixtures that are not imported in `conftest.py` will not be detected.
@@ -106,7 +106,7 @@ The SET command ensures that the new schema is visible _for one session only_ in
 DB=npg_porch
 export DB_URL=postgresql+psycopg2://npg_admin:$PASS@npg_porch_db:$PORT/$DB
 # note that the script requires a regular PG driver, not the async version showed above
-server/deploy_schema.py
+src/deploy_schema.py
 
 psql --host=npg_porch_db --port=$PORT --username=npg_admin --password -d $DB
 ```
