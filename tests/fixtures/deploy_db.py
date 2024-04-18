@@ -8,7 +8,7 @@ from npg.porchdb.models import (
 )
 from npg.porchdb.data_access import AsyncDbAccessor
 from npg.porch.models import Task as ModelledTask, TaskStateEnum
-from npg.main import app
+from npg.porch_server import app
 
 @pytest.fixture
 def minimum_data():
