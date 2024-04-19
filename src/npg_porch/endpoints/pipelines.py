@@ -25,10 +25,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
-from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.permission import RolesEnum
-from npg.porchdb.connection import get_DbAccessor
-from npg.porch.auth.token import validate
+from npg_porch.models.pipeline import Pipeline
+from npg_porch.models.permission import RolesEnum
+from npg_porch.db.connection import get_DbAccessor
+from npg_porch.auth.token import validate
 
 
 router = APIRouter(

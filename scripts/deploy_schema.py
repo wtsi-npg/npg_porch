@@ -3,7 +3,7 @@
 import os
 import sqlalchemy
 
-import npg.porchdb.models
+import npg_porch.db.models
 
 db_url = os.environ.get('DB_URL')
 schema_name = os.environ.get('DB_SCHEMA')
@@ -17,5 +17,5 @@ engine = sqlalchemy.create_engine(
     connect_args={'options': f'-csearch_path={schema_name}'}
 )
 
-npg.porchdb.models.Base.metadata.schema = schema_name
-npg.porchdb.models.Base.metadata.create_all(engine)
+npg_porch.db.models.Base.metadata.schema = schema_name
+npg_porch.db.models.Base.metadata.create_all(engine)

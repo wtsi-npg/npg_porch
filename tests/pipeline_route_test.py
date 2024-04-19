@@ -1,6 +1,6 @@
 from starlette import status
 
-from npg.porch.models import Pipeline
+from npg_porch.models import Pipeline
 
 
 headers = {

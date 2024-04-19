@@ -26,7 +26,7 @@ from sqlalchemy.sql.functions import now
 from sqlalchemy.sql.sqltypes import DateTime
 
 from .base import Base
-from npg.porch.models import Task as ModelledTask
+from npg_porch.models import Task as ModelledTask
 
 
 class Task(Base):

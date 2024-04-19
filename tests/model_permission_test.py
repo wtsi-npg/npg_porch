@@ -1,7 +1,7 @@
 import pytest
 
-from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.permission import Permission, PermissionValidationException
+from npg_porch.models.pipeline import Pipeline
+from npg_porch.models.permission import Permission, PermissionValidationException
 from pydantic import ValidationError
 
 

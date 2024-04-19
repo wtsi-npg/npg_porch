@@ -23,8 +23,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.exc import NoResultFound
 
-from npg.porchdb.models import Token
-from npg.porch.models.permission import Permission, RolesEnum
+from npg_porch.db.models import Token
+from npg_porch.models.permission import Permission, RolesEnum
 
 __AUTH_TOKEN_LENGTH__ = 32
 __AUTH_TOKEN_REGEXP__ = re.compile(

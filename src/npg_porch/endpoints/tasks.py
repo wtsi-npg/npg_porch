@@ -22,11 +22,11 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from npg.porch.auth.token import validate
-from npg.porch.models.permission import PermissionValidationException
-from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.task import Task, TaskStateEnum
-from npg.porchdb.connection import get_DbAccessor
+from npg_porch.auth.token import validate
+from npg_porch.models.permission import PermissionValidationException
+from npg_porch.models.pipeline import Pipeline
+from npg_porch.models.task import Task, TaskStateEnum
+from npg_porch.db.connection import get_DbAccessor
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status

@@ -23,8 +23,8 @@ from fastapi import Depends
 from fastapi.security import HTTPBearer
 from fastapi import HTTPException
 
-from npg.porchdb.connection import get_CredentialsValidator
-from npg.porchdb.auth import CredentialsValidationException
+from npg_porch.db.connection import get_CredentialsValidator
+from npg_porch.db.auth import CredentialsValidationException
 
 auth_scheme = HTTPBearer()
 

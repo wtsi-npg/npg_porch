@@ -2,16 +2,16 @@ import pytest
 import datetime
 from sqlalchemy import select
 
-from npg.porchdb.models import Token, Pipeline
-from npg.porchdb.auth import Validator, CredentialsValidationException
-import npg.porch.models.permission
-import npg.porch.models.pipeline
+from npg_porch.db.models import Token, Pipeline
+from npg_porch.db.auth import Validator, CredentialsValidationException
+import npg_porch.models.permission
+import npg_porch.models.pipeline
 
 @pytest.mark.asyncio
 async def test_token_string_is_valid(async_minimum):
 
     v = Validator(session = async_minimum)
-    assert isinstance(v, (npg.porchdb.auth.Validator))
+    assert isinstance(v, (npg_porch.db.auth.Validator))
 
     with pytest.raises(CredentialsValidationException,
                        match=r'The token should be 32 chars long'):
@@ -76,15 +76,15 @@ async def test_permission_object_is_returned(async_minimum):
     for t in token_rows:
         if t.description == 'Seqfarm host, job runner':
             p = await v.token2permission(t.token)
-            assert isinstance(p, (npg.porch.models.permission.Permission))
+            assert isinstance(p, (npg_porch.models.permission.Permission))
             assert p.pipeline is not None
-            assert isinstance(p.pipeline, (npg.porch.models.pipeline.Pipeline))
+            assert isinstance(p.pipeline, (npg_porch.models.pipeline.Pipeline))
             assert p.pipeline.name == 'ptest one'
             assert p.requestor_id == t.token_id
             assert p.role == 'regular_user'
         elif t.description == 'Seqfarm host, admin':
             p = await v.token2permission(t.token)
-            assert isinstance(p, (npg.porch.models.permission.Permission))
+            assert isinstance(p, (npg_porch.models.permission.Permission))
             assert p.pipeline is None
             assert p.requestor_id == t.token_id
             assert p.role == 'power_user'

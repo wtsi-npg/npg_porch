@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from npg.porchdb.models import Token, Pipeline
+from npg_porch.db.models import Token, Pipeline
 
 parser = argparse.ArgumentParser(
     description='Creates a token in the backend DB and returns it'

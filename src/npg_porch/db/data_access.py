@@ -24,8 +24,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-from npg.porchdb.models import Pipeline as DbPipeline, Task as DbTask, Event
-from npg.porch.models import Task, Pipeline, TaskStateEnum
+from npg_porch.db.models import Pipeline as DbPipeline, Task as DbTask, Event
+from npg_porch.models import Task, Pipeline, TaskStateEnum
 
 
 class AsyncDbAccessor:
