@@ -45,6 +45,16 @@ uvicorn npg_porch.server:app --host 0.0.0.0 --port 8080 --reload --log-config lo
 
 and open your browser at `http://localhost:8080` to see links to the docs.
 
+On macOS you will need to ensure that a version of the `sqlite3` library that supports SQLite extensions
+is used when installing the `pysqlite3` package. The system library on macOS does not, so an alternative
+such as the one provided by MacPorts or Homebrew should be used. For example, when using MacPorts this
+can be done by setting the `CPPFLAGS` environment variable before running the `pip install` command:
+
+```
+export CPPFLAGS="-I/opt/local/include"
+```
+
+
 The server will not start without `DB_URL` in the environment
 
 ## Running in production
