@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2021, 2022, 2024 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 import logging
 import re
 from sqlalchemy.exc import IntegrityError
@@ -82,6 +82,32 @@ async def get_pipeline(
         raise HTTPException(status_code=404,
                             detail=f"Pipeline '{pipeline_name}' not found")
     return pipeline
+
+
+@router.post(
+    "/{pipeline_name}/token/{token_desc}",
+    response_model=str,
+    responses={
+        status.HTTP_201_CREATED: {"description": "Token was created"},
+        status.HTTP_404_NOT_FOUND: {"description": "Pipeline not found"},
+    },
+    summary="Create a new token for a pipeline and return it.",
+    description="""
+    Returns a token for the pipeline with the given name.
+    A valid token issued for any pipeline is required for authorisation."""
+)
+async def create_pipeline_token(
+    pipeline_name: str,
+    token_desc: str,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> Response:
+    try:
+        token = await db_accessor.create_pipeline_token(name=pipeline_name, desc=token_desc)
+    except NoResultFound:
+        raise HTTPException(status_code=404,
+                            detail=f"Pipeline '{pipeline_name}' not found")
+    return Response(status_code=status.HTTP_201_CREATED, content=token, media_type="text/plain")
 
 
 @router.post(

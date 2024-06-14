@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2021, 2022, 2024 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -26,6 +26,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from npg_porch.db.models import Pipeline as DbPipeline, Task as DbTask, Event
 from npg_porch.models import Task, Pipeline, TaskStateEnum
+
+from npg_porch.db.models import Token
 
 
 class AsyncDbAccessor:
@@ -91,6 +93,17 @@ class AsyncDbAccessor:
         session.add(pipe)
         await session.commit()
         return pipe.convert_to_model()
+
+
+    async def create_pipeline_token(self, name: str, desc: str) -> str:
+        session = self.session
+        db_pipeline = await self._get_pipeline_db_object(name)
+
+        token = Token(pipeline=db_pipeline, description=desc)
+        session.add(token)
+        await session.commit()
+        return token.token
+
 
     async def create_task(self, token_id: int, task: Task) -> Task:
         self.logger.debug('CREATE TASK: ' + str(task))
