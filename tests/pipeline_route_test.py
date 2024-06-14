@@ -1,3 +1,5 @@
+import json
+
 from starlette import status
 
 from npg_porch.models import Pipeline
@@ -100,6 +102,16 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
 
 
 def test_create_pipeline(async_minimum, fastapi_testclient):
+    invalid_pipeline = {
+        "name": "ptest one",
+        "url": "http://test.com",  # URL, not URI
+        "version": "1"
+    }
+    response = fastapi_testclient.post(
+            "/pipelines", json=json.dumps(invalid_pipeline), follow_redirects=True,
+            headers=headers4power_user
+    )
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     # Create a pipeline
     desired_pipeline = Pipeline(
