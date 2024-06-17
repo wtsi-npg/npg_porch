@@ -22,11 +22,15 @@ Security is necessary in order to prevent accidental misuse of npg_porch. An aut
 
 A note on HTTPS: Client libraries like `requests`, certain GUIs and Firefox will try to verify the server certificate authority. System-administered software are already configured correctly, but other packages installed by conda or pip may need to be told how the client may verify with a client certificate e.g. contained in `/usr/share/ca-certificates/`. It may also be useful to unset `https_proxy` and `HTTPS_PROXY` in your environment.
 
-### Step 0 - get issued security tokens
+### Step 0 - get issued authorisation tokens
 
 Access to the service is loosely controlled with authorisation tokens. You will be issued with an admin token that enables you to register pipelines, and further tokens for pipeline-specific communication. Please do not share the tokens around and use them for purposes besides the specific pipeline. This will help us to monitor pipeline reliability and quality of service. Authorisation is achieved by HTTP Bearer Token:
 
 `curl -L -H "Authorization: Bearer $TOKEN" https://$SERVER:$PORT`
+
+Authorisation tokens are specific to a pipeline and more than one token can be issued for a pipeline. New tokens for a pipeline can be obtained using the admin token, from the pipeline's token endpoint:
+
+`curl -L -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://$SERVER:$PORT/pipelines/$PIPELINE_NAME/token/$TOKEN_DESCRIPTION`
 
 ### Step 1 - register your pipeline with npg_porch
 
@@ -34,7 +38,7 @@ Access to the service is loosely controlled with authorisation tokens. You will 
 
 Nothing in npg_porch can happen until there's a pipeline defined. For our purposes "pipeline" means "a thing you can run", and it may refer to specific code, or a wrapper that can run the pipeline in this particular way with some standard arguments.
 
-You can name your pipeline however you like, but the name must be unique, and be as informative to you as possible. Version and a URI can be useful for undestanding what code is being run.
+You can name your pipeline however you like, but the name must be unique, and be as informative to you as possible. Version and a URI can be useful for understanding what code is being run.
 
 **pipeline-def.json**
 
