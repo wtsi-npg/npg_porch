@@ -24,10 +24,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-from npg_porch.db.models import Pipeline as DbPipeline, Task as DbTask, Event
+from npg_porch.db.models import Pipeline as DbPipeline, Task as DbTask, Token as DbToken, Event
 from npg_porch.models import Task, Pipeline, TaskStateEnum
-
-from npg_porch.db.models import Token
+from npg_porch.models.token import Token
 
 
 class AsyncDbAccessor:
@@ -94,15 +93,15 @@ class AsyncDbAccessor:
         await session.commit()
         return pipe.convert_to_model()
 
-
-    async def create_pipeline_token(self, name: str, desc: str) -> str:
+    async def create_pipeline_token(self, name: str, desc: str) -> Token:
         session = self.session
         db_pipeline = await self._get_pipeline_db_object(name)
 
-        token = Token(pipeline=db_pipeline, description=desc)
-        session.add(token)
+        db_token = DbToken(pipeline=db_pipeline, description=desc)
+        session.add(db_token)
         await session.commit()
-        return token.token
+
+        return Token(name=db_pipeline.name, token=db_token.token, description=desc)
 
 
     async def create_task(self, token_id: int, task: Task) -> Task:

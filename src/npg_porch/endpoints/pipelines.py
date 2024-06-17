@@ -29,7 +29,7 @@ from npg_porch.models.pipeline import Pipeline
 from npg_porch.models.permission import RolesEnum
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.auth.token import validate
-
+from npg_porch.models.token import Token
 
 router = APIRouter(
     prefix="/pipelines",
@@ -86,7 +86,8 @@ async def get_pipeline(
 
 @router.post(
     "/{pipeline_name}/token/{token_desc}",
-    response_model=str,
+    response_model=Token,
+    status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Token was created"},
         status.HTTP_404_NOT_FOUND: {"description": "Pipeline not found"},
@@ -101,13 +102,13 @@ async def create_pipeline_token(
     token_desc: str,
     db_accessor=Depends(get_DbAccessor),
     permissions=Depends(validate)
-) -> Response:
+) -> Token:
     try:
         token = await db_accessor.create_pipeline_token(name=pipeline_name, desc=token_desc)
     except NoResultFound:
         raise HTTPException(status_code=404,
                             detail=f"Pipeline '{pipeline_name}' not found")
-    return Response(status_code=status.HTTP_201_CREATED, content=token, media_type="text/plain")
+    return token
 
 
 @router.post(
