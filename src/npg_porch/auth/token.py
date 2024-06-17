@@ -34,7 +34,7 @@ async def validate(
 ):
 
     token = creds.credentials
-    p = None
+
     try:
         p = await validator.token2permission(token)
     except CredentialsValidationException as e:

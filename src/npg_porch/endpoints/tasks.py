@@ -100,7 +100,7 @@ async def create_task(
 ) -> Task:
 
     _validate_request(permission, task.pipeline)
-    created_task = None
+
     try:
         created_task = await db_accessor.create_task(
             token_id=permission.requestor_id,
@@ -137,7 +137,7 @@ async def update_task(
 ) -> Task:
 
     _validate_request(permission, task.pipeline)
-    changed_task = None
+
     try:
         changed_task = await db_accessor.update_task(
             token_id=permission.requestor_id,
