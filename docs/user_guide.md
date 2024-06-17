@@ -32,6 +32,16 @@ Authorisation tokens are specific to a pipeline and more than one token can be i
 
 `curl -L -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://$SERVER:$PORT/pipelines/$PIPELINE_NAME/token/$TOKEN_DESCRIPTION`
 
+The server will respond with a JSON document containing the new bearer token which you may use for subsequent pipeline-specific communication:
+
+```javascript
+{
+    "name": "$PIPELINE_NAME",
+    "description": "$TOKEN_DESCRIPTION",
+    "token": "$TOKEN"
+}
+```
+
 ### Step 1 - register your pipeline with npg_porch
 
 *Schema: npg_porch.model.pipeline*
