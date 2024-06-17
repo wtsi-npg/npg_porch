@@ -173,8 +173,8 @@ def test_create_pipeline_token(async_minimum, fastapi_testclient):
     # Create a pipeline
     desired_pipeline = Pipeline(
         name=pipeline_name,
-        uri='http://test.com',
-        version='1'
+        uri="http://test.com",
+        version="1"
     )
 
     http_create_pipeline(fastapi_testclient, desired_pipeline)
@@ -189,7 +189,9 @@ def test_create_pipeline_token(async_minimum, fastapi_testclient):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert len(response.content.decode(encoding="utf-8")) == 32
+        assert response.json()["name"] == pipeline_name
+        assert response.json()["description"] == token_desc
+        assert len(response.json()["token"]) == 32
 
     # Create a new token for a non-existent pipeline
     response = fastapi_testclient.post(
