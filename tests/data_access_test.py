@@ -32,7 +32,7 @@ async def test_get_pipeline(db_accessor):
         db_accessor.get_pipeline_by_name()
 
     with pytest.raises(NoResultFound):
-        pipeline = await db_accessor.get_pipeline_by_name('not here')
+        await db_accessor.get_pipeline_by_name('not here')
 
     pipeline = await db_accessor.get_pipeline_by_name('ptest one')
     assert pipeline
@@ -76,7 +76,7 @@ async def test_create_pipeline(db_accessor):
     assert saved_pipeline.uri == pipeline.uri
 
     with pytest.raises(AssertionError):
-        saved_pipeline = await db_accessor.create_pipeline({})
+        await db_accessor.create_pipeline({})
     with pytest.raises(IntegrityError) as exception:
         # Making duplicate provides a useful error
         await db_accessor.create_pipeline(pipeline)
@@ -125,7 +125,7 @@ async def test_claim_tasks(db_accessor):
     pipeline = give_me_a_pipeline()
 
     with pytest.raises(NoResultFound) as exception:
-        tasks = await db_accessor.claim_tasks(1, pipeline)
+        await db_accessor.claim_tasks(1, pipeline)
 
         assert exception.value == 'Pipeline not found'
 

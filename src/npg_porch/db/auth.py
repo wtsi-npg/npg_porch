@@ -55,7 +55,6 @@ class Validator:
                 'Token failed character validation'
             )
 
-        valid_token_row = None
         try:
             # Using 'outerjoin' to get the left join for token, pipeline.
             # We need to retrieve all token rows, regardless of whether
@@ -74,7 +73,6 @@ class Validator:
         if (valid_token_row is not None) and (valid_token_row.date_revoked is not None):
             raise CredentialsValidationException('A revoked token is used')
 
-        permission = None
         pipeline = valid_token_row.pipeline
         token_id = valid_token_row.token_id
         if pipeline is None:

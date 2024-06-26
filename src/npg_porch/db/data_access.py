@@ -75,7 +75,6 @@ class AsyncDbAccessor:
         uri: str | None = None,
         version: str | None = None
     ) -> list[Pipeline]:
-        pipelines = []
         pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
         return [pipe.convert_to_model() for pipe in pipelines]
 

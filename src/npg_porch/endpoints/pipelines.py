@@ -135,7 +135,6 @@ async def create_pipeline(
         logging.error(f"Role {RolesEnum.POWER_USER} is required")
         raise HTTPException(status_code=403)
 
-    new_pipeline = None
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
     except IntegrityError as e:
