@@ -1,6 +1,5 @@
+from npg_porch.models import Pipeline, Task, TaskStateEnum
 from starlette import status
-
-from npg_porch.models import Task, TaskStateEnum, Pipeline
 
 # Not testing get-all-tasks as this method will ultimately go
 
@@ -32,16 +31,19 @@ def test_task_creation(async_minimum, fastapi_testclient):
         headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_201_CREATED
-    assert task_one == response.json()
+    response_obj = response.json()
+    assert task_one == response_obj
 
-    # Try again and expect to fail
+    # Try again and expect to succeed with a different status code and the
+    # same task returned.
     response = fastapi_testclient.post(
         'tasks',
         json=task_one.model_dump(),
         follow_redirects=True,
         headers=headers4ptest_one
     )
-    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == response_obj
 
     task_two = Task(
         pipeline = {

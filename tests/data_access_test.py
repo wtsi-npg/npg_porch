@@ -1,11 +1,12 @@
-import pytest
-from pydantic import ValidationError
 import re
+
+import pytest
+from npg_porch.db.data_access import AsyncDbAccessor
+from npg_porch.models import Pipeline as ModelledPipeline
+from npg_porch.models import Task, TaskStateEnum
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
-
-from npg_porch.db.data_access import AsyncDbAccessor
-from npg_porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
 
 
 def give_me_a_pipeline(number: int = 1):
@@ -101,11 +102,11 @@ async def test_create_task(db_accessor):
         task_input={'test': True}
     )
 
-    saved_task = await db_accessor.create_task(
+    (saved_task, created) = await db_accessor.create_task(
         token_id=1,
         task=task
     )
-
+    assert created is True
     assert saved_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
     assert saved_task.pipeline.name == 'ptest 1'
     assert saved_task.task_input_id, 'Input ID is created automatically'
@@ -114,10 +115,12 @@ async def test_create_task(db_accessor):
     assert len(events) == 1, 'An event was created with a successful task creation'
     assert events[0].change == 'Created', 'Message set'
 
-    with pytest.raises(IntegrityError) as exception:
-        await db_accessor.create_task(1, task)
-
-        assert re.match('UNIQUE constraint failed', exception.value)
+    (existing_task, created) = await db_accessor.create_task(1, task)
+    assert created is False
+    assert existing_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
+    assert existing_task.pipeline.name == 'ptest 1'
+    events = await db_accessor.get_events_for_task(existing_task)
+    assert len(events) == 1, 'No additional events'
 
 @pytest.mark.asyncio
 async def test_claim_tasks(db_accessor):
@@ -201,7 +204,7 @@ async def test_multi_claim_tasks(db_accessor):
 @pytest.mark.asyncio
 async def test_update_tasks(db_accessor):
     saved_pipeline = await store_me_a_pipeline(db_accessor)
-    saved_task = await db_accessor.create_task(
+    (saved_task, created) = await db_accessor.create_task(
         token_id=1,
         task=Task(
             task_input={'number': 1},

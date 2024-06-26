@@ -18,17 +18,18 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import APIRouter, HTTPException, Depends, Response
 import logging
 import re
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
-from npg_porch.models.pipeline import Pipeline
-from npg_porch.models.permission import RolesEnum
-from npg_porch.db.connection import get_DbAccessor
 from npg_porch.auth.token import validate
+from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models.permission import RolesEnum
+from npg_porch.models.pipeline import Pipeline
 from npg_porch.models.token import Token
 
 router = APIRouter(
