@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Replace with Alembic in due course
 
 import os
