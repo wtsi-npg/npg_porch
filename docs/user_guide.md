@@ -158,8 +158,6 @@ $request->content($DOC);
 my $response = $ua->request($request);
 if ($response->is_success) {
     print "Submitted successfully\n";
-} elsif ($response->code == 409 ){
-    print "Already exists, that's fine.\n";
 } else {
     die q(It's all gone wrong!)
 }
@@ -183,17 +181,9 @@ if ($response->is_success) {
 }
 ```
 
-If you get a 409 response, it is highly likely that this particular task is already registered. In this way it is possible to tell whether something has already been submitted. Note that if there are many many tasks to register some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
-
-**Example 409 failure response**
-
-```javascript
-{
-  "detail": "Unable to create task, as another like it already exists"
-}
-```
-
 Once a task has been submitted, and a 201 CREATED response has been received, the npg_porch server assigns a timestamp to the task, gives it a status of `PENDING` and assigns a unique ID to it. The response from the server contains this extra information.
+
+A 200 OK response means that this particular task for this pipeline has already been registered. The current representation of the task is returned, the status of the task might be differ from `PENDING`.  Note that if there are many tasks to register, some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
 
 ### Step 4 - write a script or program that can launch the pipeline
 
