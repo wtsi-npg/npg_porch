@@ -123,9 +123,9 @@ class AsyncDbAccessor:
 
         task.status = TaskStateEnum.PENDING
         t = self.convert_task_to_db(task, db_pipeline)
-        nested = await session.begin_nested()
         created = True
         try:
+            nested = await session.begin_nested()
             session.add(t)
             event = Event(
                 task=t,
