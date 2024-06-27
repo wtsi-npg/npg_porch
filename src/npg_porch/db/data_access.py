@@ -19,13 +19,17 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-from npg_porch.db.models import Pipeline as DbPipeline, Task as DbTask, Token as DbToken, Event
-from npg_porch.models import Task, Pipeline, TaskStateEnum
+from npg_porch.db.models import Event
+from npg_porch.db.models import Pipeline as DbPipeline
+from npg_porch.db.models import Task as DbTask
+from npg_porch.db.models import Token as DbToken
+from npg_porch.models import Pipeline, Task, TaskStateEnum
 from npg_porch.models.token import Token
 
 
@@ -102,29 +106,44 @@ class AsyncDbAccessor:
 
         return Token(name=db_pipeline.name, token=db_token.token, description=desc)
 
+    async def create_task(self, token_id: int, task: Task) -> tuple[Task, bool]:
+        '''Given a task definition creates a task.
 
-    async def create_task(self, token_id: int, task: Task) -> Task:
+        If the task does not exist, a tuple consisting of Task object for a
+        newly created database record and a boolean True object is returned.
+
+        If the task already exists, a tuple consisting of Task object for an
+        existing database record and a boolean True object is returned.
+        '''
         self.logger.debug('CREATE TASK: ' + str(task))
         session = self.session
         db_pipeline = await self._get_pipeline_db_object(
             task.pipeline.name
         )
-        # Check they exist and so on
+
         task.status = TaskStateEnum.PENDING
-
         t = self.convert_task_to_db(task, db_pipeline)
-        session.add(t)
+        created = True
+        try:
+            nested = await session.begin_nested()
+            session.add(t)
+            event = Event(
+                task=t,
+                token_id = token_id,
+                change='Created'
+            )
+            t.events.append(event)
+            await session.commit()
+        except IntegrityError:
+            await nested.rollback()
+            # Task already exists, query the database to get the up-to-date
+            # representation of the task.
+            t = await self.get_db_task(
+                pipeline_name=task.pipeline.name, job_descriptor=t.job_descriptor
+            )
+            created = False
 
-        event = Event(
-            task=t,
-            token_id = token_id,
-            change='Created'
-        )
-        t.events.append(event)
-
-        await session.commit()
-        # Error handling to follow
-        return t.convert_to_model()
+        return (t.convert_to_model(), created)
 
     async def claim_tasks(
         self, token_id: int, pipeline: Pipeline, claim_limit: int | None = 1
@@ -227,6 +246,21 @@ class AsyncDbAccessor:
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
+
+    async def get_db_task(
+        self,
+        pipeline_name: str,
+        job_descriptor: str,
+    ) -> DbTask:
+        '''Get the task.'''
+        query = select(DbTask)\
+            .join(DbTask.pipeline)\
+            .options(joinedload(DbTask.pipeline))\
+            .where(DbPipeline.name == pipeline_name)\
+            .where(DbTask.job_descriptor == job_descriptor)
+        task_result = await self.session.execute(query)
+
+        return task_result.scalars().one()
 
     @staticmethod
     def convert_task_to_db(task: Task, pipeline: DbPipeline) -> DbTask:
