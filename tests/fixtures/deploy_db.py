@@ -46,7 +46,8 @@ def minimum_data():
             definition={
                 'to_do': 'stuff',
                 'why': 'reasons'
-            }
+            },
+            state=TaskStateEnum.PENDING
         ),
         Task(
             pipeline=pipeline,
@@ -56,7 +57,8 @@ def minimum_data():
             definition={
                 'to_do': 'more stuff',
                 'why': 'reasons'
-            }
+            },
+            state=TaskStateEnum.PENDING
         )
     ]
 
