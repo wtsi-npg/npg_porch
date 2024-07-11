@@ -45,7 +45,7 @@ class Task(BaseModel):
         title='Task Input',
         description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline' # noqa: E501
     )
-    status: TaskStateEnum = TaskStateEnum.PENDING
+    status: TaskStateEnum
 
     def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()

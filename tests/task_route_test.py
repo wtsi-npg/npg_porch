@@ -16,12 +16,13 @@ def test_task_creation(async_minimum, fastapi_testclient):
 
     # Create a task with a sparse pipeline definition
     task_one = Task(
-        pipeline = {
+        pipeline={
             'name': 'ptest one'
         },
-        task_input = {
+        task_input={
             'number': 1
-        }
+        },
+        status=TaskStateEnum.PENDING,
     )
 
     response = fastapi_testclient.post(
@@ -46,12 +47,13 @@ def test_task_creation(async_minimum, fastapi_testclient):
     assert response.json() == response_obj
 
     task_two = Task(
-        pipeline = {
+        pipeline={
             'name': 'ptest none'
         },
-        task_input = {
+        task_input={
             'number': 1
-        }
+        },
+        status=TaskStateEnum.PENDING,
     )
     # The token is valid, but for a different pipeline. It is impossible
     # to have a valid token for a pipeline that does not exist.
