@@ -99,7 +99,8 @@ async def test_create_task(db_accessor):
 
     task = Task(
         pipeline=saved_pipeline,
-        task_input={'test': True}
+        task_input={'test': True},
+        status=TaskStateEnum.PENDING
     )
 
     (saved_task, created) = await db_accessor.create_task(
@@ -144,7 +145,8 @@ async def test_claim_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=pipeline
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
 
@@ -179,14 +181,16 @@ async def test_multi_claim_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=pipeline
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
         await db_accessor.create_task(
             token_id=2,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=other_pipeline
+                pipeline=other_pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
 
@@ -208,7 +212,8 @@ async def test_update_tasks(db_accessor):
         token_id=1,
         task=Task(
             task_input={'number': 1},
-            pipeline=saved_pipeline
+            pipeline=saved_pipeline,
+            status=TaskStateEnum.PENDING
         )
     )
 
@@ -219,11 +224,13 @@ async def test_update_tasks(db_accessor):
 
     events = await db_accessor.get_events_for_task(modified_task)
     assert len(events) == 2, 'Task was created, and then updated'
-    events[1].change == 'Task changed, new status DONE'
+    assert events[1].change == 'Task changed, new status DONE'
 
     # Try to change a task that doesn't exist
     with pytest.raises(NoResultFound):
-        await db_accessor.update_task(1, Task(task_input={'number': None}, pipeline=saved_pipeline))
+        await db_accessor.update_task(1, Task(task_input={'number': None},
+                                              pipeline=saved_pipeline,
+                                              status=TaskStateEnum.PENDING))
 
     # Try modifying something we're not allowed to
     saved_task.task_input_id = None
@@ -254,7 +261,8 @@ async def test_get_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=pipeline
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
 

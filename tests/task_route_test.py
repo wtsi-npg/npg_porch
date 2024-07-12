@@ -16,12 +16,13 @@ def test_task_creation(async_minimum, fastapi_testclient):
 
     # Create a task with a sparse pipeline definition
     task_one = Task(
-        pipeline = {
+        pipeline={
             'name': 'ptest one'
         },
-        task_input = {
+        task_input={
             'number': 1
-        }
+        },
+        status=TaskStateEnum.PENDING,
     )
 
     response = fastapi_testclient.post(
@@ -46,12 +47,13 @@ def test_task_creation(async_minimum, fastapi_testclient):
     assert response.json() == response_obj
 
     task_two = Task(
-        pipeline = {
+        pipeline={
             'name': 'ptest none'
         },
-        task_input = {
+        task_input={
             'number': 1
-        }
+        },
+        status=TaskStateEnum.PENDING,
     )
     # The token is valid, but for a different pipeline. It is impossible
     # to have a valid token for a pipeline that does not exist.
@@ -67,9 +69,9 @@ def test_task_creation(async_minimum, fastapi_testclient):
 def test_task_update(async_minimum, fastapi_testclient):
 
     task = fastapi_testclient.get('/tasks', headers=headers4ptest_one).json()[0]
-    assert task['status'] is None
+    assert task['status'] == TaskStateEnum.PENDING.value
 
-    task['status'] = TaskStateEnum.PENDING
+    task['status'] = TaskStateEnum.RUNNING
     response = fastapi_testclient.put(
         '/tasks',
         json=task,
@@ -206,7 +208,16 @@ def test_get_tasks(async_minimum, async_tasks, fastapi_testclient):
     )
     assert response.status_code == status.HTTP_200_OK, 'Other optional argument works'
     tasks = response.json()
-    assert len(tasks) == 10, 'Ten pending tasks selected'
+    # async_minimum provides 2 tasks, async_tasks provides 10
+    assert len(tasks) == 12, 'Twelve pending tasks selected'
+
+    response = fastapi_testclient.get(
+            '/tasks?status=RUNNING',
+            headers=headers4ptest_one
+    )
+    assert response.status_code == status.HTTP_200_OK, 'Other optional argument works'
+    tasks = response.json()
+    assert len(tasks) == 0, 'No running tasks selected'
 
     response = fastapi_testclient.get(
         '/tasks?pipeline_name="ptest one"&status=PENDING',

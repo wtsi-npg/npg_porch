@@ -21,7 +21,7 @@
 from enum import Enum
 import hashlib
 import ujson
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from npg_porch.models.pipeline import Pipeline
 
@@ -45,7 +45,7 @@ class Task(BaseModel):
         title='Task Input',
         description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline' # noqa: E501
     )
-    status: TaskStateEnum | None = None
+    status: TaskStateEnum
 
     def generate_task_id(self):
         return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()
@@ -56,17 +56,20 @@ class Task(BaseModel):
 
         The pipeline and task_input_ids can partially differ and it still be a
         valid comparison. Clients do not get to create task_input_ids and may
-        not fully specify a pipeline. Status is also optional
+        not fully specify a pipeline.
 
         Automatically attempts to cast a dict into a Task, and therefore
         ignores any properties not valid for a Task
 
         '''
-        if not isinstance(other, Task):
-            if isinstance(other, dict):
+        if isinstance(other, dict):
+            try:
                 other = Task.model_validate(other)
-            else:
+            except ValidationError:
                 return False
+
+        if not isinstance(other, Task):
+            return False
 
         truths = []
         for k, v in self.model_dump().items():
@@ -81,5 +84,5 @@ class Task(BaseModel):
                 truths.append(v == other_d[k])
         if all(truths):
             return True
-        else:
-            return False
+
+        return False
