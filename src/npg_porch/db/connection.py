@@ -22,9 +22,9 @@ import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from npg.porchdb.models import Base
-from npg.porchdb.data_access import AsyncDbAccessor
-from npg.porchdb.auth import Validator
+from npg_porch.db.models import Base
+from npg_porch.db.data_access import AsyncDbAccessor
+from npg_porch.db.auth import Validator
 
 config = {
     'DB_URL': os.environ.get('DB_URL'),
@@ -34,7 +34,6 @@ config = {
 
 if config['TEST']:
     config['DB_URL'] = 'sqlite+aiosqlite:///:memory:'
-    # config['DB_URL'] = 'sqlite+aiosqlite:///test.db'
 
 if config['DB_URL'] is None or config['DB_URL'] == '':
     raise Exception(
@@ -92,6 +91,3 @@ async def deploy_schema():
 async def close_engine():
     'Currently only needed when testing to force fixtures to refresh'
     await engine.dispose()
-    # Delete the data here for stateless testing if not in-memory
-    # if config['TEST']:
-    #     os.remove('test.db')

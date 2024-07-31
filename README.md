@@ -36,14 +36,24 @@ To run the server, please execute the following from the root directory:
 ```bash
 bash
 pip3 install -e .
-cd server
+cd src
 mkdir -p logs
 export DB_URL=postgresql+asyncpg://npg_rw:$PASS@npg_porch_db:$PORT/$DATABASE
 export DB_SCHEMA='non_default'
-uvicorn npg.main:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
+uvicorn npg_porch.server:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
 ```
 
 and open your browser at `http://localhost:8080` to see links to the docs.
+
+On macOS you will need to ensure that a version of the `sqlite3` library that supports SQLite extensions
+is used when installing the `pysqlite3` package. The system library on macOS does not, so an alternative
+such as the one provided by MacPorts or Homebrew should be used. For example, when using MacPorts this
+can be done by setting the `CPPFLAGS` environment variable before running the `pip install` command:
+
+```
+export CPPFLAGS="-I/opt/local/include"
+```
+
 
 The server will not start without `DB_URL` in the environment
 
@@ -52,7 +62,7 @@ The server will not start without `DB_URL` in the environment
 When you want HTTPS, logging and all that jazz:
 
 ```bash
-uvicorn main:app --workers 2 --host 0.0.0.0 --port 8080 --log-config ~/logging.json --ssl-keyfile ~/.ssh/key.pem --ssl-certfile ~/.ssh/cert.pem --ssl-ca-certs /usr/local/share/ca-certificates/institute_ca.crt
+uvicorn server:app --workers 2 --host 0.0.0.0 --port 8080 --log-config ~/logging.json --ssl-keyfile ~/.ssh/key.pem --ssl-certfile ~/.ssh/cert.pem --ssl-ca-certs /usr/local/share/ca-certificates/institute_ca.crt
 ```
 
 Consider running with nohup or similar.
@@ -62,7 +72,7 @@ Some notes on arguments:
 
 --host: 0.0.0.0 = bind to all network interfaces. Reliable but greedy in some situations
 
---log-config: Refers to a JSON file for python logging library. An example file is found in /server/logging.json. Uvicorn provides its own logging configuration via `uvicorn.access` and `uvicorn.error`. These may behave undesirably, and can be overridden in the JSON file with an alternate config. Likewise, fastapi logs to `fastapi` if that needs filtering. For logging to files, set `use_colors = False` in the relevant handlers or shell colour settings will appear as garbage in the logs.
+--log-config: Refers to a JSON file for python logging library. An example file is found in /src/logging.json. Uvicorn provides its own logging configuration via `uvicorn.access` and `uvicorn.error`. These may behave undesirably, and can be overridden in the JSON file with an alternate config. Likewise, fastapi logs to `fastapi` if that needs filtering. For logging to files, set `use_colors = False` in the relevant handlers or shell colour settings will appear as garbage in the logs.
 
 --ssl-keyfile: A PEM format key for the server certificate
 --ssl-certfile: A PEM format certificate for signing HTTPS communications
@@ -77,11 +87,11 @@ pip install -e .[test]
 pytest
 ```
 
-Individual tests are run in the form `pytest server/tests/init_test.py`
+Individual tests are run in the form `pytest tests/init_test.py`
 
 ### Fixtures
 
-Fixtures reside under `server/tests/fixtures` and are registered in `server/tests/conftest.py`
+Fixtures reside under `tests/fixtures` and are registered in `tests/conftest.py`
 They can also be listed by invoking `pytest --fixtures`
 
 Any fixtures that are not imported in `conftest.py` will not be detected.
@@ -106,7 +116,7 @@ The SET command ensures that the new schema is visible _for one session only_ in
 DB=npg_porch
 export DB_URL=postgresql+psycopg2://npg_admin:$PASS@npg_porch_db:$PORT/$DB
 # note that the script requires a regular PG driver, not the async version showed above
-server/deploy_schema.py
+src/deploy_schema.py
 
 psql --host=npg_porch_db --port=$PORT --username=npg_admin --password -d $DB
 ```

@@ -22,14 +22,15 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from npg.porch.auth.token import validate
-from npg.porch.models.permission import PermissionValidationException
-from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.task import Task, TaskStateEnum
-from npg.porchdb.connection import get_DbAccessor
-from sqlalchemy.exc import IntegrityError
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
+
+from npg_porch.auth.token import validate
+from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models.permission import PermissionValidationException
+from npg_porch.models.pipeline import Pipeline
+from npg_porch.models.task import Task, TaskStateEnum
 
 
 def _validate_request(permission, pipeline):
@@ -82,13 +83,19 @@ async def get_tasks(
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Task creation was successful"},
-        status.HTTP_409_CONFLICT: {"description": "A task with the same signature already exists"}
+        status.HTTP_200_OK: {"description": "A task with the same signature already exists"},
+        status.HTTP_404_NOT_FOUND: {"description": "Pipeline does not exist."},
     },
     summary="Creates one task record.",
     description='''
     Given a Task object, creates a database record for it and returns
-    the same object, the response HTTP status is 201 'Created'. The
+    a new Task object. The response HTTP status is 201 'Created'. The
     new task is assigned pending status, ie becomes available for claiming.
+
+    A request to create a task for which the database record already exists
+    is accepted. The return status code 200 is set in this case. The returned
+    Task object has its status set to the value currently available in the
+    database.
 
     The pipeline specified by the `pipeline` attribute of the Task object
     should exist. If it does not exist, return status 404 'Not found'.'''
@@ -100,21 +107,18 @@ async def create_task(
 ) -> Task:
 
     _validate_request(permission, task.pipeline)
-    created_task = None
+
     try:
-        created_task = await db_accessor.create_task(
+        (task, created) = await db_accessor.create_task(
             token_id=permission.requestor_id,
             task=task
-        )
-    except IntegrityError:
-        raise HTTPException(
-            status_code=409,
-            detail='Unable to create task, as another like it already exists'
         )
     except NoResultFound:
         raise HTTPException(status_code=404, detail='Failed to find pipeline for this task')
 
-    return created_task
+    if created is True:
+        return task
+    return JSONResponse(status_code=status.HTTP_200_OK, content=task.model_dump())
 
 
 @router.put(
@@ -137,7 +141,7 @@ async def update_task(
 ) -> Task:
 
     _validate_request(permission, task.pipeline)
-    changed_task = None
+
     try:
         changed_task = await db_accessor.update_task(
             token_id=permission.requestor_id,

@@ -1,11 +1,12 @@
-import pytest
-from pydantic import ValidationError
 import re
+
+import pytest
+from npg_porch.db.data_access import AsyncDbAccessor
+from npg_porch.models import Pipeline as ModelledPipeline
+from npg_porch.models import Task, TaskStateEnum
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
-
-from npg.porchdb.data_access import AsyncDbAccessor
-from npg.porch.models import Pipeline as ModelledPipeline, Task, TaskStateEnum
 
 
 def give_me_a_pipeline(number: int = 1):
@@ -32,7 +33,7 @@ async def test_get_pipeline(db_accessor):
         db_accessor.get_pipeline_by_name()
 
     with pytest.raises(NoResultFound):
-        pipeline = await db_accessor.get_pipeline_by_name('not here')
+        await db_accessor.get_pipeline_by_name('not here')
 
     pipeline = await db_accessor.get_pipeline_by_name('ptest one')
     assert pipeline
@@ -76,7 +77,7 @@ async def test_create_pipeline(db_accessor):
     assert saved_pipeline.uri == pipeline.uri
 
     with pytest.raises(AssertionError):
-        saved_pipeline = await db_accessor.create_pipeline({})
+        await db_accessor.create_pipeline({})
     with pytest.raises(IntegrityError) as exception:
         # Making duplicate provides a useful error
         await db_accessor.create_pipeline(pipeline)
@@ -98,14 +99,15 @@ async def test_create_task(db_accessor):
 
     task = Task(
         pipeline=saved_pipeline,
-        task_input={'test': True}
+        task_input={'test': True},
+        status=TaskStateEnum.PENDING
     )
 
-    saved_task = await db_accessor.create_task(
+    (saved_task, created) = await db_accessor.create_task(
         token_id=1,
         task=task
     )
-
+    assert created is True
     assert saved_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
     assert saved_task.pipeline.name == 'ptest 1'
     assert saved_task.task_input_id, 'Input ID is created automatically'
@@ -114,10 +116,12 @@ async def test_create_task(db_accessor):
     assert len(events) == 1, 'An event was created with a successful task creation'
     assert events[0].change == 'Created', 'Message set'
 
-    with pytest.raises(IntegrityError) as exception:
-        await db_accessor.create_task(1, task)
-
-        assert re.match('UNIQUE constraint failed', exception.value)
+    (existing_task, created) = await db_accessor.create_task(1, task)
+    assert created is False
+    assert existing_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
+    assert existing_task.pipeline.name == 'ptest 1'
+    events = await db_accessor.get_events_for_task(existing_task)
+    assert len(events) == 1, 'No additional events'
 
 @pytest.mark.asyncio
 async def test_claim_tasks(db_accessor):
@@ -125,7 +129,7 @@ async def test_claim_tasks(db_accessor):
     pipeline = give_me_a_pipeline()
 
     with pytest.raises(NoResultFound) as exception:
-        tasks = await db_accessor.claim_tasks(1, pipeline)
+        await db_accessor.claim_tasks(1, pipeline)
 
         assert exception.value == 'Pipeline not found'
 
@@ -141,7 +145,8 @@ async def test_claim_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=pipeline
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
 
@@ -176,14 +181,16 @@ async def test_multi_claim_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=pipeline
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
         await db_accessor.create_task(
             token_id=2,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=other_pipeline
+                pipeline=other_pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
 
@@ -201,11 +208,12 @@ async def test_multi_claim_tasks(db_accessor):
 @pytest.mark.asyncio
 async def test_update_tasks(db_accessor):
     saved_pipeline = await store_me_a_pipeline(db_accessor)
-    saved_task = await db_accessor.create_task(
+    (saved_task, created) = await db_accessor.create_task(
         token_id=1,
         task=Task(
             task_input={'number': 1},
-            pipeline=saved_pipeline
+            pipeline=saved_pipeline,
+            status=TaskStateEnum.PENDING
         )
     )
 
@@ -216,11 +224,13 @@ async def test_update_tasks(db_accessor):
 
     events = await db_accessor.get_events_for_task(modified_task)
     assert len(events) == 2, 'Task was created, and then updated'
-    events[1].change == 'Task changed, new status DONE'
+    assert events[1].change == 'Task changed, new status DONE'
 
     # Try to change a task that doesn't exist
     with pytest.raises(NoResultFound):
-        await db_accessor.update_task(1, Task(task_input={'number': None}, pipeline=saved_pipeline))
+        await db_accessor.update_task(1, Task(task_input={'number': None},
+                                              pipeline=saved_pipeline,
+                                              status=TaskStateEnum.PENDING))
 
     # Try modifying something we're not allowed to
     saved_task.task_input_id = None
@@ -251,7 +261,8 @@ async def test_get_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={'number': i + 1},
-                pipeline=pipeline
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING
             )
         )
 

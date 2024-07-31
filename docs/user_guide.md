@@ -22,19 +22,33 @@ Security is necessary in order to prevent accidental misuse of npg_porch. An aut
 
 A note on HTTPS: Client libraries like `requests`, certain GUIs and Firefox will try to verify the server certificate authority. System-administered software are already configured correctly, but other packages installed by conda or pip may need to be told how the client may verify with a client certificate e.g. contained in `/usr/share/ca-certificates/`. It may also be useful to unset `https_proxy` and `HTTPS_PROXY` in your environment.
 
-### Step 0 - get issued security tokens
+### Step 0 - get issued authorisation tokens
 
 Access to the service is loosely controlled with authorisation tokens. You will be issued with an admin token that enables you to register pipelines, and further tokens for pipeline-specific communication. Please do not share the tokens around and use them for purposes besides the specific pipeline. This will help us to monitor pipeline reliability and quality of service. Authorisation is achieved by HTTP Bearer Token:
 
 `curl -L -H "Authorization: Bearer $TOKEN" https://$SERVER:$PORT`
 
+Authorisation tokens are specific to a pipeline and more than one token can be issued for a pipeline. New tokens for a pipeline can be obtained using the admin token, from the pipeline's token endpoint:
+
+`curl -L -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://$SERVER:$PORT/pipelines/$PIPELINE_NAME/token/$TOKEN_DESCRIPTION`
+
+The server will respond with a JSON document containing the new bearer token which you may use for subsequent pipeline-specific communication:
+
+```javascript
+{
+    "name": "$PIPELINE_NAME",
+    "description": "$TOKEN_DESCRIPTION",
+    "token": "$TOKEN"
+}
+```
+
 ### Step 1 - register your pipeline with npg_porch
 
-*Schema: npg.porch.model.pipeline*
+*Schema: npg_porch.model.pipeline*
 
 Nothing in npg_porch can happen until there's a pipeline defined. For our purposes "pipeline" means "a thing you can run", and it may refer to specific code, or a wrapper that can run the pipeline in this particular way with some standard arguments.
 
-You can name your pipeline however you like, but the name must be unique, and be as informative to you as possible. Version and a URI can be useful for undestanding what code is being run.
+You can name your pipeline however you like, but the name must be unique, and be as informative to you as possible. Version and a URI can be useful for understanding what code is being run.
 
 **pipeline-def.json**
 
@@ -50,7 +64,7 @@ You can name your pipeline however you like, but the name must be unique, and be
 
 Keep this pipeline definition with your data, as you will need it to tell npg_porch which pipeline you are acting on.
 
-When communicating with npg_porch (as with any HTTP server) you must inspect the response code and message after each communication. See `-w " %{http_code}" above. The API documentation lists the response codes you can expect to have to handle. In this case, the server may respond with 400 - BAD REQUEST if you leave out a name, or 409 - CONFLICT if you chose a name that is already created.
+As with any HTTP server, when communicating with npg_porch you must inspect the response code and message after each communication. See `-w " %{http_code}" above. The API documentation lists the response codes you can expect to have to handle. In this case, the server may respond with 400 - BAD REQUEST if you leave out a name, or 409 - CONFLICT if you chose a name that is already created.
 
 ### Step 2 - decide on the unique criteria for running the pipeline
 
@@ -58,7 +72,7 @@ e.g. Once per 24 hours, poll iRODS metadata for data relating to a study.
 
 We might create a cronjob that runs a script. It invokes `imeta` and retrieves a list of results. Now we turn each of those results into a JSON document to our own specification:
 
-*Schema: npg.porch.model.task*
+*Schema: npg_porch.model.task*
 
 **study-100-id-run-45925.json**
 
@@ -113,7 +127,7 @@ Note that it is possible to run the same `task_input` with a different `pipeline
 
 ### Step 3 - register the documents with npg_porch
 
-*Schema: npg.porch.model.task*
+*Schema: npg_porch.model.task*
 
 Now you want the pipeline to run once per specification, and so register the documents with npg_porch.
 
@@ -144,8 +158,6 @@ $request->content($DOC);
 my $response = $ua->request($request);
 if ($response->is_success) {
     print "Submitted successfully\n";
-} elsif ($response->code == 409 ){
-    print "Already exists, that's fine.\n";
 } else {
     die q(It's all gone wrong!)
 }
@@ -169,17 +181,9 @@ if ($response->is_success) {
 }
 ```
 
-If you get a 409 response, it is highly likely that this particular task is already registered. In this way it is possible to tell whether something has already been submitted. Note that if there are many many tasks to register some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
-
-**Example 409 failure response**
-
-```javascript
-{
-  "detail": "Unable to create task, as another like it already exists"
-}
-```
-
 Once a task has been submitted, and a 201 CREATED response has been received, the npg_porch server assigns a timestamp to the task, gives it a status of `PENDING` and assigns a unique ID to it. The response from the server contains this extra information.
+
+A 200 OK response means that this particular task for this pipeline has already been registered. The current representation of the task is returned, the status of the task might be differ from `PENDING`.  Note that if there are many tasks to register, some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
 
 ### Step 4 - write a script or program that can launch the pipeline
 

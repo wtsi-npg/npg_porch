@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from npg.porchdb.models import Pipeline
+from npg_porch.db.models import Pipeline
 
 
 def test_fixture(sync_minimum):

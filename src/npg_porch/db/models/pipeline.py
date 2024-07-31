@@ -25,7 +25,7 @@ from sqlalchemy.orm import relationship
 
 from .base import Base
 
-from npg.porch.models import Pipeline as ModeledPipeline
+from npg_porch.models import Pipeline as ModeledPipeline
 
 class Pipeline(Base):
     '''

@@ -29,11 +29,11 @@ from .base import Base
 
 class Token(Base):
     '''
-    A string token ussued to client applications for the purpose of
+    A string token issued to client applications for the purpose of
     authorizing them to perform certain actions.
     '''
 
-    def random_token():
+    def random_token(self):
         '''
         Returns a 32 characters long random string. The chance of a
         collision is small.

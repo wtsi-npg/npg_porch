@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2021, 2022, 2024 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -18,18 +18,19 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import APIRouter, HTTPException, Depends
 import logging
 import re
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
-from npg.porch.models.pipeline import Pipeline
-from npg.porch.models.permission import RolesEnum
-from npg.porchdb.connection import get_DbAccessor
-from npg.porch.auth.token import validate
-
+from npg_porch.auth.token import validate
+from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models.permission import RolesEnum
+from npg_porch.models.pipeline import Pipeline
+from npg_porch.models.token import Token
 
 router = APIRouter(
     prefix="/pipelines",
@@ -85,6 +86,33 @@ async def get_pipeline(
 
 
 @router.post(
+    "/{pipeline_name}/token/{token_desc}",
+    response_model=Token,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"description": "Token was created"},
+        status.HTTP_404_NOT_FOUND: {"description": "Pipeline not found"},
+    },
+    summary="Create a new token for a pipeline and return it.",
+    description="""
+    Returns a token for the pipeline with the given name.
+    A valid token issued for any pipeline is required for authorisation."""
+)
+async def create_pipeline_token(
+    pipeline_name: str,
+    token_desc: str,
+    db_accessor=Depends(get_DbAccessor),
+    permissions=Depends(validate)
+) -> Token:
+    try:
+        token = await db_accessor.create_pipeline_token(name=pipeline_name, desc=token_desc)
+    except NoResultFound:
+        raise HTTPException(status_code=404,
+                            detail=f"Pipeline '{pipeline_name}' not found")
+    return token
+
+
+@router.post(
     "/",
     response_model=Pipeline,
     status_code=status.HTTP_201_CREATED,
@@ -108,7 +136,6 @@ async def create_pipeline(
         logging.error(f"Role {RolesEnum.POWER_USER} is required")
         raise HTTPException(status_code=403)
 
-    new_pipeline = None
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
     except IntegrityError as e:

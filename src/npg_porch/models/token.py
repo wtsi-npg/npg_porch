@@ -1,7 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
-#
-# Author: Kieron Taylor kt19@sanger.ac.uk
-# Author: Marina Gourtovaia mg8@sanger.ac.uk
+# Copyright (C) 2024 Genome Research Ltd.
 #
 # This file is part of npg_porch
 #
@@ -18,21 +15,24 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-class Pipeline(BaseModel):
+
+class Token(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     name: str = Field(
-        default = None,
+        default=None,
         title='Pipeline Name',
-        description='A user-controlled name for the pipeline'
+        description='A user-controlled name of an existing pipeline'
     )
-    uri: str | None = Field(
-        default = None,
-        title='URI',
-        description='URI to bootstrap the pipeline code'
+    description: str | None = Field(
+        default=None,
+        title='Description',
+        description='A user-controlled description of the token'
     )
-    version: str | None = Field(
-        default = None,
-        title='Version',
-        description='Pipeline version to use with URI'
+    token: str | None = Field(
+        default=None,
+        title='Token',
+        description='An authorisation token'
     )

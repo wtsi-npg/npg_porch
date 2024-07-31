@@ -1,6 +1,8 @@
+import json
+
 from starlette import status
 
-from npg.porch.models import Pipeline
+from npg_porch.models import Pipeline
 
 
 headers = {
@@ -100,6 +102,16 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
 
 
 def test_create_pipeline(async_minimum, fastapi_testclient):
+    invalid_pipeline = {
+        "name": "ptest one",
+        "url": "http://test.com",  # URL, not URI
+        "version": "1"
+    }
+    response = fastapi_testclient.post(
+            "/pipelines", json=json.dumps(invalid_pipeline), follow_redirects=True,
+            headers=headers4power_user
+    )
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     # Create a pipeline
     desired_pipeline = Pipeline(
@@ -152,3 +164,39 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         headers=headers4power_user
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_create_pipeline_token(async_minimum, fastapi_testclient):
+    pipeline_name = "ptest four"
+    token_desc = "this is a token"
+
+    # Create a pipeline
+    desired_pipeline = Pipeline(
+        name=pipeline_name,
+        uri="http://test.com",
+        version="1"
+    )
+
+    http_create_pipeline(fastapi_testclient, desired_pipeline)
+
+    # Create new tokens for the pipeline. There is no limit on the number of tokens
+    # that can be created and no restriction on token description.
+    for _ in range(3):
+        response = fastapi_testclient.post(
+            f"/pipelines/{pipeline_name}/token/{token_desc}",
+            follow_redirects=True,
+            headers=headers4power_user
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json()["name"] == pipeline_name
+        assert response.json()["description"] == token_desc
+        assert len(response.json()["token"]) == 32
+
+    # Create a new token for a non-existent pipeline
+    response = fastapi_testclient.post(
+        "/pipelines/not here/token/{token_desc}",
+        follow_redirects=True,
+        headers=headers4power_user
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
