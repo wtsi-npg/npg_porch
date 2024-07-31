@@ -5,4 +5,34 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2024-07-31
+
+### Added
+
+* A note about installing on macOS
+* An endpoint for creating pipeline tokens
+* A development Docker file
+* A Token model
+
+### Changed
+
+* Moved the project to the standard Python project layout.
+* Reorganised and renamed the modules:
+    1. `npg.porch` namespace is collapsed into `npg_porch`,
+    2. `npg.porchdb` is reorganised into `npg_porch.db`,
+    3. the entry point of the application is relocated and
+    renamed `npg/porch_server.py` -> `npg_porch/server.py`
+* Moved the test configuration file to the `tests` directory.
+* Changed the HTTP code for the `pipeline` endpoint from 409 to 422 in case of
+  bad input.
+* A Token model is returned rather than a bare string by the endpoint which
+creates tokens for a pipeline.
+* A request to create an already existing task is no longer invalid, does not
+raise an error.
+* Updated the Task model so that it is impossible to create or update the task
+  without explicitly specifying the new task status.
+* pysqlite3 is moved from the production to test dependencies.
+
 ## [1.0.0] - 2023-10-16
+
+Initial release
