@@ -29,6 +29,7 @@ ARG DEBIAN_FRONTEND
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -q -y --no-install-recommends \
+    curl \
     libsqlite3-0 \
     postgresql \
     sudo \
@@ -93,6 +94,8 @@ ENV DB_URL="postgresql+asyncpg://$URL_SLUG" \
     PORT=${PORT}
 
 EXPOSE ${PORT}
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 CMD curl -f http://localhost:${PORT} || exit 1
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
