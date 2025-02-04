@@ -26,7 +26,7 @@ async def test_token_string_is_valid(async_minimum):
     with pytest.raises(CredentialsValidationException,
                        match=r'Token failed character validation'):
         await v.token2permission('7dc1457531e3495?9bd5:bcda579c1c6')
-    # This token contains characters beyong F.
+    # This token contains characters beyond F.
     with pytest.raises(CredentialsValidationException,
                        match=r'Token failed character validation'):
         await v.token2permission('7dc1457531e3495P9bd5Kbcda579c1c6')
