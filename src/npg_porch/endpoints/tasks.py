@@ -70,8 +70,7 @@ router = APIRouter(
 async def get_tasks(
     pipeline_name: str | None = None,
     status: TaskStateEnum | None = None,
-    db_accessor=Depends(get_DbAccessor),
-    permission=Depends(validate)
+    db_accessor=Depends(get_DbAccessor)
 ) -> list[Task]:
     print(pipeline_name, status)
     return await db_accessor.get_tasks(pipeline_name=pipeline_name, task_status=status)

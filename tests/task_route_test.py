@@ -182,10 +182,7 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
 
 def test_get_tasks(async_minimum, async_tasks, fastapi_testclient):
     response = fastapi_testclient.get('/tasks')
-    assert response.status_code == status.HTTP_403_FORBIDDEN, 'Need a token to see any tasks'
-
-    response = fastapi_testclient.get('/tasks', headers=headers4ptest_one)
-    assert response.status_code == status.HTTP_200_OK, 'Authorised task fetching'
+    assert response.status_code == status.HTTP_200_OK, 'Authorisation not required for gets'
     tasks = response.json()
 
     unique_pipelines = {t['pipeline']['name'] for t in tasks}
