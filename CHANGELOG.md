@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+* Remove authorisation requirement for get requests.
+
 ## [2.0.0] - 2024-07-31
 
 ### Added
