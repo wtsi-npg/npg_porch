@@ -18,7 +18,7 @@ Bash tools like `jq` and `jo` can be useful in working with the server, as all m
 
 We have tried to make interactions with npg_porch as atomic as possible, so the data you send and the data you receive follow the same schema.
 
-Security is necessary in order to prevent accidental misuse of npg_porch. An authorisation token can be provided to you by the maintainers, which you will then use to enable each request.
+Security is necessary in order to prevent accidental misuse of npg_porch. An authorisation token can be provided to you by the maintainers, which you will then use to enable each non-GET request. Get requests do not require authorisation.
 
 A note on HTTPS: Client libraries like `requests`, certain GUIs and Firefox will try to verify the server certificate authority. System-administered software are already configured correctly, but other packages installed by conda or pip may need to be told how the client may verify with a client certificate e.g. contained in `/usr/share/ca-certificates/`. It may also be useful to unset `https_proxy` and `HTTPS_PROXY` in your environment.
 
