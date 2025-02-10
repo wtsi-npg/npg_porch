@@ -30,6 +30,10 @@ class PermissionValidationException(Exception):
 
 
 class RolesEnum(str, Enum):
+
+    def __str__(self):
+        return self.value
+
     POWER_USER = 'power_user'
     REGULAR_USER = 'regular_user'
 

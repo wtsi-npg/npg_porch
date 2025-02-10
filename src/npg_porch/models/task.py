@@ -26,6 +26,10 @@ from pydantic import BaseModel, Field, ValidationError
 from npg_porch.models.pipeline import Pipeline
 
 class TaskStateEnum(str, Enum):
+
+    def __str__(self):
+        return self.value
+
     PENDING = 'PENDING'
     CLAIMED = 'CLAIMED'
     RUNNING = 'RUNNING'
