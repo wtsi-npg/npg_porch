@@ -19,7 +19,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator, FieldValidationInfo
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 from typing import Optional
 
 from npg_porch.models.pipeline import Pipeline
@@ -55,7 +55,7 @@ class Permission(BaseModel):
 
     @field_validator('role')
     @classmethod
-    def no_pipeline4special_users(cls, v: str, info: FieldValidationInfo):
+    def no_pipeline4special_users(cls, v: str, info: ValidationInfo):
 
         if (v == RolesEnum.POWER_USER
                 and ('pipeline' in info.data and info.data['pipeline'] is not None)):
