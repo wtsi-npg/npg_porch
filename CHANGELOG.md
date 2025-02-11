@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 * Remove authorisation requirement for get requests.
+* Make TaskStateEnum and RolesEnum stringify to their values and use actual 
+  enum values rather than expected values in tests.
 
 ## [2.0.0] - 2024-07-31
 

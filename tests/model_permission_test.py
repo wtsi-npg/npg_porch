@@ -1,12 +1,12 @@
 import pytest
 
 from npg_porch.models.pipeline import Pipeline
-from npg_porch.models.permission import Permission, PermissionValidationException
+from npg_porch.models.permission import Permission, PermissionValidationException, RolesEnum
 from pydantic import ValidationError
 
 
 def test_model_create():
-    ''''
+    '''
     Test objects can be created.
     '''
 
@@ -56,7 +56,7 @@ def test_pipeline_validation():
         requestor_id = 3,
         role = 'power_user')
     with pytest.raises(PermissionValidationException,
-                       match=r'Operation is not valid for role power_user'):
+                       match=rf'Operation is not valid for role {RolesEnum.POWER_USER}'):
         permission.validate_pipeline(pipeline)
 
     permission = Permission(

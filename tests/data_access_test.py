@@ -224,7 +224,7 @@ async def test_update_tasks(db_accessor):
 
     events = await db_accessor.get_events_for_task(modified_task)
     assert len(events) == 2, 'Task was created, and then updated'
-    assert events[1].change == 'Task changed, new status DONE'
+    assert events[1].change == f'Task changed, new status {TaskStateEnum.DONE}'
 
     # Try to change a task that doesn't exist
     with pytest.raises(NoResultFound):
