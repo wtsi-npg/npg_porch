@@ -18,7 +18,7 @@ Bash tools like `jq` and `jo` can be useful in working with the server, as all m
 
 We have tried to make interactions with npg_porch as atomic as possible, so the data you send and the data you receive follow the same schema.
 
-Security is necessary in order to prevent accidental misuse of npg_porch. An authorisation token can be provided to you by the maintainers, which you will then use to enable each request.
+Security is necessary in order to prevent accidental misuse of npg_porch. An authorisation token can be provided to you by the maintainers, which you will then use to enable each non-GET request. Get requests do not require authorisation.
 
 A note on HTTPS: Client libraries like `requests`, certain GUIs and Firefox will try to verify the server certificate authority. System-administered software are already configured correctly, but other packages installed by conda or pip may need to be told how the client may verify with a client certificate e.g. contained in `/usr/share/ca-certificates/`. It may also be useful to unset `https_proxy` and `HTTPS_PROXY` in your environment.
 
@@ -183,7 +183,7 @@ if ($response->is_success) {
 
 Once a task has been submitted, and a 201 CREATED response has been received, the npg_porch server assigns a timestamp to the task, gives it a status of `PENDING` and assigns a unique ID to it. The response from the server contains this extra information.
 
-A 200 OK response means that this particular task for this pipeline has already been registered. The current representation of the task is returned, the status of the task might be differ from `PENDING`.  Note that if there are many tasks to register, some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
+A 200 OK response means that this particular task for this pipeline has already been registered. The current representation of the task is returned, the status of the task might be different from `PENDING`.  Note that if there are many tasks to register, some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
 
 ### Step 4 - write a script or program that can launch the pipeline
 

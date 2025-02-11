@@ -54,8 +54,7 @@ router = APIRouter(
 async def get_pipelines(
     uri: str | None = None,
     version: str | None = None,
-    db_accessor=Depends(get_DbAccessor),
-    permissions=Depends(validate)
+    db_accessor=Depends(get_DbAccessor)
 ) -> list[Pipeline]:
 
     return await db_accessor.get_all_pipelines(uri, version)
@@ -72,8 +71,7 @@ async def get_pipelines(
 )
 async def get_pipeline(
     pipeline_name: str,
-    db_accessor=Depends(get_DbAccessor),
-    permissions=Depends(validate)
+    db_accessor=Depends(get_DbAccessor)
 ) -> Pipeline:
 
     pipeline = None

@@ -40,9 +40,7 @@ def http_create_pipeline(fastapi_testclient, pipeline):
 def test_pipeline_get(async_minimum, fastapi_testclient):
 
     response = fastapi_testclient.get('/pipelines')
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    response = fastapi_testclient.get('/pipelines', headers=headers)
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_200_OK  # Get does not require auth
     pipeline = Pipeline.model_validate(response.json()[0])
     assert pipeline, 'Response fits into the over-the-wire model'
     assert pipeline.name == 'ptest one'
