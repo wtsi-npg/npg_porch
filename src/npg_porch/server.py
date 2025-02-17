@@ -17,9 +17,13 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
+import asyncio
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from npg_porch.db import data_access
+from npg_porch.db.connection import get_DbAccessor
 
 from npg_porch.endpoints import pipelines, tasks
 
@@ -46,23 +50,17 @@ app = FastAPI(
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 
+templates = Jinja2Templates(directory="src/npg_porch/templates")
+
 @app.get(
     "/",
     response_class=HTMLResponse,
     tags=["index"],
-    summary="Web page with links to OpenAPI documentation."
+    summary="Web page with filterable table of tasks and links to OpenAPI "
+            "documentation."
 )
-async def root():
-    return """
-    <html>
-        <head>
-            <title>About Pipeline Orchestration</title>
-        </head>
-        <body>
-            <h1>JSON API for Pipeline Orchestration</h1>
-            <p><a href="/docs">docs</a></p>
-            <p><a href="/redoc">redoc</a></p>
-            <p><a href="/api/v1/openapi.json">OpenAPI JSON Schema</a></p>
-        </body>
-    </html>
-    """
+async def root(request: Request, pipeline_name=None, status=None, task_response=Depends(tasks.get_tasks)) -> HTMLResponse:
+
+    return templates.TemplateResponse("index.j2", {"request": request, "tasks": [{
+        "pipeline": "A", "version": "1.0", "input": {}, "status": "PENDING", "changed": "01/01/2025", "created": "01/01/2025"}],
+                                                   "task_response": task_response})
