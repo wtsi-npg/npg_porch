@@ -14,8 +14,8 @@
           <th scope="col">Pipeline Version</th>
           <th scope="col">Task Input</th>
           <th scope="col">Status</th>
-          <th scope="col">Date Changed</th>
-          <th scope="col">Date Created</th>
+          {#<th scope="col">Date Changed</th>
+          <th scope="col">Date Created</th>#}
         </tr>
       </thead>
       <tbody>
@@ -25,8 +25,8 @@
             <td>{{ task.version }}</td>
             <td>{{ task.input }}</td>
             <td>{{ task.status }}</td>
-            <td>{{ task.changed }}</td>
-            <td>{{ task.created }}</td>
+            {#<td>{{ task.changed }}</td>
+            <td>{{ task.created }}</td>#}
           </tr>
         {% endfor %}
       </tbody>

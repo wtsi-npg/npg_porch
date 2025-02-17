@@ -59,8 +59,17 @@ templates = Jinja2Templates(directory="src/npg_porch/templates")
     summary="Web page with filterable table of tasks and links to OpenAPI "
             "documentation."
 )
-async def root(request: Request, pipeline_name=None, status=None, task_response=Depends(tasks.get_tasks)) -> HTMLResponse:
+async def root(request: Request,
+               pipeline_name=None,
+               status=None,
+               task_response=Depends(tasks.get_tasks)
+               ) -> HTMLResponse:
 
-    return templates.TemplateResponse("index.j2", {"request": request, "tasks": [{
-        "pipeline": "A", "version": "1.0", "input": {}, "status": "PENDING", "changed": "01/01/2025", "created": "01/01/2025"}],
-                                                   "task_response": task_response})
+    task_list = []
+    for task in task_response:
+        task_list.append({"pipeline": task.pipeline.name,
+                          "version": task.pipeline.version,
+                          "input": task.task_input,
+                          "status": task.status})
+
+    return templates.TemplateResponse("index.j2", {"request": request, "tasks": task_list})
