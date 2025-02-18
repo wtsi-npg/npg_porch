@@ -17,13 +17,15 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
-
+from datetime import datetime
 from enum import Enum
 import hashlib
 import ujson
 from pydantic import BaseModel, Field, ValidationError
 
 from npg_porch.models.pipeline import Pipeline
+from npg_porch.models.event import Event
+
 
 class TaskStateEnum(str, Enum):
 
@@ -90,3 +92,22 @@ class Task(BaseModel):
             return True
 
         return False
+
+
+class TaskExpanded(Task):
+    # events: list[Event] = Field(
+    #     default=[],
+    #     title="Task Events",
+    #     description="List of all events (changes of status) that have occurred for this task",
+    # )
+    # updated: datetime = Field(
+    #     default=None,
+    #     title="Task Updated",
+    #     description="The timestamp of the most recent event for this task"
+    # )
+    created: datetime = Field(
+        default=None,
+        title="Task Created",
+        description="The timestamp of the creation of the task"
+    )
+

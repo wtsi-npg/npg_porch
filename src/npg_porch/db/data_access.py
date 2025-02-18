@@ -19,17 +19,20 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.functions import max as samax
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
 from npg_porch.db.models import Task as DbTask
+from npg_porch.db.models import TaskExpanded as DbTaskExpanded
 from npg_porch.db.models import Token as DbToken
-from npg_porch.models import Pipeline, Task, TaskStateEnum
+from npg_porch.models import Pipeline, Task, TaskExpanded, TaskStateEnum
 from npg_porch.models.token import Token
 
 
@@ -234,7 +237,7 @@ class AsyncDbAccessor:
         Can filter tasks by pipeline name and task status in order to be more useful.
         '''
         query = select(DbTask)\
-            .join(DbTask.pipeline)\
+            .join(DbTask.pipeline) \
             .options(joinedload(DbTask.pipeline))
 
         if pipeline_name:
@@ -246,6 +249,44 @@ class AsyncDbAccessor:
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
+
+    async def get_ordered_tasks(self,
+                                pipeline_name: str | None = None,
+                                pipeline_version: str | None = None,
+                                input_key: str | None = None,
+                                input_value: str | None = None,
+                                status: str | None = None,
+                                task_status: TaskStateEnum | None = None,
+                                date_range: tuple[datetime.date, datetime.date] | None = None,
+                                limit: int = 2,
+                                page: int = 0) ->list[TaskExpanded]:
+        """
+        Gets {limit} tasks offset from the first task by {offset} in order of
+        status change, for pagination.
+
+        Can be filtered by pipeline and status. TODO: input and date.
+        """
+        latest_event = select(Event.task_id, samax(Event.time).label("changed"))\
+            .select_from(Event)\
+            .group_by(Event.task_id)\
+            .subquery()
+        query = select(DbTaskExpanded)\
+            .join(DbTaskExpanded.pipeline)\
+            .join(latest_event) \
+            .options(joinedload(DbTask.pipeline))\
+            #.limit(limit)\
+            #.offset(page*limit)
+        self.logger.info(str(query))
+
+        if pipeline_name:
+            query = query.where(DbPipeline.name == pipeline_name)
+
+        if task_status:
+            query = query.filter(DbTask.state == task_status)
+
+        task_result = await self.session.execute(query)
+        tasks = task_result.scalars().all()
+        return [task.convert_to_model() for task in tasks]
 
     async def get_db_task(
         self,

@@ -41,16 +41,16 @@ tags_metadata = [
     },
 ]
 
-
 app = FastAPI(
-    title = "Pipeline Orchestration (POrch)",
-    openapi_url = "/api/v1/openapi.json",
-    openapi_tags = tags_metadata,
+    title="Pipeline Orchestration (POrch)",
+    openapi_url="/api/v1/openapi.json",
+    openapi_tags=tags_metadata,
 )
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 
 templates = Jinja2Templates(directory="src/npg_porch/templates")
+
 
 @app.get(
     "/",
@@ -62,14 +62,18 @@ templates = Jinja2Templates(directory="src/npg_porch/templates")
 async def root(request: Request,
                pipeline_name=None,
                status=None,
-               task_response=Depends(tasks.get_tasks)
+               db_accessor=Depends(get_DbAccessor)
                ) -> HTMLResponse:
 
-    task_list = []
-    for task in task_response:
-        task_list.append({"pipeline": task.pipeline.name,
-                          "version": task.pipeline.version,
-                          "input": task.task_input,
-                          "status": task.status})
+    task_response = await db_accessor.get_ordered_tasks(pipeline_name=pipeline_name, status=status)
 
-    return templates.TemplateResponse("index.j2", {"request": request, "tasks": task_list})
+    task_list = [{"pipeline": task.pipeline.name,
+                  "version": task.pipeline.version,
+                  "input": task.task_input,
+                  "status": task.status,
+                  "changed": "",
+                  "created": task.created
+                  }
+                 for task in task_response]
+
+    return templates.TemplateResponse("index.j2", {"request": request, "tasks": task_list, "response": task_response})
