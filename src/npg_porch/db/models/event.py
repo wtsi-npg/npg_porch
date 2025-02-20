@@ -25,6 +25,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from .base import Base
+from npg_porch.db.models.task import Task
+from npg_porch.models import Event as ModelledEvent
 
 class Event(Base):
     '''
@@ -33,7 +35,7 @@ class Event(Base):
     '''
     __tablename__ = 'event'
     event_id = Column(Integer, primary_key=True, autoincrement=True)
-    task_id = Column(Integer, ForeignKey('task.task_id'))
+    task_id = Column(Integer, ForeignKey(Task.task_id))
     time = Column(DateTime, default=sqlalchemy.sql.functions.now())
     change = Column(String)
     token_id = Column(Integer, ForeignKey('token.token_id'), nullable=False)
@@ -46,3 +48,9 @@ class Event(Base):
     token = relationship(
         'Token', back_populates='events'
     )
+
+    def convert_to_model(self):
+        return ModelledEvent(
+            time=self.time,
+            change=self.change
+        )
