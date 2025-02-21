@@ -259,7 +259,7 @@ class AsyncDbAccessor:
                                 task_status: TaskStateEnum | None = None,
                                 date_range: tuple[datetime.date, datetime.date] | None = None,
                                 limit: int = 2,
-                                page: int = 0) ->list[TaskExpanded]:
+                                page: int = 1) -> list[TaskExpanded]:
         """
         Gets {limit} tasks offset from the first task by {offset} in order of
         status change, for pagination.
@@ -274,9 +274,9 @@ class AsyncDbAccessor:
             .join(DbTaskExpanded.pipeline)\
             .join(latest_event) \
             .options(joinedload(DbTask.pipeline))\
-            #.limit(limit)\
-            #.offset(page*limit)
-        self.logger.info(str(query))
+            .order_by(desc(latest_event.c.changed))\
+            .limit(limit)\
+            .offset((page-1)*limit)
 
         if pipeline_name:
             query = query.where(DbPipeline.name == pipeline_name)
@@ -284,9 +284,9 @@ class AsyncDbAccessor:
         if task_status:
             query = query.filter(DbTask.state == task_status)
 
-        task_result = await self.session.execute(query)
-        tasks = task_result.scalars().all()
-        return [task.convert_to_model() for task in tasks]
+        result = await self.session.execute(query)
+        tasks = result.scalars().all()
+        return [task.convert_to_model()for task in tasks]
 
     async def get_db_task(
         self,

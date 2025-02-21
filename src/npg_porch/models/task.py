@@ -96,11 +96,6 @@ class Task(BaseModel):
 
 
 class TaskExpanded(Task):
-    # events: list[Event] = Field(
-    #     default=[],
-    #     title="Task Events",
-    #     description="List of all events (changes of status) that have occurred for this task",
-    # )
     # updated: datetime = Field(
     #     default=None,
     #     title="Task Updated",

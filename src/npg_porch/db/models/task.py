@@ -77,6 +77,7 @@ class TaskExpanded(Task):
         return ModelledTaskExpanded(
             pipeline=self.pipeline.convert_to_model(),
             created=self.created,
+            task_input_id=self.job_descriptor,
             task_input=self.definition,
             status=self.state
         )
