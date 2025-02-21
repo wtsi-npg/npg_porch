@@ -62,16 +62,18 @@ templates = Jinja2Templates(directory="src/npg_porch/templates")
 )
 async def root(request: Request,
                pipeline_name=None,
-               page=1,
+               page: int = 1,
+               limit: int = 2,
                status=None,
                db_accessor=Depends(get_DbAccessor)
                ) -> HTMLResponse:
-    filters = {Pipeline.name: pipeline_name, Task.State: status}  # etc, etc.
+    filters = {Pipeline.name: pipeline_name, Task.state: status}  # etc, etc.
     min_page = 1
-    max_page = await db_accessor.count_tasks(filters)  # TODO: add query to get number of pages
+    max_page = int(await db_accessor.count_tasks(filters)/limit)
+    max_page = max_page if max_page > min_page else min_page
     page = min_page if page < min_page else max_page if page > max_page else page  # need to clamp page number
-
-    task_response = await db_accessor.get_ordered_tasks(pipeline_name=pipeline_name, page=page, status=status)
+    print(f"min page: {min_page}, max_page: {max_page}, page: {page}")
+    task_response = await db_accessor.get_ordered_tasks(pipeline_name=pipeline_name, page=page, status=status, limit=limit)
     event_response = [await db_accessor.get_events_for_task(task) for task in task_response]
 
     return templates.TemplateResponse("index.j2", {"request": request, "tasks": zip(task_response, event_response),

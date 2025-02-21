@@ -34,8 +34,10 @@
 
     <div class="container text-center">
       <div class="row">
-        <div class="column"><a href="?page={{ min_page }}> {{ min_page }} </a></div>
-        <div class="column"><a href="?page={{ max_page }}> {{ max_page }} </a></div>
+        <div class="column"><a href="?page={{ min_page }}"> {{ min_page }} </a></div>
+        {% if max_page > min_page %}
+          <div class="column"><a href="?page={{ max_page }}"> {{ max_page }} </a></div>
+        {% endif %}
         <div class="column"><a href="/docs">docs</a></div>
         <div class="column"><a href="/redoc">redoc</a></div>
         <div class="column"><a href="/api/v1/openapi.json">OpenAPI JSON Schema</a></div>

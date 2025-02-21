@@ -261,8 +261,8 @@ class AsyncDbAccessor:
                                 limit: int = 2,
                                 page: int = 1) -> list[TaskExpanded]:
         """
-        Gets {limit} tasks offset from the first task by {offset} in order of
-        status change, for pagination.
+        Gets tasks in order of their most recent status change, with a provided
+        limit value, and an offset determined by which page is being displayed.
 
         Can be filtered by pipeline and status. TODO: input and date.
         """
@@ -273,7 +273,7 @@ class AsyncDbAccessor:
         query = select(DbTaskExpanded)\
             .join(DbTaskExpanded.pipeline)\
             .join(latest_event) \
-            .options(joinedload(DbTask.pipeline))\
+            .options(joinedload(DbTaskExpanded.pipeline))\
             .order_by(desc(latest_event.c.changed))\
             .limit(limit)\
             .offset((page-1)*limit)
@@ -292,14 +292,15 @@ class AsyncDbAccessor:
                           filters: dict,
                           date_range: tuple[datetime.date, datetime.date] | None = None,
                           ) -> int:
-        query = select(count(DbTaskExpanded))\
-            .join(DbTaskExpanded.pipeline) \
-            .options(joinedload(DbTask.pipeline))
+        query = select(count())\
+            .select_from(DbTask)\
+            .join(DbTask.pipeline)
+        self.logger.info(query)
 
         query = add_filters(query, filters)
 
         result = await self.session.execute(query)
-        return result.scalars().one()
+        return result.scalar()
 
     async def get_db_task(
         self,
@@ -339,6 +340,7 @@ class AsyncDbAccessor:
 
 
 def add_filters(query: Select, filters: dict):
-    for k, v in filters:
-        query = query.where(k == v)
+    for k, v in filters.items():
+        if v is not None:
+            query = query.where(k == v)
     return query
