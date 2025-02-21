@@ -21,11 +21,11 @@
 import logging
 from datetime import datetime
 
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, Select, Column
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.functions import max as samax
+from sqlalchemy.sql.functions import max as samax, count
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
@@ -288,6 +288,19 @@ class AsyncDbAccessor:
         tasks = result.scalars().all()
         return [task.convert_to_model()for task in tasks]
 
+    async def count_tasks(self,
+                          filters: dict,
+                          date_range: tuple[datetime.date, datetime.date] | None = None,
+                          ) -> int:
+        query = select(count(DbTaskExpanded))\
+            .join(DbTaskExpanded.pipeline) \
+            .options(joinedload(DbTask.pipeline))
+
+        query = add_filters(query, filters)
+
+        result = await self.session.execute(query)
+        return result.scalars().one()
+
     async def get_db_task(
         self,
         pipeline_name: str,
@@ -315,9 +328,17 @@ class AsyncDbAccessor:
         )
 
     async def get_events_for_task(self, task: Task) -> list[Event]:
-        events = await self.session.execute(
+        result = await self.session.execute(
             select(Event)
             .join(Event.task)
             .where(DbTask.job_descriptor == task.task_input_id)
+            .order_by(desc(Event.time))
         )
-        return events.scalars().all()
+        events = result.scalars().all()
+        return [event.convert_to_model() for event in events]
+
+
+def add_filters(query: Select, filters: dict):
+    for k, v in filters:
+        query = query.where(k == v)
+    return query

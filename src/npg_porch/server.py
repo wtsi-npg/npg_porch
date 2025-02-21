@@ -24,6 +24,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from npg_porch.db import data_access
 from npg_porch.db.connection import get_DbAccessor
+from npg_porch.db.models import Pipeline, Task
 
 from npg_porch.endpoints import pipelines, tasks
 
@@ -61,19 +62,17 @@ templates = Jinja2Templates(directory="src/npg_porch/templates")
 )
 async def root(request: Request,
                pipeline_name=None,
+               page=1,
                status=None,
                db_accessor=Depends(get_DbAccessor)
                ) -> HTMLResponse:
+    filters = {Pipeline.name: pipeline_name, Task.State: status}  # etc, etc.
+    min_page = 1
+    max_page = await db_accessor.count_tasks(filters)  # TODO: add query to get number of pages
+    page = min_page if page < min_page else max_page if page > max_page else page  # need to clamp page number
 
-    task_response = await db_accessor.get_ordered_tasks(pipeline_name=pipeline_name, status=status)
+    task_response = await db_accessor.get_ordered_tasks(pipeline_name=pipeline_name, page=page, status=status)
+    event_response = [await db_accessor.get_events_for_task(task) for task in task_response]
 
-    task_list = [{"pipeline": task.pipeline.name,
-                  "version": task.pipeline.version,
-                  "input": task.task_input,
-                  "status": task.status,
-                  "changed": "",
-                  "created": task.created
-                  }
-                 for task in task_response]
-
-    return templates.TemplateResponse("index.j2", {"request": request, "tasks": task_list, "response": task_response})
+    return templates.TemplateResponse("index.j2", {"request": request, "tasks": zip(task_response, event_response),
+                                                   "min_page": min_page, "max_page": max_page})

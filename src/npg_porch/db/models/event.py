@@ -25,8 +25,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from .base import Base
-from npg_porch.models import Event as ModelledEvent
 from .task import Task
+from npg_porch.models import Event as ModelledEvent
 
 class Event(Base):
     '''
