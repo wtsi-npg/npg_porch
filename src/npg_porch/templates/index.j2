@@ -25,8 +25,8 @@
             <td>{{ task[0].pipeline.version }}</td>
             <td>{{ task[0].task_input }}</td>
             <td>{{ task[0].status }}</td>
-            <td>{{ task[1][0].time }}</td>
-            <td>{{ task[0].created }}</td>
+            <td>{{ task[1][0].time.strftime('%d/%m/%y %H:%M:%S') }}</td>
+            <td>{{ task[0].created.strftime('%d/%m/%y %H:%M:%S') }}</td>
           </tr>
         {% endfor %}
       </tbody>

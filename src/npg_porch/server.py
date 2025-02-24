@@ -22,7 +22,6 @@ import asyncio
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from npg_porch.db import data_access
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.db.models import Pipeline, Task
 
