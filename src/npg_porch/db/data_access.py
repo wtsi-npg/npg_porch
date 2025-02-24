@@ -251,15 +251,11 @@ class AsyncDbAccessor:
         return [t.convert_to_model() for t in tasks]
 
     async def get_ordered_tasks(self,
-                                pipeline_name: str | None = None,
-                                pipeline_version: str | None = None,
-                                input_key: str | None = None,
-                                input_value: str | None = None,
-                                status: str | None = None,
-                                task_status: TaskStateEnum | None = None,
+                                filters: dict,
+                                limit: int,
+                                page: int,
                                 date_range: tuple[datetime.date, datetime.date] | None = None,
-                                limit: int = 2,
-                                page: int = 1) -> list[TaskExpanded]:
+                                ) -> list[TaskExpanded]:
         """
         Gets tasks in order of their most recent status change, with a provided
         limit value, and an offset determined by which page is being displayed.
@@ -278,11 +274,7 @@ class AsyncDbAccessor:
             .limit(limit)\
             .offset((page-1)*limit)
 
-        if pipeline_name:
-            query = query.where(DbPipeline.name == pipeline_name)
-
-        if task_status:
-            query = query.filter(DbTask.state == task_status)
+        query = add_filters(query, filters)
 
         result = await self.session.execute(query)
         tasks = result.scalars().all()
@@ -295,7 +287,6 @@ class AsyncDbAccessor:
         query = select(count())\
             .select_from(DbTask)\
             .join(DbTask.pipeline)
-        self.logger.info(query)
 
         query = add_filters(query, filters)
 
