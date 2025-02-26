@@ -276,6 +276,8 @@ class AsyncDbAccessor:
 
         query = add_filters(query, filters)
 
+        self.logger.info(query)
+
         result = await self.session.execute(query)
         tasks = result.scalars().all()
         return [task.convert_to_model()for task in tasks]

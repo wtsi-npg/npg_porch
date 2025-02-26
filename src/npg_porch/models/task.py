@@ -24,8 +24,6 @@ import ujson
 from pydantic import BaseModel, Field, ValidationError
 
 from npg_porch.models.pipeline import Pipeline
-from npg_porch.models.event import Event
-
 
 
 class TaskStateEnum(str, Enum):
