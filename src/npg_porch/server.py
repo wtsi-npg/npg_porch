@@ -70,10 +70,18 @@ async def root(request: Request,
     min_page = 1
     max_page = int(await db_accessor.count_tasks(filters)/limit)
     max_page = max_page if max_page > min_page else min_page
-    page = min_page if page < min_page else max_page if page > max_page else page  # need to clamp page number
+    page = min_page if page < min_page \
+        else max_page if page > max_page \
+        else page  # need to clamp page number
 
-    task_response = await db_accessor.get_ordered_tasks(filters=filters, limit=limit, page=page)
-    event_response = [await db_accessor.get_events_for_task(task) for task in task_response]
+    task_response = await db_accessor.get_ordered_tasks(filters=filters,
+                                                        limit=limit,
+                                                        page=page)
+    event_response = [await db_accessor.get_events_for_task(task)
+                      for task in task_response]
 
-    return templates.TemplateResponse("index.j2", {"request": request, "tasks": zip(task_response, event_response),
-                                                   "current_page": page, "max_page": max_page})
+    return templates.TemplateResponse("index.j2", {
+        "request": request,
+        "tasks": zip(task_response, event_response),
+        "current_page": page, "max_page": max_page
+    })
