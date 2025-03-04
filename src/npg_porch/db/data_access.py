@@ -27,9 +27,9 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
-from npg_porch.db.models import Task as DbTask, TaskExpanded as DbTaskExp
+from npg_porch.db.models import Task as DbTask
 from npg_porch.db.models import Token as DbToken
-from npg_porch.models import Pipeline, Task, TaskStateEnum
+from npg_porch.models import Pipeline, Task, TaskStateEnum, TaskExpanded
 from npg_porch.models.token import Token
 
 
@@ -232,18 +232,21 @@ class AsyncDbAccessor:
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 
-    async def get_ordered_tasks(self, limit: int = 100):
+    async def get_expanded_tasks(self) -> list[TaskExpanded]:
+        """
+        Gets information about tasks including their creation date, with latest
+        ordered by latest creation date.
+        """
         query = (
-            select(DbTaskExp)
-            .join(DbTaskExp.pipeline)
-            .options(joinedload(DbTaskExp.pipeline))
-            .order_by(DbTaskExp.created.desc())
-            .limit(limit)
+            select(DbTask)
+            .join(DbTask.pipeline)
+            .options(joinedload(DbTask.pipeline))
+            .order_by(DbTask.created.desc())
         )
 
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
-        return [t.convert_to_model() for t in tasks]
+        return [t.convert_to_model(TaskExpanded) for t in tasks]
 
     async def get_db_task(
         self,

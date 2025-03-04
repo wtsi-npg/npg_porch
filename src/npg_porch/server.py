@@ -26,6 +26,7 @@ from jinja2 import Environment, PackageLoader
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks
+from npg_porch.models import TaskExpanded
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
@@ -60,17 +61,15 @@ version = metadata.version("npg_porch")
     "/",
     response_class=HTMLResponse,
     tags=["index"],
-    summary="Web page with filterable table of tasks.",
+    summary="Web page with listing of Porch tasks.",
 )
-async def root(
-    request: Request, limit: int = 100, db_accessor=Depends(get_DbAccessor)
-) -> HTMLResponse:
-    task_response = await db_accessor.get_ordered_tasks(limit=limit)
+async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
+    task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks()
     return templates.TemplateResponse(
         "index.j2",
         {
             "request": request,
-            "tasks": task_response,
+            "tasks": task_list,
             "version": version,
         },
     )
