@@ -23,8 +23,8 @@ from fastapi.responses import HTMLResponse
 
 from npg_porch.endpoints import pipelines, tasks
 
-#https://fastapi.tiangolo.com/tutorial/bigger-applications/
-#https://fastapi.tiangolo.com/tutorial/metadata
+# https://fastapi.tiangolo.com/tutorial/bigger-applications/
+# https://fastapi.tiangolo.com/tutorial/metadata
 
 tags_metadata = [
     {
@@ -39,18 +39,19 @@ tags_metadata = [
 
 
 app = FastAPI(
-    title = "Pipeline Orchestration (POrch)",
-    openapi_url = "/api/v1/openapi.json",
-    openapi_tags = tags_metadata,
+    title="Pipeline Orchestration (POrch)",
+    openapi_url="/api/v1/openapi.json",
+    openapi_tags=tags_metadata,
 )
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
+
 
 @app.get(
     "/",
     response_class=HTMLResponse,
     tags=["index"],
-    summary="Web page with links to OpenAPI documentation."
+    summary="Web page with links to OpenAPI documentation.",
 )
 async def root():
     return """

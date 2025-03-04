@@ -19,7 +19,13 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from sqlalchemy import (
-    Column, Integer, String, JSON, UniqueConstraint, ForeignKey, Index
+    Column,
+    Integer,
+    String,
+    JSON,
+    UniqueConstraint,
+    ForeignKey,
+    Index,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import now
@@ -30,12 +36,13 @@ from npg_porch.models import Task as ModelledTask
 
 
 class Task(Base):
-    '''
+    """
     A unique combination of inputs for an Pipeline
-    '''
-    __tablename__ = 'task'
+    """
+
+    __tablename__ = "task"
     task_id = Column(Integer, primary_key=True, autoincrement=True)
-    pipeline_id = Column(Integer, ForeignKey('pipeline.pipeline_id'))
+    pipeline_id = Column(Integer, ForeignKey("pipeline.pipeline_id"))
     job_descriptor = Column(String)
     # This is the serialisation of Dict representing the JSON
     # provided by the workflow - we don't want to get into serialising
@@ -50,22 +57,20 @@ class Task(Base):
     created = Column(DateTime, default=now())
 
     # Set unique this way so that SQLite creates the constraint
-    __table_args__ = (UniqueConstraint('pipeline_id', 'job_descriptor', name='unique_tasks'),)
+    __table_args__ = (
+        UniqueConstraint("pipeline_id", "job_descriptor", name="unique_tasks"),
+    )
 
     # Index('idx_unique_tasks', pipeline_id, job_descriptor, unique=True)
-    Index('idx_ordered_tasks', pipeline_id, created)
+    Index("idx_ordered_tasks", pipeline_id, created)
 
-    pipeline = relationship(
-        'Pipeline', back_populates='tasks'
-    )
-    events = relationship(
-        'Event', back_populates='task'
-    )
+    pipeline = relationship("Pipeline", back_populates="tasks")
+    events = relationship("Event", back_populates="task")
 
     def convert_to_model(self) -> ModelledTask:
         return ModelledTask(
             pipeline=self.pipeline.convert_to_model(),
             task_input_id=self.job_descriptor,
             task_input=self.definition,
-            status=self.state
+            status=self.state,
         )

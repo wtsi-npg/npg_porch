@@ -25,37 +25,40 @@ from pydantic import BaseModel, Field, ValidationError
 
 from npg_porch.models.pipeline import Pipeline
 
-class TaskStateEnum(str, Enum):
 
+class TaskStateEnum(str, Enum):
     def __str__(self):
         return self.value
 
-    PENDING = 'PENDING'
-    CLAIMED = 'CLAIMED'
-    RUNNING = 'RUNNING'
-    DONE = 'DONE'
-    FAILED = 'FAILED'
-    CANCELLED = 'CANCELLED'
+    PENDING = "PENDING"
+    CLAIMED = "CLAIMED"
+    RUNNING = "RUNNING"
+    DONE = "DONE"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
 
 class Task(BaseModel):
     pipeline: Pipeline
     task_input_id: str | None = Field(
         None,
-        title='Task Input ID',
-        description='A stringified unique identifier for a piece of work. Set by the npg_porch server, not the client' # noqa: E501
+        title="Task Input ID",
+        description="A stringified unique identifier for a piece of work. Set by the npg_porch server, not the client",  # noqa: E501
     )
     task_input: dict = Field(
         None,
-        title='Task Input',
-        description='A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline' # noqa: E501
+        title="Task Input",
+        description="A structured parameter set that uniquely identifies a piece of work, and enables an iteration of a pipeline",  # noqa: E501
     )
     status: TaskStateEnum
 
     def generate_task_id(self):
-        return hashlib.sha256(ujson.dumps(self.task_input, sort_keys=True).encode()).hexdigest()
+        return hashlib.sha256(
+            ujson.dumps(self.task_input, sort_keys=True).encode()
+        ).hexdigest()
 
     def __eq__(self, other):
-        '''
+        """
         Allow instances of Task to be compared with ==
 
         The pipeline and task_input_ids can partially differ and it still be a
@@ -65,7 +68,7 @@ class Task(BaseModel):
         Automatically attempts to cast a dict into a Task, and therefore
         ignores any properties not valid for a Task
 
-        '''
+        """
         if isinstance(other, dict):
             try:
                 other = Task.model_validate(other)
@@ -78,12 +81,12 @@ class Task(BaseModel):
         truths = []
         for k, v in self.model_dump().items():
             other_d = other.model_dump()
-            if k == 'pipeline':
-                truths.append(v['name'] == other_d[k]['name'])
-            elif k == 'task_input_id':
+            if k == "pipeline":
+                truths.append(v["name"] == other_d[k]["name"])
+            elif k == "task_input_id":
                 break
-            elif k == 'status':
-                break # or maybe compare?
+            elif k == "status":
+                break  # or maybe compare?
             else:
                 truths.append(v == other_d[k])
         if all(truths):

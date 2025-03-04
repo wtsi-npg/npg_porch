@@ -28,11 +28,10 @@ from npg_porch.db.auth import CredentialsValidationException
 
 auth_scheme = HTTPBearer()
 
-async def validate(
-    creds = Depends(auth_scheme),
-    validator = Depends(get_CredentialsValidator)
-):
 
+async def validate(
+    creds=Depends(auth_scheme), validator=Depends(get_CredentialsValidator)
+):
     token = creds.credentials
 
     try:

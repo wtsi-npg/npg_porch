@@ -27,33 +27,30 @@ from npg_porch.db.models import Token
 from npg_porch.models.permission import Permission, RolesEnum
 
 __AUTH_TOKEN_LENGTH__ = 32
-__AUTH_TOKEN_REGEXP__ = re.compile(
-    r'\A[0-9A-F]+\Z', flags = re.ASCII | re.IGNORECASE)
+__AUTH_TOKEN_REGEXP__ = re.compile(r"\A[0-9A-F]+\Z", flags=re.ASCII | re.IGNORECASE)
+
 
 class CredentialsValidationException(Exception):
     pass
 
 
 class Validator:
-    '''
+    """
     A validator for credentials presented by the requestor.
 
     Instantiate with a sqlalchemy AsyncSession
-    '''
+    """
 
     def __init__(self, session):
         self.session = session
 
     async def token2permission(self, token: str):
-
         if len(token) != __AUTH_TOKEN_LENGTH__:
             raise CredentialsValidationException(
                 f"The token should be {__AUTH_TOKEN_LENGTH__} chars long"
             )
         elif __AUTH_TOKEN_REGEXP__.match(token) is None:
-            raise CredentialsValidationException(
-                'Token failed character validation'
-            )
+            raise CredentialsValidationException("Token failed character validation")
 
         try:
             # Using 'outerjoin' to get the left join for token, pipeline.
@@ -68,23 +65,20 @@ class Validator:
             )
             valid_token_row = result.scalar_one()
         except NoResultFound:
-            raise CredentialsValidationException('An unknown token is used')
+            raise CredentialsValidationException("An unknown token is used")
 
         if (valid_token_row is not None) and (valid_token_row.date_revoked is not None):
-            raise CredentialsValidationException('A revoked token is used')
+            raise CredentialsValidationException("A revoked token is used")
 
         pipeline = valid_token_row.pipeline
         token_id = valid_token_row.token_id
         if pipeline is None:
-            permission = Permission(
-                role = RolesEnum.POWER_USER,
-                requestor_id = token_id
-            )
+            permission = Permission(role=RolesEnum.POWER_USER, requestor_id=token_id)
         else:
             permission = Permission(
-                role = RolesEnum.REGULAR_USER,
-                requestor_id = token_id,
-                pipeline = pipeline.convert_to_model()
+                role=RolesEnum.REGULAR_USER,
+                requestor_id=token_id,
+                pipeline=pipeline.convert_to_model(),
             )
 
         return permission
