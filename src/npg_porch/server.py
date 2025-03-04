@@ -18,9 +18,13 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, PackageLoader
 
+
+from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
@@ -46,24 +50,21 @@ app = FastAPI(
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 
+env = Environment(loader=PackageLoader("npg_porch", "templates"))
+templates = Jinja2Templates(env=env)
+
 
 @app.get(
     "/",
     response_class=HTMLResponse,
     tags=["index"],
-    summary="Web page with links to OpenAPI documentation.",
+    summary="Web page with filterable table of tasks and links to OpenAPI "
+    "documentation.",
 )
-async def root():
-    return """
-    <html>
-        <head>
-            <title>About Pipeline Orchestration</title>
-        </head>
-        <body>
-            <h1>JSON API for Pipeline Orchestration</h1>
-            <p><a href="/docs">docs</a></p>
-            <p><a href="/redoc">redoc</a></p>
-            <p><a href="/api/v1/openapi.json">OpenAPI JSON Schema</a></p>
-        </body>
-    </html>
-    """
+async def root(
+    request: Request, limit: int = 100, db_accessor=Depends(get_DbAccessor)
+) -> HTMLResponse:
+    task_response = await db_accessor.get_ordered_tasks(limit=limit)
+    return templates.TemplateResponse(
+        "index.j2", {"request": request, "tasks": task_response}
+    )

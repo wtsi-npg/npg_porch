@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
-
+from datetime import datetime
 from enum import Enum
 import hashlib
 import ujson
@@ -93,3 +93,13 @@ class Task(BaseModel):
             return True
 
         return False
+
+
+class TaskExpanded(Task):
+    """
+    An expanded task model for serving the ui.
+    """
+
+    created: datetime = Field(
+        default=None, title="Task Created", description="The timestamp of task creation"
+    )
