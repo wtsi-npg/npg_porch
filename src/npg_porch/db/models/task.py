@@ -32,7 +32,7 @@ from sqlalchemy.sql.functions import now
 from sqlalchemy.sql.sqltypes import DateTime
 
 from .base import Base
-from npg_porch.models import Task as ModelledTask
+from npg_porch.models import Task as ModelledTask, TaskExpanded as ModelledTaskExpanded
 
 
 class Task(Base):
@@ -67,10 +67,15 @@ class Task(Base):
     pipeline = relationship("Pipeline", back_populates="tasks")
     events = relationship("Event", back_populates="task")
 
-    def convert_to_model(self) -> ModelledTask:
-        return ModelledTask(
-            pipeline=self.pipeline.convert_to_model(),
-            task_input_id=self.job_descriptor,
-            task_input=self.definition,
-            status=self.state,
-        )
+    def convert_to_model(
+        self, task_class: type[ModelledTask | ModelledTaskExpanded] = ModelledTask
+    ) -> ModelledTask | ModelledTaskExpanded:
+        init_args = {
+            "pipeline": self.pipeline.convert_to_model(),
+            "task_input_id": self.job_descriptor,
+            "task_input": self.definition,
+            "status": self.state,
+        }
+        if task_class == ModelledTaskExpanded:
+            init_args["created"] = self.created
+        return task_class(**init_args)

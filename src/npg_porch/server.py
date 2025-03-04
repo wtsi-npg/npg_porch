@@ -18,10 +18,15 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from fastapi import FastAPI
+from importlib import metadata
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, PackageLoader
 
+from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks
+from npg_porch.models import TaskExpanded
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
@@ -46,24 +51,37 @@ app = FastAPI(
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 
+env = Environment(loader=PackageLoader("npg_porch", "templates"))
+templates = Jinja2Templates(env=env)
+
+version = metadata.version("npg_porch")
+
 
 @app.get(
     "/",
     response_class=HTMLResponse,
     tags=["index"],
+    summary="Web page with listing of Porch tasks.",
+)
+async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
+    task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks()
+    return templates.TemplateResponse(
+        "index.j2",
+        {
+            "request": request,
+            "tasks": task_list,
+            "version": version,
+        },
+    )
+
+
+@app.get(
+    "/about",
+    response_class=HTMLResponse,
+    tags=["about"],
     summary="Web page with links to OpenAPI documentation.",
 )
-async def root():
-    return """
-    <html>
-        <head>
-            <title>About Pipeline Orchestration</title>
-        </head>
-        <body>
-            <h1>JSON API for Pipeline Orchestration</h1>
-            <p><a href="/docs">docs</a></p>
-            <p><a href="/redoc">redoc</a></p>
-            <p><a href="/api/v1/openapi.json">OpenAPI JSON Schema</a></p>
-        </body>
-    </html>
-    """
+async def about(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "about.j2", {"request": request, "version": version}
+    )
