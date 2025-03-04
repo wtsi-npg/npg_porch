@@ -10,12 +10,12 @@ from npg_porch.db.connection import session_factory, deploy_schema, close_engine
 
 @pytest.fixture
 def sync_session():
-    '''
+    """
     A synchronous sqlalchemy scoped session, connected to sqlite
     Use for tests that don't need a running npg_porch server
-    '''
+    """
 
-    sqlite_url = 'sqlite+pysqlite:///:memory:'
+    sqlite_url = "sqlite+pysqlite:///:memory:"
     engine = sqlalchemy.create_engine(sqlite_url)
     Base.metadata.create_all(engine)
     SessionFactory = sqlalchemy.orm.sessionmaker(bind=engine)
@@ -27,7 +27,7 @@ def sync_session():
 
 @pytest_asyncio.fixture
 async def async_session():
-    '''
+    """
     An asynchronous sqlalchemy session, connected to sqlite
 
     Requires an event loop and some awaiting to make it work, e.g.
@@ -38,9 +38,9 @@ async def async_session():
             await session.execute('SQL')
         ...
     ```
-    '''
-    if os.environ.get('NPG_PORCH_MODE') is None:
-        raise Exception('Do not run async tests without setting $ENV{NPG_PORCH_MODE}')
+    """
+    if os.environ.get("NPG_PORCH_MODE") is None:
+        raise Exception("Do not run async tests without setting $ENV{NPG_PORCH_MODE}")
     await deploy_schema()
     session = session_factory()
 

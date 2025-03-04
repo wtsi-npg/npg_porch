@@ -28,6 +28,7 @@ test = [
     "pytest",
     "pytest-asyncio",
     "requests",
+    "black",
     "flake8",
     "httpx"
 ]

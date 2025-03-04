@@ -11,14 +11,17 @@ from sqlalchemy.orm.exc import NoResultFound
 
 def give_me_a_pipeline(number: int = 1):
     return ModelledPipeline(
-        name=f'ptest {number}',
+        name=f"ptest {number}",
         version=str(number),
-        uri=f'file:///team117/test_pipeline{number}'
+        uri=f"file:///team117/test_pipeline{number}",
     )
 
 
-async def store_me_a_pipeline(dac: AsyncDbAccessor, number: int = 1) -> ModelledPipeline:
+async def store_me_a_pipeline(
+    dac: AsyncDbAccessor, number: int = 1
+) -> ModelledPipeline:
     return await dac.create_pipeline(give_me_a_pipeline(number))
+
 
 def test_data_accessor_setup(async_session):
     with pytest.raises(TypeError):
@@ -27,18 +30,20 @@ def test_data_accessor_setup(async_session):
     dac = AsyncDbAccessor(async_session)
     assert dac
 
+
 @pytest.mark.asyncio
 async def test_get_pipeline(db_accessor):
     with pytest.raises(TypeError):
         db_accessor.get_pipeline_by_name()
 
     with pytest.raises(NoResultFound):
-        await db_accessor.get_pipeline_by_name('not here')
+        await db_accessor.get_pipeline_by_name("not here")
 
-    pipeline = await db_accessor.get_pipeline_by_name('ptest one')
+    pipeline = await db_accessor.get_pipeline_by_name("ptest one")
     assert pipeline
-    assert pipeline.name == 'ptest one'
-    assert pipeline.version == '0.3.14'
+    assert pipeline.name == "ptest one"
+    assert pipeline.version == "0.3.14"
+
 
 @pytest.mark.asyncio
 async def test_get_all_pipelines(db_accessor):
@@ -46,23 +51,27 @@ async def test_get_all_pipelines(db_accessor):
     assert isinstance(pipes, list)
     assert len(pipes) == 1
 
-    assert pipes[0].name == 'ptest one'
+    assert pipes[0].name == "ptest one"
 
     # Make a second pipeline with the same version and different uri as the one in the fixture
-    await db_accessor.create_pipeline(ModelledPipeline(
-        name='ptest two',
-        version='0.3.14',
-        uri='test-the-other-one.com'
-    ))
+    await db_accessor.create_pipeline(
+        ModelledPipeline(
+            name="ptest two", version="0.3.14", uri="test-the-other-one.com"
+        )
+    )
 
-    pipes = await db_accessor.get_all_pipelines(version='0.3.14')
+    pipes = await db_accessor.get_all_pipelines(version="0.3.14")
     assert len(pipes) == 2
 
-    pipes = await db_accessor.get_all_pipelines(uri='test-the-other-one.com')
+    pipes = await db_accessor.get_all_pipelines(uri="test-the-other-one.com")
     assert len(pipes) == 1
 
-    pipes = await db_accessor.get_all_pipelines(version='0.3.14', uri='pipeline-test.com')
-    assert len(pipes) == 1, 'Both parameters work together, even if it does not reduce the results'
+    pipes = await db_accessor.get_all_pipelines(
+        version="0.3.14", uri="pipeline-test.com"
+    )
+    assert (
+        len(pipes) == 1
+    ), "Both parameters work together, even if it does not reduce the results"
 
 
 @pytest.mark.asyncio
@@ -82,46 +91,42 @@ async def test_create_pipeline(db_accessor):
         # Making duplicate provides a useful error
         await db_accessor.create_pipeline(pipeline)
 
-        assert re.match('UNIQUE constraint failed', exception.value)
+        assert re.match("UNIQUE constraint failed", exception.value)
+
 
 @pytest.mark.asyncio
 async def test_create_task(db_accessor):
     # create task with no pipeline
     with pytest.raises(ValidationError):
-        await db_accessor.create_task(
-            token_id=1,
-            task=Task(
-                task_input={'test': True}
-            )
-        )
+        await db_accessor.create_task(token_id=1, task=Task(task_input={"test": True}))
 
     saved_pipeline = await store_me_a_pipeline(db_accessor)
 
     task = Task(
-        pipeline=saved_pipeline,
-        task_input={'test': True},
-        status=TaskStateEnum.PENDING
+        pipeline=saved_pipeline, task_input={"test": True}, status=TaskStateEnum.PENDING
     )
 
-    (saved_task, created) = await db_accessor.create_task(
-        token_id=1,
-        task=task
-    )
+    (saved_task, created) = await db_accessor.create_task(token_id=1, task=task)
     assert created is True
-    assert saved_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
-    assert saved_task.pipeline.name == 'ptest 1'
-    assert saved_task.task_input_id, 'Input ID is created automatically'
+    assert (
+        saved_task.status == TaskStateEnum.PENDING
+    ), "State automatically set to PENDING"
+    assert saved_task.pipeline.name == "ptest 1"
+    assert saved_task.task_input_id, "Input ID is created automatically"
 
     events = await db_accessor.get_events_for_task(saved_task)
-    assert len(events) == 1, 'An event was created with a successful task creation'
-    assert events[0].change == 'Created', 'Message set'
+    assert len(events) == 1, "An event was created with a successful task creation"
+    assert events[0].change == "Created", "Message set"
 
     (existing_task, created) = await db_accessor.create_task(1, task)
     assert created is False
-    assert existing_task.status == TaskStateEnum.PENDING, 'State automatically set to PENDING'
-    assert existing_task.pipeline.name == 'ptest 1'
+    assert (
+        existing_task.status == TaskStateEnum.PENDING
+    ), "State automatically set to PENDING"
+    assert existing_task.pipeline.name == "ptest 1"
     events = await db_accessor.get_events_for_task(existing_task)
-    assert len(events) == 1, 'No additional events'
+    assert len(events) == 1, "No additional events"
+
 
 @pytest.mark.asyncio
 async def test_claim_tasks(db_accessor):
@@ -131,7 +136,7 @@ async def test_claim_tasks(db_accessor):
     with pytest.raises(NoResultFound) as exception:
         await db_accessor.claim_tasks(1, pipeline)
 
-        assert exception.value == 'Pipeline not found'
+        assert exception.value == "Pipeline not found"
 
     # Now try again with a pipeline but no tasks
     await db_accessor.create_pipeline(pipeline)
@@ -144,34 +149,35 @@ async def test_claim_tasks(db_accessor):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
-                task_input={'number': i + 1},
+                task_input={"number": i + 1},
                 pipeline=pipeline,
-                status=TaskStateEnum.PENDING
-            )
+                status=TaskStateEnum.PENDING,
+            ),
         )
 
     tasks = await db_accessor.claim_tasks(1, pipeline)
-    assert len(tasks) == 1, 'One task claimed successfully'
+    assert len(tasks) == 1, "One task claimed successfully"
     assert tasks[0].status == TaskStateEnum.CLAIMED
-    assert tasks[0].task_input == {'number': 1}
-    assert tasks[0].task_input_id, 'unique ID set'
+    assert tasks[0].task_input == {"number": 1}
+    assert tasks[0].task_input_id, "unique ID set"
 
     events = await db_accessor.get_events_for_task(tasks[0])
-    assert len(events) == 2, 'Event for task creation, event for claiming'
-    assert events[1].change == 'Task claimed'
+    assert len(events) == 2, "Event for task creation, event for claiming"
+    assert events[1].change == "Task claimed"
 
     tasks = await db_accessor.claim_tasks(1, pipeline, 8)
-    assert len(tasks) == 8, 'Lots of tasks claimed successfully'
-    assert tasks[0].task_input == {'number': 2}, 'Tasks claimed sequentially'
-    assert tasks[1].task_input == {'number': 3}, 'Tasks claimed sequentially'
+    assert len(tasks) == 8, "Lots of tasks claimed successfully"
+    assert tasks[0].task_input == {"number": 2}, "Tasks claimed sequentially"
+    assert tasks[1].task_input == {"number": 3}, "Tasks claimed sequentially"
 
     tasks = await db_accessor.claim_tasks(1, pipeline, 2)
-    assert len(tasks) == 1, 'Cannot claim more tasks than are available'
-    assert tasks[0].task_input == {'number': 10}, 'Last task is present'
+    assert len(tasks) == 1, "Cannot claim more tasks than are available"
+    assert tasks[0].task_input == {"number": 10}, "Last task is present"
+
 
 @pytest.mark.asyncio
 async def test_multi_claim_tasks(db_accessor):
-    'Test to ensure no cross-talk between multiple pipelines and tasks'
+    "Test to ensure no cross-talk between multiple pipelines and tasks"
 
     pipeline = await store_me_a_pipeline(db_accessor)
     other_pipeline = await store_me_a_pipeline(db_accessor, 2)
@@ -180,29 +186,29 @@ async def test_multi_claim_tasks(db_accessor):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
-                task_input={'number': i + 1},
+                task_input={"number": i + 1},
                 pipeline=pipeline,
-                status=TaskStateEnum.PENDING
-            )
+                status=TaskStateEnum.PENDING,
+            ),
         )
         await db_accessor.create_task(
             token_id=2,
             task=Task(
-                task_input={'number': i + 1},
+                task_input={"number": i + 1},
                 pipeline=other_pipeline,
-                status=TaskStateEnum.PENDING
-            )
+                status=TaskStateEnum.PENDING,
+            ),
         )
 
     tasks = await db_accessor.claim_tasks(1, pipeline, 3)
     for i, t in enumerate(tasks, 1):
         assert t.pipeline == pipeline
-        assert t.task_input == {'number': i}
+        assert t.task_input == {"number": i}
 
     tasks = await db_accessor.claim_tasks(1, other_pipeline, 3)
     for i, t in enumerate(tasks, 1):
         assert t.pipeline == other_pipeline
-        assert t.task_input == {'number': i}
+        assert t.task_input == {"number": i}
 
 
 @pytest.mark.asyncio
@@ -211,10 +217,10 @@ async def test_update_tasks(db_accessor):
     (saved_task, created) = await db_accessor.create_task(
         token_id=1,
         task=Task(
-            task_input={'number': 1},
+            task_input={"number": 1},
             pipeline=saved_pipeline,
-            status=TaskStateEnum.PENDING
-        )
+            status=TaskStateEnum.PENDING,
+        ),
     )
 
     saved_task.status = TaskStateEnum.DONE
@@ -223,34 +229,44 @@ async def test_update_tasks(db_accessor):
     assert modified_task == saved_task
 
     events = await db_accessor.get_events_for_task(modified_task)
-    assert len(events) == 2, 'Task was created, and then updated'
-    assert events[1].change == f'Task changed, new status {TaskStateEnum.DONE}'
+    assert len(events) == 2, "Task was created, and then updated"
+    assert events[1].change == f"Task changed, new status {TaskStateEnum.DONE}"
 
     # Try to change a task that doesn't exist
     with pytest.raises(NoResultFound):
-        await db_accessor.update_task(1, Task(task_input={'number': None},
-                                              pipeline=saved_pipeline,
-                                              status=TaskStateEnum.PENDING))
+        await db_accessor.update_task(
+            1,
+            Task(
+                task_input={"number": None},
+                pipeline=saved_pipeline,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
 
     # Try modifying something we're not allowed to
     saved_task.task_input_id = None
     with pytest.raises(Exception) as exception:
         await db_accessor.update_task(1, saved_task)
-        assert exception.value == 'Cannot change task definition. Submit a new task instead'
+        assert (
+            exception.value
+            == "Cannot change task definition. Submit a new task instead"
+        )
 
 
 @pytest.mark.asyncio
 async def test_get_tasks(db_accessor):
     all_tasks = await db_accessor.get_tasks()
 
-    assert len(all_tasks) == 2, 'All tasks currently includes two for one pipeline from the fixture'
+    assert (
+        len(all_tasks) == 2
+    ), "All tasks currently includes two for one pipeline from the fixture"
 
-    tasks = await db_accessor.get_tasks(pipeline_name = 'ptest one')
+    tasks = await db_accessor.get_tasks(pipeline_name="ptest one")
 
-    assert tasks == all_tasks, 'Filtering by pipeline name gives the same result'
+    assert tasks == all_tasks, "Filtering by pipeline name gives the same result"
 
-    tasks = await db_accessor.get_tasks(task_status = TaskStateEnum.FAILED)
-    assert len(tasks) == 0, 'No failed tasks yet'
+    tasks = await db_accessor.get_tasks(task_status=TaskStateEnum.FAILED)
+    assert len(tasks) == 0, "No failed tasks yet"
 
     # Create an additional pipeline and tasks
 
@@ -260,34 +276,34 @@ async def test_get_tasks(db_accessor):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
-                task_input={'number': i + 1},
+                task_input={"number": i + 1},
                 pipeline=pipeline,
-                status=TaskStateEnum.PENDING
-            )
+                status=TaskStateEnum.PENDING,
+            ),
         )
 
     all_tasks = await db_accessor.get_tasks()
-    assert len(all_tasks) == 5, 'Now we have five tasks in two pipelines'
+    assert len(all_tasks) == 5, "Now we have five tasks in two pipelines"
 
-    tasks = await db_accessor.get_tasks(pipeline_name = 'ptest one')
-    assert len(tasks) == 2, 'New tasks filtered out by pipeline name'
-    assert tasks[0].pipeline.name == 'ptest one'
+    tasks = await db_accessor.get_tasks(pipeline_name="ptest one")
+    assert len(tasks) == 2, "New tasks filtered out by pipeline name"
+    assert tasks[0].pipeline.name == "ptest one"
 
     # Change one task to another status
     await db_accessor.update_task(
-        token_id = 1,
+        token_id=1,
         task=Task(
-            task_input={'number': 3},
-            pipeline=pipeline,
-            status=TaskStateEnum.DONE
-        )
+            task_input={"number": 3}, pipeline=pipeline, status=TaskStateEnum.DONE
+        ),
     )
 
-    tasks = await db_accessor.get_tasks(task_status = TaskStateEnum.DONE)
-    assert len(tasks) == 1, 'Not done tasks are filtered'
-    assert tasks[0].task_input == {'number': 3}, 'Leaving only one'
+    tasks = await db_accessor.get_tasks(task_status=TaskStateEnum.DONE)
+    assert len(tasks) == 1, "Not done tasks are filtered"
+    assert tasks[0].task_input == {"number": 3}, "Leaving only one"
 
     # Check interaction of both constraints
 
-    tasks = await db_accessor.get_tasks(pipeline_name='ptest one', task_status=TaskStateEnum.DONE)
+    tasks = await db_accessor.get_tasks(
+        pipeline_name="ptest one", task_status=TaskStateEnum.DONE
+    )
     assert len(tasks) == 0, 'Pipeline "ptest one" has no DONE tasks'

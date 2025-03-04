@@ -37,8 +37,8 @@ router = APIRouter(
     tags=["pipelines"],
     responses={
         status.HTTP_403_FORBIDDEN: {"description": "Not authorised"},
-        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Unexpected error"}
-    }
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Unexpected error"},
+    },
 )
 
 
@@ -46,17 +46,16 @@ router = APIRouter(
     "/",
     response_model=list[Pipeline],
     summary="Get information about all pipelines.",
-    description='''
+    description="""
     Returns a list of pydantic Pipeline models.
     A uri and/or version filter can be used.
-    A valid token issued for any pipeline is required for authorisation.'''
+    A valid token issued for any pipeline is required for authorisation.""",
 )
 async def get_pipelines(
     uri: str | None = None,
     version: str | None = None,
-    db_accessor=Depends(get_DbAccessor)
+    db_accessor=Depends(get_DbAccessor),
 ) -> list[Pipeline]:
-
     return await db_accessor.get_all_pipelines(uri, version)
 
 
@@ -65,21 +64,20 @@ async def get_pipelines(
     response_model=Pipeline,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
     summary="Get information about one pipeline.",
-    description='''
+    description="""
     Returns a single pydantic Pipeline model if found.
-    A valid token issued for any pipeline is required for authorisation.'''
+    A valid token issued for any pipeline is required for authorisation.""",
 )
 async def get_pipeline(
-    pipeline_name: str,
-    db_accessor=Depends(get_DbAccessor)
+    pipeline_name: str, db_accessor=Depends(get_DbAccessor)
 ) -> Pipeline:
-
     pipeline = None
     try:
         pipeline = await db_accessor.get_pipeline_by_name(name=pipeline_name)
     except NoResultFound:
-        raise HTTPException(status_code=404,
-                            detail=f"Pipeline '{pipeline_name}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Pipeline '{pipeline_name}' not found"
+        )
     return pipeline
 
 
@@ -94,19 +92,22 @@ async def get_pipeline(
     summary="Create a new token for a pipeline and return it.",
     description="""
     Returns a token for the pipeline with the given name.
-    A valid token issued for any pipeline is required for authorisation."""
+    A valid token issued for any pipeline is required for authorisation.""",
 )
 async def create_pipeline_token(
     pipeline_name: str,
     token_desc: str,
     db_accessor=Depends(get_DbAccessor),
-    permissions=Depends(validate)
+    permissions=Depends(validate),
 ) -> Token:
     try:
-        token = await db_accessor.create_pipeline_token(name=pipeline_name, desc=token_desc)
+        token = await db_accessor.create_pipeline_token(
+            name=pipeline_name, desc=token_desc
+        )
     except NoResultFound:
-        raise HTTPException(status_code=404,
-                            detail=f"Pipeline '{pipeline_name}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Pipeline '{pipeline_name}' not found"
+        )
     return token
 
 
@@ -116,20 +117,21 @@ async def create_pipeline_token(
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Pipeline was created"},
-        status.HTTP_400_BAD_REQUEST: {"description": "Insufficient pipeline properties provided"},
-        status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"}
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Insufficient pipeline properties provided"
+        },
+        status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"},
     },
     summary="Create one pipeline record.",
-    description='''
+    description="""
     Using JSON data in the request, creates a new pipeline record.
-    A valid special power user token is required for authorisation.'''
+    A valid special power user token is required for authorisation.""",
 )
 async def create_pipeline(
     pipeline: Pipeline,
     db_accessor=Depends(get_DbAccessor),
-    permissions=Depends(validate)
+    permissions=Depends(validate),
 ) -> Pipeline:
-
     if permissions.role != RolesEnum.POWER_USER:
         logging.error(f"Role {RolesEnum.POWER_USER} is required")
         raise HTTPException(status_code=403)
@@ -138,14 +140,13 @@ async def create_pipeline(
         new_pipeline = await db_accessor.create_pipeline(pipeline)
     except IntegrityError as e:
         logging.error(str(e))
-        if (re.search('NOT NULL', str(e))):
+        if re.search("NOT NULL", str(e)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Pipeline must specify a name and URI and version'
+                detail="Pipeline must specify a name and URI and version",
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail='Pipeline already exists'
+                status_code=status.HTTP_409_CONFLICT, detail="Pipeline already exists"
             )
     return new_pipeline

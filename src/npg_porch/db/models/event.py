@@ -19,30 +19,26 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import sqlalchemy
-from sqlalchemy import (
-    Column, Integer, String, DateTime, ForeignKey
-)
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 from .base import Base
 
+
 class Event(Base):
-    '''
+    """
     A sequence of time-stamped state changes for each Task for
     reporting and metrics purposes.
-    '''
-    __tablename__ = 'event'
+    """
+
+    __tablename__ = "event"
     event_id = Column(Integer, primary_key=True, autoincrement=True)
-    task_id = Column(Integer, ForeignKey('task.task_id'))
+    task_id = Column(Integer, ForeignKey("task.task_id"))
     time = Column(DateTime, default=sqlalchemy.sql.functions.now())
     change = Column(String)
-    token_id = Column(Integer, ForeignKey('token.token_id'), nullable=False)
+    token_id = Column(Integer, ForeignKey("token.token_id"), nullable=False)
 
-    task = relationship(
-        'Task'
-    )
+    task = relationship("Task")
 
     # Consider adding 'order_by=Token.token_id'
-    token = relationship(
-        'Token', back_populates='events'
-    )
+    token = relationship("Token", back_populates="events")

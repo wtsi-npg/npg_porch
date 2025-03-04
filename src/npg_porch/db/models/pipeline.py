@@ -18,33 +18,31 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import (
-    Column, Integer, String
-)
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
 from .base import Base
 
 from npg_porch.models import Pipeline as ModeledPipeline
 
+
 class Pipeline(Base):
-    '''
+    """
     A black box of science
-    '''
-    __tablename__ = 'pipeline'
+    """
+
+    __tablename__ = "pipeline"
     pipeline_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
     repository_uri = Column(String, nullable=False)
     version = Column(String, nullable=False)
 
-    tasks = relationship('Task', back_populates='pipeline')
+    tasks = relationship("Task", back_populates="pipeline")
 
-    tokens = relationship('Token', back_populates='pipeline')
+    tokens = relationship("Token", back_populates="pipeline")
 
     def convert_to_model(self):
-        'Convert sqlalchemy object to npg_porch format'
+        "Convert sqlalchemy object to npg_porch format"
         return ModeledPipeline(
-            name=self.name,
-            version=self.version,
-            uri=self.repository_uri
+            name=self.name, version=self.version, uri=self.repository_uri
         )

@@ -19,46 +19,43 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import sqlalchemy
-from sqlalchemy import (
-    Column, Integer, String, DateTime, ForeignKey
-)
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 import uuid
 
 from .base import Base
 
+
 class Token(Base):
-    '''
+    """
     A string token issued to client applications for the purpose of
     authorizing them to perform certain actions.
-    '''
+    """
 
     def random_token(self):
-        '''
+        """
         Returns a 32 characters long random string. The chance of a
         collision is small.
-        '''
+        """
         return str(uuid.uuid4()).replace("-", "")
 
-    __tablename__ = 'token'
+    __tablename__ = "token"
     token_id = Column(Integer, primary_key=True, autoincrement=True)
     token = Column(String(length=32), unique=True, default=random_token)
     description = Column(String, nullable=False)
     # Nullable foreign key into the pipeline table to accommodate
     # admin tokens that are not linked to any particular pipeline.
     # Example: endpoint for creating a new pipeline record.
-    pipeline_id = Column(Integer, ForeignKey('pipeline.pipeline_id'),
-                         nullable=True)
+    pipeline_id = Column(Integer, ForeignKey("pipeline.pipeline_id"), nullable=True)
     date_issued = Column(DateTime, default=sqlalchemy.sql.functions.now())
     date_revoked = Column(DateTime, nullable=True)
 
-    pipeline = relationship(
-        'Pipeline', back_populates='tokens'
-    )
-    events = relationship(
-        'Event', back_populates='token'
-    )
+    pipeline = relationship("Pipeline", back_populates="tokens")
+    events = relationship("Event", back_populates="token")
 
     def __repr__(self):
         return "<Token(token_id='%i', description='%s', pipeline='%s')>" % (
-               self.token_id, self.description, self.pipeline.name)
+            self.token_id,
+            self.description,
+            self.pipeline.name,
+        )
