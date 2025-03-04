@@ -33,3 +33,5 @@ test = [
     "flake8",
     "httpx"
 ]
+
+[tool.setuptools_scm]
