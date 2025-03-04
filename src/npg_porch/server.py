@@ -22,6 +22,7 @@ import asyncio
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, PackageLoader
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.db.models import Pipeline, Task
 
@@ -49,8 +50,8 @@ app = FastAPI(
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 
-templates = Jinja2Templates(directory="src/npg_porch/templates")
-
+env = Environment(loader=PackageLoader('npg_porch', 'templates'))
+templates = Jinja2Templates(env=env)
 
 @app.get(
     "/",
@@ -72,7 +73,7 @@ async def root(request: Request,
     max_page = max_page if max_page > min_page else min_page
     page = min_page if page < min_page \
         else max_page if page > max_page \
-        else page  # need to clamp page number
+        else page  # need to clamp page number between min_page and max_page
 
     task_response = await db_accessor.get_ordered_tasks(filters=filters,
                                                         limit=limit,

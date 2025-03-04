@@ -253,8 +253,7 @@ class AsyncDbAccessor:
     async def get_ordered_tasks(self,
                                 filters: dict,
                                 limit: int,
-                                page: int,
-                                date_range: tuple[datetime.date, datetime.date] | None = None,
+                                page: int
                                 ) -> list[TaskExpanded]:
         """
         Gets tasks in order of their most recent status change, with a provided
