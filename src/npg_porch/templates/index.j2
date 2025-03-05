@@ -30,6 +30,65 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if max_page_number > 1 %}
+      <nav aria-label="Pagination">
+        <ul class="pagination">
+          {% if current_page > 3 %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ request.url.include_query_params(page=1) }}"
+              >
+                1
+              </a>
+            </li>
+          {% endif %}
+          {% if current_page > 5 %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ request.url.include_query_params(page=current_page-5) }}"
+                 aria-label="Skip-5-pages-left"
+              >
+                <span aria-hidden="true">&laquo</span>
+              </a>
+            </li>
+          {% endif %}
+          {% for p in range(current_page - 2, current_page + 3) %}
+            {% if p > 0 and p < max_page_number + 1 %}
+              {% if p == current_page %}
+                <li class="page-item active" aria-current="page">
+              {% else %}
+                <li class="page-item">
+              {% endif %}
+                <a class="page-link"
+                   href="{{ request.url.include_query_params(page=p) }}"
+                >
+                  {{ p }}
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if current_page < max_page_number - 4 %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ request.url.include_query_params(page=current_page+5) }}"
+                 aria-label="Skip-5-pages-right"
+              >
+                <span aria-hidden="true">&raquo</span>
+              </a>
+            </li>
+          {% endif %}
+          {% if current_page < max_page_number - 2 %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ request.url.include_query_params(page=max_page_number) }}"
+              >
+                {{ max_page_number }}
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
 
     <div class="text-center">Copyright Genome Research Ltd 2025 - version: {{ version }} - <a href="/about">about</a></div>
   </body>
