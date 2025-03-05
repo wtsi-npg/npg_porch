@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.functions import count
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
@@ -32,7 +33,6 @@ from npg_porch.db.models import Task as DbTask
 from npg_porch.db.models import Token as DbToken
 from npg_porch.models import Pipeline, Task, TaskStateEnum, TaskExpanded
 from npg_porch.models.token import Token
-from sqlalchemy.sql.functions import count
 
 
 class AsyncDbAccessor:
@@ -235,7 +235,7 @@ class AsyncDbAccessor:
         return [t.convert_to_model() for t in tasks]
 
     async def get_expanded_tasks(
-        self, page: PositiveInt, limit: PositiveInt = 20
+        self, page: PositiveInt = 1, limit: PositiveInt = 20
     ) -> list[TaskExpanded]:
         """
         Gets information about tasks including their creation date, with latest
@@ -256,8 +256,8 @@ class AsyncDbAccessor:
 
     async def count_tasks(self) -> int:
         query = select(count()).select_from(DbTask)
-        result = await self.session.execute(query)
-        return result.scalar()
+        count_result = await self.session.execute(query)
+        return count_result.scalar()
 
     async def get_db_task(
         self,

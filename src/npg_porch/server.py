@@ -69,14 +69,16 @@ version = metadata.version("npg_porch")
 async def root(
     request: Request,
     page: PositiveInt = 1,
-    limit: PositiveInt = 20,
+    results_per_page: PositiveInt = 20,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
-    page_count = math.ceil(await db_accessor.count_tasks() / limit)
-    if page > page_count:
-        return RedirectResponse(url=request.url.include_query_params(page=page_count))
+    max_page_number = math.ceil(await db_accessor.count_tasks() / results_per_page)
+    if page > max_page_number:
+        return RedirectResponse(
+            url=request.url.include_query_params(page=max_page_number)
+        )
     task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks(
-        page=page, limit=limit
+        page=page, limit=results_per_page
     )
 
     return templates.TemplateResponse(
@@ -84,7 +86,7 @@ async def root(
         {
             "request": request,
             "tasks": task_list,
-            "page_count": page_count,
+            "max_page_number": max_page_number,
             "current_page": page,
             "version": version,
         },
