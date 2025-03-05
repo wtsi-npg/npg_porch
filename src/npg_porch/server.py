@@ -1,4 +1,4 @@
-# Copyright (C) 2021, 2022 Genome Research Ltd.
+# Copyright (C) 2021, 2022, 2025 Genome Research Ltd.
 #
 # Author: Kieron Taylor kt19@sanger.ac.uk
 # Author: Marina Gourtovaia mg8@sanger.ac.uk
@@ -19,10 +19,13 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from importlib import metadata
+
+import math
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import Response, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
+from pydantic import PositiveInt
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks
@@ -63,13 +66,26 @@ version = metadata.version("npg_porch")
     tags=["index"],
     summary="Web page with listing of Porch tasks.",
 )
-async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
-    task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks()
+async def root(
+    request: Request,
+    page: PositiveInt = 1,
+    limit: PositiveInt = 20,
+    db_accessor=Depends(get_DbAccessor),
+) -> Response:
+    page_count = math.ceil(await db_accessor.count_tasks() / limit)
+    if page > page_count:
+        return RedirectResponse(url=request.url.include_query_params(page=page_count))
+    task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks(
+        page=page, limit=limit
+    )
+
     return templates.TemplateResponse(
         "index.j2",
         {
             "request": request,
             "tasks": task_list,
+            "page_count": page_count,
+            "current_page": page,
             "version": version,
         },
     )

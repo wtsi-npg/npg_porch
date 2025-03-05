@@ -30,6 +30,59 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if page_count > 1 %}
+      <nav aria-label="Pagination">
+        <ul class="pagination">
+          {% if current_page < 5 %}
+            <li class="page-item disabled">
+              <a class="page-link" aria-label="Skip-left">
+                <span aria-hidden="true">&laquo</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{request.url.include_query_params(page=current_page-4) }}"
+                 aria-label="Skip-left"
+              >
+                <span aria-hidden="true">&laquo</span>
+              </a>
+            </li>
+          {% endif %}
+          {% for p in range(current_page - 3, current_page + 4) %}
+            {% if p > 0 and p < page_count + 1 %}
+              {% if p == current_page %}
+                <li class="page-item active" aria-current="page">
+              {% else %}
+                <li class="page-item">
+              {% endif %}
+                <a class="page-link"
+                   href="{{ request.url.include_query_params(page=p) }}"
+                >
+                  {{ p }}
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if current_page > page_count - 4 %}
+            <li class="page-item disabled">
+              <a class="page-link" aria-label="Skip-right">
+                <span aria-hidden="true">&raquo</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ request.url.include_query_params(page=current_page+4) }}"
+                 aria-label="Skip-right"
+              >
+                <span aria-hidden="true">&raquo</span>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
 
     <div class="text-center">Copyright Genome Research Ltd 2025 - version: {{ version }} - <a href="/about">about</a></div>
   </body>

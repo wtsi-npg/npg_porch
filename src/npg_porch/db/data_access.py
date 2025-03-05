@@ -20,6 +20,7 @@
 
 import logging
 
+from pydantic import PositiveInt
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
@@ -31,6 +32,7 @@ from npg_porch.db.models import Task as DbTask
 from npg_porch.db.models import Token as DbToken
 from npg_porch.models import Pipeline, Task, TaskStateEnum, TaskExpanded
 from npg_porch.models.token import Token
+from sqlalchemy.sql.functions import count
 
 
 class AsyncDbAccessor:
@@ -232,7 +234,9 @@ class AsyncDbAccessor:
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 
-    async def get_expanded_tasks(self) -> list[TaskExpanded]:
+    async def get_expanded_tasks(
+        self, page: PositiveInt, limit: PositiveInt = 20
+    ) -> list[TaskExpanded]:
         """
         Gets information about tasks including their creation date, with latest
         ordered by latest creation date.
@@ -242,11 +246,18 @@ class AsyncDbAccessor:
             .join(DbTask.pipeline)
             .options(joinedload(DbTask.pipeline))
             .order_by(DbTask.created.desc())
+            .limit(limit)
+            .offset((page - 1) * limit)
         )
 
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model(TaskExpanded) for t in tasks]
+
+    async def count_tasks(self) -> int:
+        query = select(count()).select_from(DbTask)
+        result = await self.session.execute(query)
+        return result.scalar()
 
     async def get_db_task(
         self,
