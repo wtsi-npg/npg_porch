@@ -8,6 +8,17 @@
   </head>
   <body>
     <h3>Porch Tasks</h3>
+    <form method="get" action="/">
+      <label for="pipeline_selection">Pipeline Selection:</label>
+      <select class="form-select" name="pipeline_name" id="pipeline_selection">
+        <option disabled>--Pipeline Selection--</option>
+        <option {{ "selected" if not "pipeline_name" in request.query_params.keys() }} value="">All</option>
+        {% for pipeline in pipelines %}
+          <option {{ "selected" if request.query_params.get("pipeline_name") == pipeline.name }} value={{ pipeline.name }}>{{ pipeline.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="submit" value="Submit">
+    </form>
     <table class="table">
       <thead>
         <tr>

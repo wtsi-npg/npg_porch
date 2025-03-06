@@ -21,7 +21,7 @@
 from importlib import metadata
 
 import math
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import Response, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
@@ -29,7 +29,7 @@ from pydantic import PositiveInt
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks
-from npg_porch.models import TaskExpanded
+from npg_porch.models import TaskExpanded, Pipeline
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
@@ -70,21 +70,26 @@ async def root(
     request: Request,
     page: PositiveInt = 1,
     results_per_page: PositiveInt = 20,
+    pipeline_name: str = None,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
-    max_page_number = math.ceil(await db_accessor.count_tasks() / results_per_page)
-    if page > max_page_number:
+    max_page_number = math.ceil(
+        await db_accessor.count_tasks(pipeline_name) / results_per_page
+    )
+    if page > max_page_number > 0:
         return RedirectResponse(
             url=request.url.include_query_params(page=max_page_number)
         )
     task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks(
-        page=page, limit=results_per_page
+        page=page, limit=results_per_page, pipeline_name=pipeline_name
     )
+    pipeline_list: list[Pipeline] = await db_accessor.get_all_pipelines()
 
     return templates.TemplateResponse(
         "index.j2",
         {
             "request": request,
+            "pipelines": pipeline_list,
             "tasks": task_list,
             "max_page_number": max_page_number,
             "current_page": page,
