@@ -21,7 +21,7 @@
 import logging
 
 from pydantic import PositiveInt
-from sqlalchemy import select
+from sqlalchemy import select, Select, Column
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
@@ -235,7 +235,7 @@ class AsyncDbAccessor:
         return [t.convert_to_model() for t in tasks]
 
     async def get_expanded_tasks(
-        self, page: PositiveInt = 1, limit: PositiveInt = 20
+        self, page: PositiveInt = 1, limit: PositiveInt = 20, pipeline_name: str = None
     ) -> list[TaskExpanded]:
         """
         Gets information about tasks including their creation date, with latest
@@ -250,12 +250,19 @@ class AsyncDbAccessor:
             .offset((page - 1) * limit)
         )
 
+        if pipeline_name:
+            query = query.where(DbPipeline.name == pipeline_name)
+
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model(TaskExpanded) for t in tasks]
 
-    async def count_tasks(self) -> int:
-        query = select(count()).select_from(DbTask)
+    async def count_tasks(self, pipeline_name: str = None) -> int:
+        query = select(count()).select_from(DbTask).join(DbTask.pipeline)
+
+        if pipeline_name:
+            query = query.where(DbPipeline.name == pipeline_name)
+
         count_result = await self.session.execute(query)
         return count_result.scalar()
 

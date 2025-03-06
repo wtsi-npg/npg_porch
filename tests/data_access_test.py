@@ -314,9 +314,37 @@ async def test_get_expanded_tasks(db_accessor, async_tasks):
         len(expanded_tasks) == 3
     ), "If a page cannot be filled, the remaining tasks are returned"
 
+    pipeline, tasks = await store_pipeline_with_tasks(db_accessor, tasks_number=10)
+
+    expanded_tasks = await db_accessor.get_expanded_tasks()
+
+    assert (
+        len(expanded_tasks) == 20
+    ), "Tasks from all pipelines are returned by default, up to the limit"
+
+    expanded_tasks_pipeline = await db_accessor.get_expanded_tasks(
+        pipeline_name=pipeline.name
+    )
+
+    assert (
+        len(expanded_tasks_pipeline) == 10
+    ), "Only tasks from the filtered pipeline are returned"
+
 
 @pytest.mark.asyncio
 async def test_count_tasks(db_accessor, async_tasks):
     task_count = await db_accessor.count_tasks()
 
     assert task_count == 12, "Tasks are counted correctly"
+
+    pipeline, tasks = await store_pipeline_with_tasks(db_accessor, tasks_number=10)
+
+    task_count = await db_accessor.count_tasks()
+
+    assert task_count == 22, "Tasks from all pipelines are counted by default"
+
+    task_count_pipeline = await db_accessor.count_tasks(pipeline.name)
+
+    assert (
+        task_count_pipeline == 10
+    ), "Only tasks from the filtered pipeline are counted"
