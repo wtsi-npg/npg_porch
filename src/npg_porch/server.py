@@ -70,9 +70,13 @@ async def root(
     request: Request,
     page: PositiveInt = 1,
     results_per_page: PositiveInt = 20,
-    pipeline_name: str = None,
+    pipeline_name: str = "",
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
+    url = redirect_default_arg(request.url, "pipeline_name", pipeline_name, "")
+    url = redirect_default_arg(url, "page", page, 1)
+    if url != request.url:
+        return RedirectResponse(url=url)
     max_page_number = math.ceil(
         await db_accessor.count_tasks(pipeline_name) / results_per_page
     )
@@ -108,3 +112,12 @@ async def about(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         "about.j2", {"request": request, "version": version}
     )
+
+
+def redirect_default_arg(
+    url, argument_name, argument_value, argument_default: any = None
+) -> str:
+    if argument_value == argument_default:
+        return url.remove_query_params(argument_name)
+    else:
+        return url
