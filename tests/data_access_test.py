@@ -23,6 +23,24 @@ async def store_me_a_pipeline(
     return await dac.create_pipeline(give_me_a_pipeline(number))
 
 
+async def store_pipeline_with_tasks(
+    dac: AsyncDbAccessor, pipeline_number: int = 1, tasks_number: int = 1
+):
+    pipeline = await store_me_a_pipeline(dac, pipeline_number)
+    tasks = []
+    for i in range(tasks_number):
+        task, created = await dac.create_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
+        tasks.append({"task": task, "created": created})
+    return pipeline, tasks
+
+
 def test_data_accessor_setup(async_session):
     with pytest.raises(TypeError):
         dac = AsyncDbAccessor()
@@ -179,26 +197,12 @@ async def test_claim_tasks(db_accessor):
 async def test_multi_claim_tasks(db_accessor):
     "Test to ensure no cross-talk between multiple pipelines and tasks"
 
-    pipeline = await store_me_a_pipeline(db_accessor)
-    other_pipeline = await store_me_a_pipeline(db_accessor, 2)
-
-    for i in range(3):
-        await db_accessor.create_task(
-            token_id=1,
-            task=Task(
-                task_input={"number": i + 1},
-                pipeline=pipeline,
-                status=TaskStateEnum.PENDING,
-            ),
-        )
-        await db_accessor.create_task(
-            token_id=2,
-            task=Task(
-                task_input={"number": i + 1},
-                pipeline=other_pipeline,
-                status=TaskStateEnum.PENDING,
-            ),
-        )
+    pipeline, pipeline_tasks = await store_pipeline_with_tasks(
+        db_accessor, tasks_number=3
+    )
+    other_pipeline, other_tasks = await store_pipeline_with_tasks(
+        db_accessor, pipeline_number=2, tasks_number=3
+    )
 
     tasks = await db_accessor.claim_tasks(1, pipeline, 3)
     for i, t in enumerate(tasks, 1):
@@ -213,15 +217,8 @@ async def test_multi_claim_tasks(db_accessor):
 
 @pytest.mark.asyncio
 async def test_update_tasks(db_accessor):
-    saved_pipeline = await store_me_a_pipeline(db_accessor)
-    (saved_task, created) = await db_accessor.create_task(
-        token_id=1,
-        task=Task(
-            task_input={"number": 1},
-            pipeline=saved_pipeline,
-            status=TaskStateEnum.PENDING,
-        ),
-    )
+    saved_pipeline, saved_tasks = await store_pipeline_with_tasks(db_accessor)
+    saved_task = saved_tasks[0]["task"]
 
     saved_task.status = TaskStateEnum.DONE
     modified_task = await db_accessor.update_task(1, saved_task)
@@ -270,17 +267,7 @@ async def test_get_tasks(db_accessor):
 
     # Create an additional pipeline and tasks
 
-    pipeline = await store_me_a_pipeline(db_accessor, 2)
-
-    for i in range(3):
-        await db_accessor.create_task(
-            token_id=1,
-            task=Task(
-                task_input={"number": i + 1},
-                pipeline=pipeline,
-                status=TaskStateEnum.PENDING,
-            ),
-        )
+    pipeline, tasks = await store_pipeline_with_tasks(db_accessor, 2, 3)
 
     all_tasks = await db_accessor.get_tasks()
     assert len(all_tasks) == 5, "Now we have five tasks in two pipelines"
