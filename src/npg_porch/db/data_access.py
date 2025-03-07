@@ -24,6 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.functions import count
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
@@ -247,6 +248,11 @@ class AsyncDbAccessor:
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
         return [t.convert_to_model(TaskExpanded) for t in tasks]
+
+    async def count_tasks(self) -> int:
+        query = select(count()).select_from(DbTask)
+        count_result = await self.session.execute(query)
+        return count_result.scalar()
 
     async def get_db_task(
         self,

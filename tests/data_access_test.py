@@ -307,3 +307,17 @@ async def test_get_tasks(db_accessor):
         pipeline_name="ptest one", task_status=TaskStateEnum.DONE
     )
     assert len(tasks) == 0, 'Pipeline "ptest one" has no DONE tasks'
+
+
+@pytest.mark.asyncio
+async def test_get_expanded_tasks(db_accessor, async_tasks):
+    expanded_tasks = await db_accessor.get_expanded_tasks()
+
+    assert len(expanded_tasks) == 12, "Gets all tasks"
+
+
+@pytest.mark.asyncio
+async def test_count_tasks(db_accessor, async_tasks):
+    task_count = await db_accessor.count_tasks()
+
+    assert task_count == 12, "Tasks are counted correctly"
