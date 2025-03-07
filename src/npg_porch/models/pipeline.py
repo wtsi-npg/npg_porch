@@ -20,21 +20,18 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class Pipeline(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
-        default = None,
-        title='Pipeline Name',
-        description='A user-controlled name for the pipeline'
+        default=None,
+        title="Pipeline Name",
+        description="A user-controlled name for the pipeline",
     )
     uri: str | None = Field(
-        default = None,
-        title='URI',
-        description='URI to bootstrap the pipeline code'
+        default=None, title="URI", description="URI to bootstrap the pipeline code"
     )
     version: str | None = Field(
-        default = None,
-        title='Version',
-        description='Pipeline version to use with URI'
+        default=None, title="Version", description="Pipeline version to use with URI"
     )

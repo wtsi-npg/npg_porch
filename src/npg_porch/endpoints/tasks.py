@@ -34,7 +34,6 @@ from npg_porch.models.task import Task, TaskStateEnum
 
 
 def _validate_request(permission, pipeline):
-
     try:
         permission.validate_pipeline(pipeline)
     except PermissionValidationException as e:
@@ -42,8 +41,9 @@ def _validate_request(permission, pipeline):
         logger.warning(str(e))
         raise HTTPException(
             status_code=403,
-            detail=("Given credentials cannot be used for"
-                    f" pipeline '{pipeline.name}'")
+            detail=(
+                "Given credentials cannot be used for" f" pipeline '{pipeline.name}'"
+            ),
         )
 
         pass
@@ -54,8 +54,8 @@ router = APIRouter(
     tags=["tasks"],
     responses={
         status.HTTP_403_FORBIDDEN: {"description": "Not authorised"},
-        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Unexpected error"}
-    }
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Unexpected error"},
+    },
 )
 
 
@@ -63,15 +63,14 @@ router = APIRouter(
     "/",
     response_model=list[Task],
     summary="Returns all tasks, and can be filtered to task status or pipeline name",
-    description='''
+    description="""
     Return all tasks. The list of tasks can be filtered by supplying a pipeline
-    name and/or task status'''
+    name and/or task status""",
 )
 async def get_tasks(
     pipeline_name: str | None = None,
     status: TaskStateEnum | None = None,
     db_accessor=Depends(get_DbAccessor),
-    permission=Depends(validate)
 ) -> list[Task]:
     print(pipeline_name, status)
     return await db_accessor.get_tasks(pipeline_name=pipeline_name, task_status=status)
@@ -83,11 +82,13 @@ async def get_tasks(
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Task creation was successful"},
-        status.HTTP_200_OK: {"description": "A task with the same signature already exists"},
+        status.HTTP_200_OK: {
+            "description": "A task with the same signature already exists"
+        },
         status.HTTP_404_NOT_FOUND: {"description": "Pipeline does not exist."},
     },
     summary="Creates one task record.",
-    description='''
+    description="""
     Given a Task object, creates a database record for it and returns
     a new Task object. The response HTTP status is 201 'Created'. The
     new task is assigned pending status, ie becomes available for claiming.
@@ -98,23 +99,21 @@ async def get_tasks(
     database.
 
     The pipeline specified by the `pipeline` attribute of the Task object
-    should exist. If it does not exist, return status 404 'Not found'.'''
+    should exist. If it does not exist, return status 404 'Not found'.""",
 )
 async def create_task(
-    task: Task,
-    db_accessor=Depends(get_DbAccessor),
-    permission=Depends(validate)
+    task: Task, db_accessor=Depends(get_DbAccessor), permission=Depends(validate)
 ) -> Task:
-
     _validate_request(permission, task.pipeline)
 
     try:
         (task, created) = await db_accessor.create_task(
-            token_id=permission.requestor_id,
-            task=task
+            token_id=permission.requestor_id, task=task
         )
     except NoResultFound:
-        raise HTTPException(status_code=404, detail='Failed to find pipeline for this task')
+        raise HTTPException(
+            status_code=404, detail="Failed to find pipeline for this task"
+        )
 
     if created is True:
         return task
@@ -128,24 +127,20 @@ async def create_task(
         status.HTTP_200_OK: {"description": "Task was modified"},
     },
     summary="Update one task.",
-    description='''
+    description="""
     Given a Task object, updates the status of the task in the database
     to the value of the status in this Task object.
 
-    If the task does not exist, status 404 'Not found' is returned.'''
+    If the task does not exist, status 404 'Not found' is returned.""",
 )
 async def update_task(
-    task: Task,
-    db_accessor=Depends(get_DbAccessor),
-    permission=Depends(validate)
+    task: Task, db_accessor=Depends(get_DbAccessor), permission=Depends(validate)
 ) -> Task:
-
     _validate_request(permission, task.pipeline)
 
     try:
         changed_task = await db_accessor.update_task(
-            token_id=permission.requestor_id,
-            task=task
+            token_id=permission.requestor_id, task=task
         )
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -157,10 +152,12 @@ async def update_task(
     "/claim",
     response_model=list[Task],
     responses={
-        status.HTTP_200_OK: {"description": "Receive a list of tasks that have been claimed"}
+        status.HTTP_200_OK: {
+            "description": "Receive a list of tasks that have been claimed"
+        }
     },
     summary="Claim tasks for a particular pipeline.",
-    description='''
+    description="""
     Arguments - the Pipeline object and the maximum number of tasks
     to retrieve and claim, the latter defaults to 1 if not given.
 
@@ -172,20 +169,17 @@ async def update_task(
 
     The pipeline object returned within each of the tasks is consistent
     with the pipeline object in the payload, but has all possible
-    attributes defined (uri, version).'''
+    attributes defined (uri, version).""",
 )
 async def claim_task(
     pipeline: Pipeline,
     num_tasks: Annotated[int | None, Query(gt=0)] = 1,
     db_accessor=Depends(get_DbAccessor),
-    permission=Depends(validate)
+    permission=Depends(validate),
 ) -> list[Task]:
-
     _validate_request(permission, pipeline)
     tasks = await db_accessor.claim_tasks(
-        token_id=permission.requestor_id,
-        pipeline=pipeline,
-        claim_limit=num_tasks
+        token_id=permission.requestor_id, pipeline=pipeline, claim_limit=num_tasks
     )
 
     return tasks

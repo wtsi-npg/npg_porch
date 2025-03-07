@@ -24,44 +24,42 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.functions import count
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
 from npg_porch.db.models import Task as DbTask
 from npg_porch.db.models import Token as DbToken
-from npg_porch.models import Pipeline, Task, TaskStateEnum
+from npg_porch.models import Pipeline, Task, TaskStateEnum, TaskExpanded
 from npg_porch.models.token import Token
 
 
 class AsyncDbAccessor:
-    '''
+    """
     A data access class for routine sqlalchemy operations
 
     Instantiate with a sqlalchemy AsyncSession
-    '''
+    """
 
     def __init__(self, session):
         self.session = session
         self.logger = logging.getLogger(__name__)
 
     async def get_pipeline_by_name(self, name: str) -> Pipeline:
-
         pipeline = await self._get_pipeline_db_object(name)
         return pipeline.convert_to_model()
 
     async def _get_pipeline_db_object(self, name: str) -> Pipeline:
-
         pipeline_result = await self.session.execute(
-            select(DbPipeline)
-            .filter_by(name=name)
+            select(DbPipeline).filter_by(name=name)
         )
-        return pipeline_result.scalar_one() # errors if no rows
+        return pipeline_result.scalar_one()  # errors if no rows
 
     async def _get_pipeline_db_objects(
         self,
         name: str | None = None,
         version: str | None = None,
-        uri: str | None = None
+        uri: str | None = None,
     ) -> list[Pipeline]:
         query = select(DbPipeline)
         if name:
@@ -75,9 +73,7 @@ class AsyncDbAccessor:
         return pipeline_result.scalars().all()
 
     async def get_all_pipelines(
-        self,
-        uri: str | None = None,
-        version: str | None = None
+        self, uri: str | None = None, version: str | None = None
     ) -> list[Pipeline]:
         pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
         return [pipe.convert_to_model() for pipe in pipelines]
@@ -87,9 +83,7 @@ class AsyncDbAccessor:
         assert isinstance(pipeline, Pipeline)
 
         pipe = DbPipeline(
-            name=pipeline.name,
-            version=pipeline.version,
-            repository_uri=pipeline.uri
+            name=pipeline.name, version=pipeline.version, repository_uri=pipeline.uri
         )
 
         session.add(pipe)
@@ -107,19 +101,17 @@ class AsyncDbAccessor:
         return Token(name=db_pipeline.name, token=db_token.token, description=desc)
 
     async def create_task(self, token_id: int, task: Task) -> tuple[Task, bool]:
-        '''Given a task definition creates a task.
+        """Given a task definition creates a task.
 
         If the task does not exist, a tuple consisting of Task object for a
         newly created database record and a boolean True object is returned.
 
         If the task already exists, a tuple consisting of Task object for an
         existing database record and a boolean True object is returned.
-        '''
-        self.logger.debug('CREATE TASK: ' + str(task))
+        """
+        self.logger.debug("CREATE TASK: " + str(task))
         session = self.session
-        db_pipeline = await self._get_pipeline_db_object(
-            task.pipeline.name
-        )
+        db_pipeline = await self._get_pipeline_db_object(task.pipeline.name)
 
         task.status = TaskStateEnum.PENDING
         t = self.convert_task_to_db(task, db_pipeline)
@@ -127,11 +119,7 @@ class AsyncDbAccessor:
         try:
             nested = await session.begin_nested()
             session.add(t)
-            event = Event(
-                task=t,
-                token_id = token_id,
-                change='Created'
-            )
+            event = Event(task=t, token_id=token_id, change="Created")
             t.events.append(event)
             await session.commit()
         except IntegrityError:
@@ -152,12 +140,11 @@ class AsyncDbAccessor:
 
         try:
             pipeline_result = await session.execute(
-                select(DbPipeline)
-                .filter_by(name=pipeline.name)
+                select(DbPipeline).filter_by(name=pipeline.name)
             )
             pipeline = pipeline_result.scalar_one()
         except NoResultFound:
-            raise NoResultFound('Pipeline not found')
+            raise NoResultFound("Pipeline not found")
 
         potential_tasks = await session.execute(
             select(DbTask)
@@ -175,9 +162,7 @@ class AsyncDbAccessor:
         try:
             for task in claimed_tasks:
                 task.state = TaskStateEnum.CLAIMED
-                event = Event(
-                    change='Task claimed', token_id=token_id, task=task
-                )
+                event = Event(change="Task claimed", token_id=token_id, task=task)
                 session.add(event)
             await session.commit()
         except IntegrityError as e:
@@ -191,16 +176,16 @@ class AsyncDbAccessor:
         return work
 
     async def update_task(self, token_id: int, task: Task) -> Task:
-        '''
+        """
         Allows the modification of state of a task.
         Other fields cannot be changed.
-        '''
+        """
         session = self.session
         # Get the matching task from the DB
         try:
             db_pipe = await self._get_pipeline_db_object(task.pipeline.name)
         except NoResultFound:
-            raise NoResultFound('Pipeline not found')
+            raise NoResultFound("Pipeline not found")
 
         try:
             task_result = await session.execute(
@@ -208,34 +193,35 @@ class AsyncDbAccessor:
                 .filter_by(pipeline=db_pipe)
                 .filter_by(job_descriptor=task.generate_task_id())
             )
-            og_task = task_result.scalar_one() # Doesn't raise exception if no rows?!
+            og_task = task_result.scalar_one()  # Doesn't raise exception if no rows?!
         except NoResultFound:
-            raise NoResultFound('Task to be modified could not be found')
+            raise NoResultFound("Task to be modified could not be found")
 
         new_status = task.status
         # Might be the same as the old one, but save and log nevertheless
         # in case we have some heart beat status in future.
         og_task.state = new_status
-        event = Event(change=f'Task changed, new status {new_status}',
-                             token_id=token_id, task=og_task)
+        event = Event(
+            change=f"Task changed, new status {new_status}",
+            token_id=token_id,
+            task=og_task,
+        )
         session.add(event)
         await session.commit()
 
         return og_task.convert_to_model()
 
     async def get_tasks(
-        self,
-        pipeline_name: str | None = None,
-        task_status: TaskStateEnum | None = None
+        self, pipeline_name: str | None = None, task_status: TaskStateEnum | None = None
     ) -> list[Task]:
-        '''
+        """
         Gets all the tasks.
 
         Can filter tasks by pipeline name and task status in order to be more useful.
-        '''
-        query = select(DbTask)\
-            .join(DbTask.pipeline)\
-            .options(joinedload(DbTask.pipeline))
+        """
+        query = (
+            select(DbTask).join(DbTask.pipeline).options(joinedload(DbTask.pipeline))
+        )
 
         if pipeline_name:
             query = query.where(DbPipeline.name == pipeline_name)
@@ -247,17 +233,40 @@ class AsyncDbAccessor:
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 
+    async def get_expanded_tasks(self) -> list[TaskExpanded]:
+        """
+        Gets information about tasks including their creation date, with latest
+        ordered by latest creation date.
+        """
+        query = (
+            select(DbTask)
+            .join(DbTask.pipeline)
+            .options(joinedload(DbTask.pipeline))
+            .order_by(DbTask.created.desc())
+        )
+
+        task_result = await self.session.execute(query)
+        tasks = task_result.scalars().all()
+        return [t.convert_to_model(TaskExpanded) for t in tasks]
+
+    async def count_tasks(self) -> int:
+        query = select(count()).select_from(DbTask)
+        count_result = await self.session.execute(query)
+        return count_result.scalar()
+
     async def get_db_task(
         self,
         pipeline_name: str,
         job_descriptor: str,
     ) -> DbTask:
-        '''Get the task.'''
-        query = select(DbTask)\
-            .join(DbTask.pipeline)\
-            .options(joinedload(DbTask.pipeline))\
-            .where(DbPipeline.name == pipeline_name)\
+        """Get the task."""
+        query = (
+            select(DbTask)
+            .join(DbTask.pipeline)
+            .options(joinedload(DbTask.pipeline))
+            .where(DbPipeline.name == pipeline_name)
             .where(DbTask.job_descriptor == job_descriptor)
+        )
         task_result = await self.session.execute(query)
 
         return task_result.scalars().one()
@@ -270,7 +279,7 @@ class AsyncDbAccessor:
             pipeline=pipeline,
             job_descriptor=task.generate_task_id(),
             definition=task.task_input,
-            state=task.status
+            state=task.status,
         )
 
     async def get_events_for_task(self, task: Task) -> list[Event]:

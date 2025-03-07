@@ -19,20 +19,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class Token(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
         default=None,
-        title='Pipeline Name',
-        description='A user-controlled name of an existing pipeline'
+        title="Pipeline Name",
+        description="A user-controlled name of an existing pipeline",
     )
     description: str | None = Field(
         default=None,
-        title='Description',
-        description='A user-controlled description of the token'
+        title="Description",
+        description="A user-controlled description of the token",
     )
     token: str | None = Field(
-        default=None,
-        title='Token',
-        description='An authorisation token'
+        default=None, title="Token", description="An authorisation token"
     )

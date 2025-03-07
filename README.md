@@ -116,7 +116,7 @@ The SET command ensures that the new schema is visible _for one session only_ in
 DB=npg_porch
 export DB_URL=postgresql+psycopg2://npg_admin:$PASS@npg_porch_db:$PORT/$DB
 # note that the script requires a regular PG driver, not the async version showed above
-src/deploy_schema.py
+scripts/deploy_schema.py
 
 psql --host=npg_porch_db --port=$PORT --username=npg_admin --password -d $DB
 ```

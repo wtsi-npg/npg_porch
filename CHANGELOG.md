@@ -5,6 +5,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2025-03-07
+
+### Added
+
+* A Simple Webpage displaying a listing of all tasks.
+
+### Changed
+
+* Remove authorisation requirement for get requests.
+* Make TaskStateEnum and RolesEnum stringify to their values and use actual 
+  enum values rather than expected values in tests.
+
 ## [2.0.0] - 2024-07-31
 
 ### Added

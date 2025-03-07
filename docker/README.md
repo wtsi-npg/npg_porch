@@ -1,10 +1,10 @@
 # Development Dockerfile
 
-The Dockerfile and scripts in this directory may be use to create a development image
+The Dockerfile and scripts in this directory may be used to create a development image
 that hosts both the PostgreSQL database and the npg_porch server.
 
 The application is populated with a hard-coded administrator user, password and
-administration token and is configured log to STDERR and STDOUT.
+administration token and is configured to log to STDERR and STDOUT.
 
 To create an image using the Dockerfile, run the following command from the root of the
 repository:
