@@ -77,5 +77,5 @@ class Task(Base):
             "status": self.state,
         }
         if task_class == ModelledTaskExpanded:
-            init_args["created"] = self.created
+            init_args["created"] = self.created.isoformat(timespec="seconds")
         return task_class(**init_args)
