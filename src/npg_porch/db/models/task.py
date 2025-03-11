@@ -77,5 +77,5 @@ class Task(Base):
             "status": self.state,
         }
         if task_class == ModelledTaskExpanded:
-            init_args["created"] = self.created.strftime("%Y-%m-%d\u00A0%H:%M:%S")
+            init_args["created"] = self.created
         return task_class(**init_args)
