@@ -31,7 +31,7 @@
           { data: 'pipeline.version' },
           { data: 'task_input',
             render: function(data, type, row) {
-              return JSON.stringify(data);
+              return JSON.stringify(data).replaceAll(",", ", ");
             }
           },
           { data: 'status' },
