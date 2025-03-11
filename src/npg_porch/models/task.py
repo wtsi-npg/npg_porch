@@ -103,5 +103,5 @@ class TaskExpanded(Task):
     created: str = Field(
         default=None,
         title="Task Created",
-        description="The timestamp of task creation in YYYY-MM-DDTHH:mm:ss format",
+        description="The timestamp of task creation in YYYY-MM-DD HH:mm:ss format",
     )
