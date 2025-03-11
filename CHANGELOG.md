@@ -5,6 +5,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.1] - 2025-03-11
+
+### Changed
+
+* Format of Date Created provided to ui.
+
+### Removed
+
+* Unnecessary database access from index page.
+
 ## [2.1.0] - 2025-03-07
 
 ### Added
