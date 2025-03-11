@@ -19,14 +19,12 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from importlib import metadata
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
 
-from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui
-from npg_porch.models import TaskExpanded
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
@@ -64,13 +62,11 @@ version = metadata.version("npg_porch")
     tags=["index"],
     summary="Web page with listing of Porch tasks.",
 )
-async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
-    task_list: list[TaskExpanded] = await db_accessor.get_expanded_tasks()
+async def root(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         "index.j2",
         {
             "request": request,
-            "tasks": task_list,
             "version": version,
         },
     )
