@@ -23,7 +23,6 @@ import hashlib
 import ujson
 from pydantic import BaseModel, Field, ValidationError
 
-from npg_porch.models.config import DatetimeConfig
 from npg_porch.models.pipeline import Pipeline
 
 
@@ -98,7 +97,9 @@ class Task(BaseModel):
 
 class TaskExpanded(Task):
     """
-    An expanded task model for serving the ui.
+    An expanded task model for serving a web page.
+
+    Dates are formatted to improve human readability.
     """
 
     created: datetime = Field(
@@ -107,5 +108,5 @@ class TaskExpanded(Task):
         description="The timestamp of task creation",
     )
 
-    class Config(DatetimeConfig):
-        pass  # Allows created to be stored as a datetime but formatted correctly when accessed
+    class Config:
+        json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%d\u00A0%H:%M:%S")}
