@@ -1,4 +1,5 @@
 import re
+import time
 
 import pytest
 from npg_porch.db.data_access import AsyncDbAccessor
@@ -310,10 +311,47 @@ async def test_get_tasks(db_accessor):
 
 
 @pytest.mark.asyncio
-async def test_get_expanded_tasks(db_accessor, async_tasks):
+async def test_get_expanded_tasks(db_accessor):
     expanded_tasks = await db_accessor.get_expanded_tasks()
 
-    assert len(expanded_tasks) == 12, "Gets all tasks"
+    assert len(expanded_tasks) == 2, "Gets all tasks"
+
+    pipeline = await store_me_a_pipeline(db_accessor)
+
+    for i in range(3):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
+
+    expanded_tasks = await db_accessor.get_expanded_tasks()
+
+    assert len(expanded_tasks) == 5, "Gets tasks from new pipeline as well"
+    assert (
+        expanded_tasks[0].created == expanded_tasks[0].updated
+    ), "Creation date is the same as status update date"
+
+    time.sleep(1)  # Delay to ensure a difference in time stamp
+
+    # Change one task to another status
+    await db_accessor.update_task(
+        token_id=1,
+        task=Task(
+            task_input={"number": 1}, pipeline=pipeline, status=TaskStateEnum.DONE
+        ),
+    )
+
+    expanded_tasks = await db_accessor.get_expanded_tasks()
+
+    assert len(expanded_tasks) == 5, "Updating a task does not change number of results"
+    # ordered by updated date, so this should always be the task that was updated
+    assert (
+        expanded_tasks[0].created < expanded_tasks[0].updated
+    ), "Status update date is more recent than creation date"
 
 
 @pytest.mark.asyncio

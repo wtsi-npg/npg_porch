@@ -235,8 +235,8 @@ class AsyncDbAccessor:
 
     async def get_expanded_tasks(self) -> list[TaskExpanded]:
         """
-        Gets information about tasks including their creation date, with latest
-        ordered by latest creation date.
+        Gets information about tasks including their creation date, ordered
+        by their most recent status update.
         """
         latest_event = (
             select(samax(Event.time).label("status_date"), Event.task_id)
@@ -249,7 +249,7 @@ class AsyncDbAccessor:
             .select_from(DbTask)
             .join(latest_event, DbTask.task_id == latest_event.c.task_id)
             .options(joinedload(DbTask.pipeline))
-            .order_by(DbTask.created.desc())
+            .order_by(latest_event.c.status_date.desc())
         )
 
         self.logger.info(query.compile())
