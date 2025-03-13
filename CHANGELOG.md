@@ -5,6 +5,17 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.2] - 2025-03-13
+
+### Added
+
+* Display date of last status change for tasks shown on the ui.
+
+### Changed
+
+* Improve datetime formatting backend.
+* Improve display of task_input json to allow line wrapping.
+
 ## [2.1.1] - 2025-03-11
 
 ### Changed
