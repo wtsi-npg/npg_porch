@@ -27,7 +27,9 @@ def minimum_data():
             token="4bab73544c834c6f86f9662e5de26d0d", description="Seqfarm host, admin"
         ),
     ]
-    b_event = a_event = Event(token=tokens[0], change="Created")
+    #  Initialising these events as the same object was causing confusion in the database
+    a_event = Event(token=tokens[0], change="Created")
+    b_event = Event(token=tokens[0], change="Created")
     tasks = [
         Task(
             pipeline=pipeline,

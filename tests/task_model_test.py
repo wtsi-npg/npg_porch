@@ -11,6 +11,8 @@ def test_expanded_task_date_format():
     task = TaskExpanded(
         pipeline=pipeline,
         created=datetime(2025, 1, 1, 0, 0, 0),
+        updated=datetime(2025, 1, 2, 12, 30, 15),
         status=TaskStateEnum.PENDING,
     )
     assert str(task.created) == "2025-01-01 00:00:00"
+    assert str(task.updated) == "2025-01-02 12:30:15"
