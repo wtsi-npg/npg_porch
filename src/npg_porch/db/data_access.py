@@ -252,7 +252,7 @@ class AsyncDbAccessor:
             .order_by(latest_event.c.status_date.desc())
         )
 
-        self.logger.info(query.compile())
+        self.logger.debug(query.compile())
         task_result = await self.session.execute(query)
         return [
             t.Task.convert_to_model(TaskExpanded, t.status_date) for t in task_result
