@@ -97,11 +97,21 @@ class Task(BaseModel):
 
 class TaskExpanded(Task):
     """
-    An expanded task model for serving the ui.
+    An expanded task model for serving a web page.
+
+    Dates are formatted to improve human readability.
     """
 
-    created: str = Field(
+    created: datetime = Field(
         default=None,
         title="Task Created",
-        description="The timestamp of task creation in YYYY-MM-DD HH:mm:ss format",
+        description="The timestamp of task creation",
     )
+    updated: datetime = Field(
+        default=None,
+        title="Task Status Updated",
+        description="The timestamp of task status update",
+    )
+
+    class Config:
+        json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%d\u00A0%H:%M:%S")}

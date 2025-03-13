@@ -15,6 +15,7 @@
           <th scope="col">Pipeline Version</th>
           <th scope="col">Task Input</th>
           <th scope="col">Status</th>
+          <th scope="col">Status Date</th>
           <th scope="col">Date Created</th>
         </tr>
       </thead>
@@ -30,10 +31,11 @@
           { data: 'pipeline.version' },
           { data: 'task_input',
             render: function(data, type, row) {
-              return JSON.stringify(data);
+              return JSON.stringify(data).replaceAll(",", ", ");
             }
           },
           { data: 'status' },
+          { data: 'updated' },
           { data: 'created' }
         ]
       })

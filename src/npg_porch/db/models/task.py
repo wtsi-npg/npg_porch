@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
+from datetime import datetime
 
 from sqlalchemy import (
     Column,
@@ -68,7 +69,9 @@ class Task(Base):
     events = relationship("Event", back_populates="task")
 
     def convert_to_model(
-        self, task_class: type[ModelledTask | ModelledTaskExpanded] = ModelledTask
+        self,
+        task_class: type[ModelledTask | ModelledTaskExpanded] = ModelledTask,
+        updated: datetime = None,
     ) -> ModelledTask | ModelledTaskExpanded:
         init_args = {
             "pipeline": self.pipeline.convert_to_model(),
@@ -77,5 +80,6 @@ class Task(Base):
             "status": self.state,
         }
         if task_class == ModelledTaskExpanded:
-            init_args["created"] = self.created.strftime("%Y-%m-%d\u00A0%H:%M:%S")
+            init_args["created"] = self.created
+            init_args["updated"] = updated
         return task_class(**init_args)
