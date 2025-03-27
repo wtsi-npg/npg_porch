@@ -62,10 +62,11 @@ version = metadata.version("npg_porch")
     tags=["index"],
     summary="Web page with listing of Porch tasks.",
 )
-async def root(request: Request) -> HTMLResponse:
+async def root(request: Request, pipeline_name: str = None) -> HTMLResponse:
     return templates.TemplateResponse(
         "index.j2",
         {
+            "pipeline_name": pipeline_name,
             "request": request,
             "version": version,
         },

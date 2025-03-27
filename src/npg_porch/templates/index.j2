@@ -52,12 +52,19 @@
 
             // Add list of options
             column
-                .data()
-                .unique()
-                .sort()
-                .each(function (d, j) {
-                    select.add(new Option(d));
-                });
+              .data()
+              .unique()
+              .sort()
+              .each(function (d, j) {
+                option = new Option(d);
+                select.add(new Option(d));
+              });
+
+            // Set initial value
+            {% if pipeline_name %}
+              select.value = "{{ pipeline_name }}";
+              select.dispatchEvent(new Event('change'));
+            {% endif %}
           });
         },
         ajax: '/ui/tasks/',
