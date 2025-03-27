@@ -9,6 +9,11 @@
   <body>
     <h3>Porch Tasks</h3>
     <table class="table" id="tasks">
+      <tfoot>
+        <tr>
+          <th scope="col">Pipeline Name</th>
+        </tr>
+      </tfoot>
       <thead>
         <tr>
           <th scope="col">Pipeline Name</th>
@@ -24,6 +29,37 @@
     <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
     <script>
       new DataTable('#tasks', {
+        initComplete: function () {
+          // Put footer above column titles
+          $('#tasks tfoot tr').insertBefore($('#tasks thead tr'))
+          this.api().columns().every( function () {
+            let column = this;
+            if (column.title() != 'Pipeline Name')
+              return;
+
+            // Replace footer title with select element
+            let select = document.createElement('select');
+            select.add(new Option('All Pipelines'));
+            column.footer().replaceChildren(select);
+
+            // Apply listener for user change in value
+            select.addEventListener('change', function () {
+                let value = select.value == 'All Pipelines' ? '' : select.value;
+                column
+                    .search(value, {exact: true})
+                    .draw();
+            });
+
+            // Add list of options
+            column
+                .data()
+                .unique()
+                .sort()
+                .each(function (d, j) {
+                    select.add(new Option(d));
+                });
+          });
+        },
         ajax: '/ui/tasks/',
         processing: true,
         columns: [
