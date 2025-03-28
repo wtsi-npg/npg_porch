@@ -34,8 +34,7 @@
           $('#tasks tfoot tr').insertBefore($('#tasks thead tr'))
           this.api().columns().every( function () {
             let column = this;
-            if (column.title() != 'Pipeline Name')
-              return;
+            if (column.title() != 'Pipeline Name') return;
 
             // Replace footer title with select element
             let select = document.createElement('select');
@@ -44,10 +43,21 @@
 
             // Apply listener for user change in value
             select.addEventListener('change', function () {
-                let value = select.value == 'All Pipelines' ? '' : select.value;
-                column
-                    .search(value, {exact: true})
-                    .draw();
+              let value = select.value == 'All Pipelines' ? '' : select.value;
+              column
+                .search(value, {exact: true})
+                .draw();
+                // Update URL
+                if ('URLSearchParams' in window) {
+                  const url = new URL(window.location)
+                  if (value)
+                    url.searchParams.set('pipeline_name', value)
+                  else
+                    url.searchParams.delete('pipeline_name')
+                  history.pushState(null, 'Porch Tasks', url);
+                }
+                else
+                  history.pushState(null, 'Porch Tasks', '/?pipeline_name=${value}');
             });
 
             // Add list of options
