@@ -233,10 +233,12 @@ class AsyncDbAccessor:
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 
-    async def get_expanded_tasks(self) -> list[TaskExpanded]:
+    async def get_expanded_tasks(self, pipeline_name: str = None) -> list[TaskExpanded]:
         """
         Gets information about tasks including their creation date, ordered
         by their most recent status update.
+
+        Can be filtered by pipeline name.
         """
         latest_event = (
             select(samax(Event.time).label("status_date"), Event.task_id)
@@ -248,9 +250,13 @@ class AsyncDbAccessor:
             select(DbTask, latest_event.c.status_date)
             .select_from(DbTask)
             .join(latest_event, DbTask.task_id == latest_event.c.task_id)
-            .options(joinedload(DbTask.pipeline))
+            .join(DbTask.pipeline)
+            .options(contains_eager(DbTask.pipeline))
             .order_by(latest_event.c.status_date.desc())
         )
+
+        if pipeline_name:
+            query = query.where(DbPipeline.name == pipeline_name)
 
         self.logger.debug(query.compile())
         task_result = await self.session.execute(query)
