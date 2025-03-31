@@ -15,7 +15,7 @@
         <option disabled>--Pipeline Selection--</option>
         <option {{ "selected" if pipeline_name == "All" }} value="">All</option>
         {% for pipeline in pipelines %}
-          <option {{ "selected" if pipeline_name == pipeline.name }} value={{ pipeline.name }}>{{ pipeline.name }}</option>
+          <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
         {% endfor %}
       </select>
       <input type="submit" value="Filter">
