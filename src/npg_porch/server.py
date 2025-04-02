@@ -36,8 +36,12 @@ tags_metadata = [
         "description": "Manage pipelines.",
     },
     {
-        "name": "index",
-        "description": "Links to documentation.",
+        "name": "ui",
+        "description": "Fetching and display of tasks for the UI.",
+    },
+    {
+        "name": "about",
+        "description": "Links to pipeline listings and documentation.",
     },
 ]
 
@@ -60,7 +64,7 @@ version = metadata.version("npg_porch")
 @app.get(
     "/",
     response_class=HTMLResponse,
-    tags=["index"],
+    tags=["ui"],
     summary="Web page with listing of all Porch tasks.",
 )
 async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
@@ -69,7 +73,7 @@ async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLRes
         "listing.j2",
         {
             "endpoint": "/ui/tasks",
-            "pipeline_name": "All",
+            "pipeline_name": None,
             "pipelines": pipeline_list,
             "request": request,
             "version": version,
@@ -90,7 +94,7 @@ async def form_redirect(pipeline_name: str) -> RedirectResponse:
     # Needs intermediate path to prevent interference with other paths
     "/pipeline/{pipeline_name}",
     response_class=HTMLResponse,
-    tags=["pipeline"],
+    tags=["ui"],
     summary="Web page with listing of porch tasks for specified pipeline.",
 )
 async def pipeline(
@@ -119,7 +123,7 @@ async def pipeline_redirect() -> RedirectResponse:
     "/about",
     response_class=HTMLResponse,
     tags=["about"],
-    summary="Web page with links to OpenAPI documentation.",
+    summary="Web page with links to pipeline OpenAPI documentation.",
 )
 async def about(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
     pipeline_list = await db_accessor.get_all_pipelines()
