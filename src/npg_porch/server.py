@@ -20,7 +20,7 @@
 
 from importlib import metadata
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import Response, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
 
@@ -67,56 +67,24 @@ version = metadata.version("npg_porch")
     tags=["ui"],
     summary="Web page with listing of all Porch tasks.",
 )
-async def root(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
+async def root(
+    request: Request, pipeline_name: str = None, db_accessor=Depends(get_DbAccessor)
+) -> Response:
+    if not pipeline_name and "pipeline_name" in request.query_params.keys():
+        return RedirectResponse(request.url.remove_query_params("pipeline_name"))
+
     pipeline_list = await db_accessor.get_all_pipelines()
+    endpoint = f"/ui/tasks/{pipeline_name}" if pipeline_name else "/ui/tasks"
     return templates.TemplateResponse(
         "listing.j2",
         {
-            "endpoint": "/ui/tasks",
-            "pipeline_name": None,
-            "pipelines": pipeline_list,
-            "request": request,
-            "version": version,
-        },
-    )
-
-
-@app.get(
-    "/form_redirect",
-    response_class=RedirectResponse,
-    summary="Redirect to deal with form input",
-)
-async def form_redirect(pipeline_name: str) -> RedirectResponse:
-    return RedirectResponse(f"/pipeline/{pipeline_name}")
-
-
-@app.get(
-    # Needs intermediate path to prevent interference with other paths
-    "/pipeline/{pipeline_name}",
-    response_class=HTMLResponse,
-    tags=["ui"],
-    summary="Web page with listing of porch tasks for specified pipeline.",
-)
-async def pipeline(
-    request: Request, pipeline_name: str, db_accessor=Depends(get_DbAccessor)
-) -> HTMLResponse:
-    pipeline_list = await db_accessor.get_all_pipelines()
-    return templates.TemplateResponse(
-        "listing.j2",
-        {
-            "endpoint": f"/ui/tasks/{ pipeline_name }",
+            "endpoint": endpoint,
             "pipeline_name": pipeline_name,
             "pipelines": pipeline_list,
             "request": request,
             "version": version,
         },
     )
-
-
-# Redirect intermediate path
-@app.get("/pipeline", response_class=RedirectResponse)
-async def pipeline_redirect() -> RedirectResponse:
-    return RedirectResponse("/")
 
 
 @app.get(
