@@ -19,8 +19,13 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from importlib import metadata
+
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import Response, HTMLResponse, RedirectResponse
+from fastapi.responses import (
+    Response,
+    HTMLResponse,
+    RedirectResponse,
+)
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
 
@@ -45,7 +50,6 @@ tags_metadata = [
     },
 ]
 
-
 app = FastAPI(
     title="Pipeline Orchestration (POrch)",
     openapi_url="/api/v1/openapi.json",
@@ -68,12 +72,23 @@ version = metadata.version("npg_porch")
     summary="Web page with listing of all Porch tasks.",
 )
 async def root(
-    request: Request, pipeline_name: str = None, db_accessor=Depends(get_DbAccessor)
+    request: Request,
+    pipeline_name: str = None,
+    db_accessor=Depends(get_DbAccessor),
 ) -> Response:
     if not pipeline_name and "pipeline_name" in request.query_params.keys():
         return RedirectResponse(request.url.remove_query_params("pipeline_name"))
 
-    pipeline_list = await db_accessor.get_all_pipelines()
+    pipeline_list = await db_accessor.get_recent_pipelines()
+    if pipeline_name and pipeline_name not in [
+        pipeline.name for pipeline in pipeline_list
+    ]:
+        return HTMLResponse(
+            f"""
+            <h1> Error 404 </h1>
+            <h3> {pipeline_name} not registered in POrch </h3> 
+            """
+        )
     endpoint = f"/ui/tasks/{pipeline_name}" if pipeline_name else "/ui/tasks"
     return templates.TemplateResponse(
         "listing.j2",
