@@ -335,6 +335,12 @@ async def test_get_expanded_tasks(db_accessor):
         expanded_tasks[0].created == expanded_tasks[0].updated
     ), "Creation date is the same as status update date"
 
+    expanded_tasks = await db_accessor.get_expanded_tasks(pipeline.name)
+
+    assert (
+        len(expanded_tasks) == 3
+    ), "Gets only tasks from the pipeline that is specified"
+
     time.sleep(1)  # Delay to ensure a difference in time stamp
 
     # Change one task to another status

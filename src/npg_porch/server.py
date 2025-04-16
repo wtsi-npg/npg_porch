@@ -19,11 +19,17 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from importlib import metadata
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+
+from fastapi import FastAPI, Request, Depends
+from fastapi.responses import (
+    Response,
+    HTMLResponse,
+    RedirectResponse,
+)
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
 
+from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
@@ -35,11 +41,14 @@ tags_metadata = [
         "description": "Manage pipelines.",
     },
     {
-        "name": "index",
-        "description": "Links to documentation.",
+        "name": "ui",
+        "description": "Fetching and display of tasks for the UI.",
+    },
+    {
+        "name": "about",
+        "description": "Links to pipeline listings and documentation.",
     },
 ]
-
 
 app = FastAPI(
     title="Pipeline Orchestration (POrch)",
@@ -59,13 +68,34 @@ version = metadata.version("npg_porch")
 @app.get(
     "/",
     response_class=HTMLResponse,
-    tags=["index"],
-    summary="Web page with listing of Porch tasks.",
+    tags=["ui"],
+    summary="Web page with listing of all Porch tasks.",
 )
-async def root(request: Request) -> HTMLResponse:
+async def root(
+    request: Request,
+    pipeline_name: str = None,
+    db_accessor=Depends(get_DbAccessor),
+) -> Response:
+    if not pipeline_name and "pipeline_name" in request.query_params.keys():
+        return RedirectResponse(request.url.remove_query_params("pipeline_name"))
+
+    pipeline_list = await db_accessor.get_recent_pipelines()
+    if pipeline_name and pipeline_name not in [
+        pipeline.name for pipeline in pipeline_list
+    ]:
+        return HTMLResponse(
+            f"""
+            <h1> Error 404 </h1>
+            <h3> {pipeline_name} not registered in POrch </h3> 
+            """
+        )
+    endpoint = f"/ui/tasks/{pipeline_name}" if pipeline_name else "/ui/tasks"
     return templates.TemplateResponse(
-        "index.j2",
+        "listing.j2",
         {
+            "endpoint": endpoint,
+            "pipeline_name": pipeline_name,
+            "pipelines": pipeline_list,
             "request": request,
             "version": version,
         },
@@ -76,9 +106,10 @@ async def root(request: Request) -> HTMLResponse:
     "/about",
     response_class=HTMLResponse,
     tags=["about"],
-    summary="Web page with links to OpenAPI documentation.",
+    summary="Web page with links to pipeline OpenAPI documentation.",
 )
-async def about(request: Request) -> HTMLResponse:
+async def about(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
+    pipeline_list = await db_accessor.get_recent_pipelines()
     return templates.TemplateResponse(
-        "about.j2", {"request": request, "version": version}
+        "about.j2", {"pipelines": pipeline_list, "request": request, "version": version}
     )

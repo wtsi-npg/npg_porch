@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Porch Tasks</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
+  </head>
+  <body>
+    <h3>Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
+    <form method="get" action="/" class="px-3" id="selection_form">
+      <label for="pipeline_selection">Pipeline Selection:</label>
+      <select class="form-select" name="pipeline_name" id="pipeline_selection">
+        <option disabled>--Pipeline Selection--</option>
+        <option {{ "selected" if not pipeline_name }} value="">All</option>
+        {% for pipeline in pipelines %}
+          <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="submit" value="Filter">
+    </form>
+    <table class="table" id="tasks">
+      <thead>
+        <tr>
+          <th scope="col">Pipeline Name</th>
+          <th scope="col">Pipeline Version</th>
+          <th scope="col">Task Input</th>
+          <th scope="col">Status</th>
+          <th scope="col">Status Date</th>
+          <th scope="col">Date Created</th>
+        </tr>
+      </thead>
+    </table>
+    <script>
+      new DataTable('#tasks', {
+        ajax: '{{ endpoint }}',
+        processing: true,
+        columns: [
+          { data: 'pipeline.name' },
+          { data: 'pipeline.version' },
+          { data: 'task_input',
+            render: function(data, type, row) {
+              return JSON.stringify(data).replaceAll(",", ", ");
+            }
+          },
+          { data: 'status' },
+          { data: 'updated' },
+          { data: 'created' }
+        ],
+        order: [[4, 'desc' ]]
+      })
+    </script>
+    <div class="text-center">Copyright Genome Research Ltd. 2025 - version: {{ version }} - <a href="/about">about</a></div>
+  </body>
+</html>
