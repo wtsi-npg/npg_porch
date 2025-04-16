@@ -109,7 +109,7 @@ async def root(
     summary="Web page with links to pipeline OpenAPI documentation.",
 )
 async def about(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
-    pipeline_list = await db_accessor.get_all_pipelines()
+    pipeline_list = await db_accessor.get_recent_pipelines()
     return templates.TemplateResponse(
         "about.j2", {"pipelines": pipeline_list, "request": request, "version": version}
     )

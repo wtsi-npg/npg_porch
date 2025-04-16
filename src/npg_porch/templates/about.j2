@@ -15,7 +15,7 @@
           <h5>Pipelines</h5>
           <ul class="list-unstyled">
             {% for pipeline in pipelines %}
-              <li><a href="/pipeline/{{ pipeline.name }}">{{ pipeline.name }}</a></li>
+              <li><a href="/?pipeline_name={{ pipeline.name }}">{{ pipeline.name }}</a></li>
             {% endfor %}
           </ul>
         </div>
