@@ -5,7 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [2.1.3]
+## [2.1.3] - 2025-04-17
 
 ### Added
 
