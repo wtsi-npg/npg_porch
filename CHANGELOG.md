@@ -5,6 +5,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.3]
+
+### Added
+
+* Pipeline selection dropdown to change listing view.
+
+### Changed
+
+* Improve endpoint tagging for documentation.
+* Initially order listing by status date.
+* Only show current pipelines.
+
 ## [2.1.2] - 2025-03-13
 
 ### Added
