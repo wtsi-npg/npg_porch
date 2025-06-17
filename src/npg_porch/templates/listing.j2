@@ -13,7 +13,7 @@
     <div class="container mb-5">
       <div class="row mt-4 mb-4">
         <div class="col">
-          <h3 class="mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
+          <h3 class="text-start mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
         </div>
       </div>
 
@@ -21,7 +21,7 @@
         <div class="col-md-6">
           <form method="get" action="/" id="selection_form" class="d-flex align-items-end gap-3">
             <div class="flex-grow-1">
-              <label for="pipeline_selection" class="form-label">Pipeline Selection:</label>
+              <label for="pipeline_selection" class="form-label text-start">Pipeline Selection:</label>
               <select class="form-select" name="pipeline_name" id="pipeline_selection">
                 <option disabled>--Pipeline Selection--</option>
                 <option {{ "selected" if not pipeline_name }} value="">All</option>
@@ -43,12 +43,12 @@
             <table class="table" id="tasks">
               <thead>
                 <tr>
-                  <th scope="col">Pipeline Name</th>
-                  <th scope="col">Pipeline Version</th>
-                  <th scope="col">Task Input</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Status Date</th>
-                  <th scope="col">Date Created</th>
+                  <th scope="col" class="text-start">Pipeline Name</th>
+                  <th scope="col" class="text-start">Pipeline Version</th>
+                  <th scope="col" class="text-start">Task Input</th>
+                  <th scope="col" class="text-start">Status</th>
+                  <th scope="col" class="text-start">Status Date</th>
+                  <th scope="col" class="text-start">Date Created</th>
                 </tr>
               </thead>
             </table>
