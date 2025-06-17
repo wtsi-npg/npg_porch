@@ -10,30 +10,53 @@
     <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
   </head>
   <body>
-    <h3>Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
-    <form method="get" action="/" class="px-3" id="selection_form">
-      <label for="pipeline_selection">Pipeline Selection:</label>
-      <select class="form-select" name="pipeline_name" id="pipeline_selection">
-        <option disabled>--Pipeline Selection--</option>
-        <option {{ "selected" if not pipeline_name }} value="">All</option>
-        {% for pipeline in pipelines %}
-          <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
-        {% endfor %}
-      </select>
-      <input type="submit" value="Filter">
-    </form>
-    <table class="table" id="tasks">
-      <thead>
-        <tr>
-          <th scope="col">Pipeline Name</th>
-          <th scope="col">Pipeline Version</th>
-          <th scope="col">Task Input</th>
-          <th scope="col">Status</th>
-          <th scope="col">Status Date</th>
-          <th scope="col">Date Created</th>
-        </tr>
-      </thead>
-    </table>
+    <div class="container">
+      <div class="row mt-4 mb-4">
+        <div class="col">
+          <h3>Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <form method="get" action="/" id="selection_form" class="d-flex align-items-end gap-3">
+            <div class="flex-grow-1">
+              <label for="pipeline_selection" class="form-label">Pipeline Selection:</label>
+              <select class="form-select" name="pipeline_name" id="pipeline_selection">
+                <option disabled>--Pipeline Selection--</option>
+                <option {{ "selected" if not pipeline_name }} value="">All</option>
+                {% for pipeline in pipelines %}
+                  <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="table-responsive mb-4">
+            <table class="table" id="tasks">
+              <thead>
+                <tr>
+                  <th scope="col">Pipeline Name</th>
+                  <th scope="col">Pipeline Version</th>
+                  <th scope="col">Task Input</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Status Date</th>
+                  <th scope="col">Date Created</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       new DataTable('#tasks', {
         ajax: '{{ endpoint }}',
@@ -53,6 +76,11 @@
         order: [[4, 'desc' ]]
       })
     </script>
-    <div class="text-center">Copyright Genome Research Ltd. 2025 - version: {{ version }} - <a href="/about">about</a></div>
+
+    <footer class="mt-5 py-3 border-top">
+      <div class="container">
+        <div class="text-center">Copyright Genome Research Ltd. 2025 - version: {{ version }} - <a href="/about">about</a></div>
+      </div>
+    </footer>
   </body>
 </html>
