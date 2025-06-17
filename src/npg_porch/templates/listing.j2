@@ -10,14 +10,14 @@
     <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
   </head>
   <body>
-    <div class="container">
+    <div class="container mb-5">
       <div class="row mt-4 mb-4">
         <div class="col">
-          <h3>Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
+          <h3 class="mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
         </div>
       </div>
 
-      <div class="row mb-4">
+      <div class="row mt-3 mb-4">
         <div class="col-md-6">
           <form method="get" action="/" id="selection_form" class="d-flex align-items-end gap-3">
             <div class="flex-grow-1">
@@ -37,7 +37,7 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="row mt-4">
         <div class="col">
           <div class="table-responsive mb-4">
             <table class="table" id="tasks">
