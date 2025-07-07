@@ -32,6 +32,14 @@
                   <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
                 {% endfor %}
               </select>
+              <label for="state_selection">Task Status Selection:</label>
+              <select class="form-select" name="task_status" id="state_selection">
+                <option disabled>--Task Status Selection--</option>
+                <option {{ "selected" if not task_status }} value="">All</option>
+                {% for state in states %}
+                  <option {{ "selected" if task_status == state }} value="{{ state }}">{{ state }}</option>
+                {% endfor %}
+              </select>
             </div>
             <div>
               <button type="submit" class="btn btn-primary">Filter</button>
@@ -59,7 +67,6 @@
         </div>
       </div>
     </div>
-
     <script>
       new DataTable('#tasks', {
         ajax: '{{ endpoint }}',

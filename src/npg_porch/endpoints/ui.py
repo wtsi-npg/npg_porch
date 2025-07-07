@@ -17,11 +17,20 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 import logging
-
+from enum import Enum
 from fastapi import APIRouter, Depends, Request
 from starlette import status
 
 from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models import TaskStateEnum
+
+
+class UiStateEnum(str, Enum):
+    def __str__(self):
+        return self.value
+
+    NOT_DONE = "NOT DONE"
+
 
 router = APIRouter(
     prefix="/ui",
@@ -54,4 +63,31 @@ async def get_ui_pipeline_tasks(
 ) -> dict:
     params = request.query_params.get
     task_list = await db_accessor.get_expanded_tasks(pipeline_name)
+    return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
+
+
+@router.get(
+    "/tasks/{pipeline_name}/{state}",
+    response_model=dict,
+    summary="Returns all expanded tasks for the specified pipeline in a "
+    "displayable format for the ui",
+)
+async def get_ui_pipeline_state_tasks(
+    request: Request,
+    pipeline_name: str,
+    state: TaskStateEnum | UiStateEnum,
+    db_accessor=Depends(get_DbAccessor),
+) -> dict:
+    pipeline_name = None if pipeline_name == "All" else pipeline_name
+    params = request.query_params.get
+    state = (
+        [
+            taskstate
+            for taskstate in TaskStateEnum
+            if taskstate not in [TaskStateEnum.DONE, TaskStateEnum.CANCELLED]
+        ]
+        if state == UiStateEnum.NOT_DONE
+        else state
+    )
+    task_list = await db_accessor.get_expanded_tasks(pipeline_name, state)
     return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}

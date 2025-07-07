@@ -17,7 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
-
 from importlib import metadata
 
 from fastapi import FastAPI, Request, Depends
@@ -31,6 +30,7 @@ from jinja2 import Environment, PackageLoader
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui
+from npg_porch.models import TaskStateEnum
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
@@ -74,10 +74,19 @@ version = metadata.version("npg_porch")
 async def root(
     request: Request,
     pipeline_name: str = None,
+    task_status: TaskStateEnum | ui.UiStateEnum | None = None,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
+    redirect = False
+    url = request.url
     if not pipeline_name and "pipeline_name" in request.query_params.keys():
-        return RedirectResponse(request.url.remove_query_params("pipeline_name"))
+        url = request.url.remove_query_params("pipeline_name")
+        redirect = True
+    if not task_status and "task_status" in request.query_params.keys():
+        url = request.url.remove_query_params("task_status")
+        redirect = True
+    if redirect:
+        return RedirectResponse(url)
 
     pipeline_list = await db_accessor.get_recent_pipelines()
     if pipeline_name and pipeline_name not in [
@@ -89,14 +98,25 @@ async def root(
             <h3> {pipeline_name} not registered in POrch </h3> 
             """
         )
-    endpoint = f"/ui/tasks/{pipeline_name}" if pipeline_name else "/ui/tasks"
+
+    endpoint = "/ui/tasks"
+    if pipeline_name and task_status:
+        endpoint += f"/{pipeline_name}/{task_status}"
+    elif pipeline_name:
+        endpoint += f"/{pipeline_name}"
+    elif task_status:
+        endpoint += f"/All/{task_status}"
+
     return templates.TemplateResponse(
         "listing.j2",
         {
             "endpoint": endpoint,
             "pipeline_name": pipeline_name,
+            "task_status": task_status,
             "pipelines": pipeline_list,
             "request": request,
+            "states": [state for state in TaskStateEnum]
+            + [state for state in ui.UiStateEnum],
             "version": version,
         },
     )
