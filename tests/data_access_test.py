@@ -359,6 +359,10 @@ async def test_get_expanded_tasks(db_accessor):
         expanded_tasks[0].created < expanded_tasks[0].updated
     ), "Status update date is more recent than creation date"
 
+    expanded_tasks = await db_accessor.get_expanded_tasks(status=TaskStateEnum.PENDING)
+
+    assert len(expanded_tasks) == 4, "Done tasks do not appear in PENDING results"
+
 
 @pytest.mark.asyncio
 async def test_count_tasks(db_accessor, async_tasks):
