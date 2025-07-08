@@ -371,3 +371,51 @@ async def test_count_tasks(db_accessor, async_tasks):
     task_count = await db_accessor.count_tasks()
 
     assert task_count == 12, "Tasks are counted correctly"
+
+
+@pytest.mark.asyncio
+async def test_get_long_running_tasks(db_accessor):
+    pipeline = await store_me_a_pipeline(db_accessor, 2)
+
+    for i in range(4):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                pipeline=pipeline,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
+
+    # increase expected time to ensure that a task added later will not be "long_running"
+    time.sleep(1)
+
+    # Change task to done
+    for i in range(2):
+        await db_accessor.update_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                pipeline=pipeline,
+                status=TaskStateEnum.DONE,
+            ),
+        )
+
+    long_running_tasks = await db_accessor.get_long_running_tasks()
+
+    assert (
+        len(long_running_tasks) == 2
+    ), "Tasks that have been running for longer than the DONE task are long_running"
+
+    await db_accessor.create_task(
+        token_id=1,
+        task=Task(
+            task_input={"number": 4},
+            pipeline=pipeline,
+            status=TaskStateEnum.PENDING,
+        ),
+    )
+
+    long_running_tasks = await db_accessor.get_long_running_tasks()
+
+    assert len(long_running_tasks) == 2, "A newer task is not long running"

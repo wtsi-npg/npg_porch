@@ -92,3 +92,16 @@ async def get_ui_pipeline_state_tasks(
     )
     task_list = await db_accessor.get_expanded_tasks(pipeline_name, state)
     return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
+
+
+@router.get(
+    "/long_running",
+    response_model=dict,
+    summary="Returns all long running tasks in a displayable format for the ui",
+)
+async def get_long_running_tasks(
+    request: Request, db_accessor=Depends(get_DbAccessor)
+) -> dict:
+    params = request.query_params.get
+    task_list = await db_accessor.get_long_running_tasks()
+    return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}

@@ -19,6 +19,8 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from datetime import datetime
+from statistics import mean, stdev
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -286,6 +288,27 @@ class AsyncDbAccessor:
         query = select(count()).select_from(DbTask)
         count_result = await self.session.execute(query)
         return count_result.scalar()
+
+    async def get_long_running_tasks(self) -> list[TaskExpanded]:
+        tasks = await self.get_expanded_tasks()
+        lengths = {}
+        not_done = {}
+        for task in tasks:
+            if task.status == TaskStateEnum.DONE:
+                lengths.setdefault(task.pipeline.name, []).append(
+                    (task.updated - task.created).total_seconds()
+                )
+            elif task.status != TaskStateEnum.CANCELLED:
+                not_done.setdefault(task.pipeline.name, []).append(task)
+        long_running = []
+        for pipeline, pipeline_tasks in not_done.items():
+            if pipeline not in lengths.keys() or len(lengths[pipeline]) < 2:
+                continue  # not enough data for this pipeline
+            cutoff = mean(lengths[pipeline]) + (2 * stdev(lengths[pipeline]))
+            for task in pipeline_tasks:
+                if (datetime.now() - task.created).total_seconds() > cutoff:
+                    long_running.append(task)
+        return long_running
 
     async def get_db_task(
         self,

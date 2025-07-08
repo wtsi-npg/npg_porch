@@ -27,6 +27,7 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
+from typing import Optional
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui
@@ -74,7 +75,7 @@ version = metadata.version("npg_porch")
 async def root(
     request: Request,
     pipeline_name: str = None,
-    task_status: TaskStateEnum | ui.UiStateEnum | None = None,
+    task_status: Optional[ui.UiStateEnum | TaskStateEnum] = ui.UiStateEnum.ALL,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
     redirect = False
@@ -82,7 +83,7 @@ async def root(
     if not pipeline_name and "pipeline_name" in request.query_params.keys():
         url = request.url.remove_query_params("pipeline_name")
         redirect = True
-    if not task_status and "task_status" in request.query_params.keys():
+    if not task_status == ui.UiStateEnum.ALL:
         url = request.url.remove_query_params("task_status")
         redirect = True
     if redirect:
@@ -115,8 +116,28 @@ async def root(
             "task_status": task_status,
             "pipelines": pipeline_list,
             "request": request,
-            "states": [state for state in TaskStateEnum]
-            + [state for state in ui.UiStateEnum],
+            "states": [state for state in ui.UiStateEnum]
+            + [state for state in TaskStateEnum],
+            "version": version,
+        },
+    )
+
+
+@app.get(
+    "/long_running",
+    response_class=HTMLResponse,
+    tags=["ui"],
+    summary="Web page with listing of long running Porch tasks",
+)
+async def long_running(
+    request: Request, db_accessor=Depends(get_DbAccessor)
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "listing.j2",
+        {
+            "endpoint": "/ui/long_running",
+            "pipeline_name": "Long Running",
+            "request": request,
             "version": version,
         },
     )
