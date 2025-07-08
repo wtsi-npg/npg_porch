@@ -29,6 +29,7 @@ class UiStateEnum(str, Enum):
     def __str__(self):
         return self.value
 
+    ALL = "All"
     NOT_DONE = "NOT DONE"
 
 
@@ -87,7 +88,7 @@ async def get_ui_pipeline_state_tasks(
             if taskstate not in [TaskStateEnum.DONE, TaskStateEnum.CANCELLED]
         ]
         if state == UiStateEnum.NOT_DONE
-        else state
+        else [state]
     )
     task_list = await db_accessor.get_expanded_tasks(pipeline_name, state)
     return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
