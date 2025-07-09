@@ -4,36 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Porch Tasks</title>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
   </head>
   <body>
-    <h3>Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
-    <form method="get" action="/" class="px-3" id="selection_form">
-      <label for="pipeline_selection">Pipeline Selection:</label>
-      <select class="form-select" name="pipeline_name" id="pipeline_selection">
-        <option disabled>--Pipeline Selection--</option>
-        <option {{ "selected" if not pipeline_name }} value="">All</option>
-        {% for pipeline in pipelines %}
-          <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
-        {% endfor %}
-      </select>
-      <input type="submit" value="Filter">
-    </form>
-    <table class="table" id="tasks">
-      <thead>
-        <tr>
-          <th scope="col">Pipeline Name</th>
-          <th scope="col">Pipeline Version</th>
-          <th scope="col">Task Input</th>
-          <th scope="col">Status</th>
-          <th scope="col">Status Date</th>
-          <th scope="col">Date Created</th>
-        </tr>
-      </thead>
-    </table>
+    <div class="container-fluid mb-5">
+      <div class="row mt-4 mb-4">
+        <div class="col">
+          <h3 class="text-start mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }}</h3>
+        </div>
+      </div>
+
+      <div class="row mt-3 mb-4">
+        <div class="col-md-6">
+          <form method="get" action="/" id="selection_form" class="d-flex align-items-end gap-3">
+            <div class="flex-grow-1">
+              <label for="pipeline_selection" class="form-label text-start">Pipeline Selection:</label>
+              <select class="form-select" name="pipeline_name" id="pipeline_selection">
+                <option disabled>--Pipeline Selection--</option>
+                <option {{ "selected" if not pipeline_name }} value="">All</option>
+                {% for pipeline in pipelines %}
+                  <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <div class="col">
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered border-primary" id="tasks">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="text-start">Pipeline Name</th>
+                  <th scope="col" class="text-start">Pipeline Version</th>
+                  <th scope="col" class="text-start">Task Input</th>
+                  <th scope="col" class="text-start">Status</th>
+                  <th scope="col" class="text-start">Status Date</th>
+                  <th scope="col" class="text-start">Date Created</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       new DataTable('#tasks', {
         ajax: '{{ endpoint }}',
@@ -50,9 +76,31 @@
           { data: 'updated' },
           { data: 'created' }
         ],
-        order: [[4, 'desc' ]]
+        order: [[4, 'desc' ]],
+        rowCallback: function(row, data) {
+          const status = data.status.toLowerCase();
+          // Map task statuses to Bootstrap contextual table classes
+          const statusClassMap = {
+            'done': 'table-success',      // Green - successful completion
+            'running': 'table-primary',   // Blue - active/current state
+            'claimed': 'table-warning',   // Yellow - caution/in-progress
+            'pending': 'table-light',     // Light gray - neutral state
+            'failed': 'table-danger',     // Red - error/failure
+            'cancelled': 'table-secondary' // Gray - inactive/cancelled
+          };
+
+          const bootstrapClass = statusClassMap[status];
+          if (bootstrapClass) {
+            $(row).addClass(bootstrapClass);
+          }
+        }
       })
     </script>
-    <div class="text-center">Copyright Genome Research Ltd. 2025 - version: {{ version }} - <a href="/about">about</a></div>
+
+    <footer class="mt-5 py-3 border-top">
+      <div class="container">
+        <div class="text-center">Copyright Genome Research Ltd. 2025 - version: {{ version }} - <a href="/about">about</a></div>
+      </div>
+    </footer>
   </body>
 </html>
