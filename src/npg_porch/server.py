@@ -27,7 +27,6 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
-from typing import Optional
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui
@@ -75,7 +74,7 @@ version = metadata.version("npg_porch")
 async def root(
     request: Request,
     pipeline_name: str = None,
-    task_status: Optional[ui.UiStateEnum | TaskStateEnum] = ui.UiStateEnum.ALL,
+    task_status: ui.UiStateEnum | TaskStateEnum = ui.UiStateEnum.ALL,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
     redirect = False
@@ -83,7 +82,10 @@ async def root(
     if not pipeline_name and "pipeline_name" in request.query_params.keys():
         url = request.url.remove_query_params("pipeline_name")
         redirect = True
-    if not task_status == ui.UiStateEnum.ALL:
+    if (
+        task_status == ui.UiStateEnum.ALL
+        and "task_status" in request.query_params.keys()
+    ):
         url = request.url.remove_query_params("task_status")
         redirect = True
     if redirect:

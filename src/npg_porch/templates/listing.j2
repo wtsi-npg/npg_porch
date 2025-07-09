@@ -39,15 +39,13 @@
                   <option {{ "selected" if task_status == state }} value="{{ state }}">{{ state }}</option>
                 {% endfor %}
               </select>
-            </div>
-            <div>
               <button type="submit" class="btn btn-primary">Filter</button>
             </div>
           </form>
         </div>
         <div class="col-md-6">
-          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Long Running"}}" role="button" href="/long_running">Long Running</a>
           <a class="btn btn-primary {{ "d-none" if pipeline_name != "Long Running"}}" role="button" href="/">All Tasks</a>
+          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Long Running"}}" role="button" href="/long_running">Long Running</a>
         </div>
       </div>
 

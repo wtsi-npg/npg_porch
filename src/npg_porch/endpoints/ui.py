@@ -88,6 +88,8 @@ async def get_ui_pipeline_state_tasks(
             if taskstate not in [TaskStateEnum.DONE, TaskStateEnum.CANCELLED]
         ]
         if state == UiStateEnum.NOT_DONE
+        else None
+        if state == UiStateEnum.ALL
         else [state]
     )
     task_list = await db_accessor.get_expanded_tasks(pipeline_name, state)

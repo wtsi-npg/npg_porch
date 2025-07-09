@@ -22,7 +22,7 @@ import logging
 from datetime import datetime
 from statistics import mean, stdev
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
@@ -275,8 +275,7 @@ class AsyncDbAccessor:
         if pipeline_name:
             query = query.where(DbPipeline.name == pipeline_name)
         if status:
-            for state in status:
-                query = query.where(DbTask.state == state)
+            query = query.where(or_(DbTask.state == state for state in status))
 
         self.logger.debug(query.compile())
         task_result = await self.session.execute(query)
