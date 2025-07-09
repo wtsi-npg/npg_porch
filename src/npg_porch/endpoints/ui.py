@@ -43,37 +43,12 @@ router = APIRouter(
 
 
 @router.get(
-    "/tasks",
-    response_model=dict,
-    summary="Returns all expanded tasks in a displayable format for the ui",
-)
-async def get_ui_tasks(request: Request, db_accessor=Depends(get_DbAccessor)) -> dict:
-    params = request.query_params.get
-    task_list = await db_accessor.get_expanded_tasks()
-    return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
-
-
-@router.get(
-    "/tasks/{pipeline_name}",
-    response_model=dict,
-    summary="Returns all expanded tasks for the specified pipeline in a "
-    "displayable format for the ui",
-)
-async def get_ui_pipeline_tasks(
-    request: Request, pipeline_name: str, db_accessor=Depends(get_DbAccessor)
-) -> dict:
-    params = request.query_params.get
-    task_list = await db_accessor.get_expanded_tasks(pipeline_name)
-    return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
-
-
-@router.get(
     "/tasks/{pipeline_name}/{state}",
     response_model=dict,
-    summary="Returns all expanded tasks for the specified pipeline in a "
+    summary="Returns all expanded tasks for the specified pipeline and status in a "
     "displayable format for the ui",
 )
-async def get_ui_pipeline_state_tasks(
+async def get_ui_tasks(
     request: Request,
     pipeline_name: str,
     state: TaskStateEnum | UiStateEnum,
@@ -101,7 +76,7 @@ async def get_ui_pipeline_state_tasks(
     response_model=dict,
     summary="Returns all long running tasks in a displayable format for the ui",
 )
-async def get_long_running_tasks(
+async def get_long_running_ui_tasks(
     request: Request, db_accessor=Depends(get_DbAccessor)
 ) -> dict:
     params = request.query_params.get

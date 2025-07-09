@@ -103,12 +103,8 @@ async def root(
         )
 
     endpoint = "/ui/tasks"
-    if pipeline_name and task_status:
-        endpoint += f"/{pipeline_name}/{task_status}"
-    elif pipeline_name:
-        endpoint += f"/{pipeline_name}"
-    elif task_status:
-        endpoint += f"/All/{task_status}"
+    endpoint += f"/{pipeline_name}" if pipeline_name else "/All"
+    endpoint += f"/{task_status}/" if task_status else ui.UiStateEnum.ALL
 
     return templates.TemplateResponse(
         "listing.j2",
