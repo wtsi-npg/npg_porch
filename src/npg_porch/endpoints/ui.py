@@ -16,7 +16,6 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
-import logging
 from enum import Enum
 from fastapi import APIRouter, Depends, Request
 from starlette import status
@@ -45,8 +44,8 @@ router = APIRouter(
 @router.get(
     "/tasks/{pipeline_name}/{state}",
     response_model=dict,
-    summary="Returns all expanded tasks for the specified pipeline and status in a "
-    "displayable format for the ui",
+    summary="Returns all expanded tasks for the specified pipeline and status "
+    "in a displayable format for the ui",
 )
 async def get_ui_tasks(
     request: Request,

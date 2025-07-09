@@ -104,7 +104,7 @@ async def root(
 
     endpoint = "/ui/tasks"
     endpoint += f"/{pipeline_name}" if pipeline_name else "/All"
-    endpoint += f"/{task_status}/" if task_status else ui.UiStateEnum.ALL
+    endpoint += f"/{task_status}/"
 
     return templates.TemplateResponse(
         "listing.j2",
@@ -127,9 +127,7 @@ async def root(
     tags=["ui"],
     summary="Web page with listing of long running Porch tasks",
 )
-async def long_running(
-    request: Request, db_accessor=Depends(get_DbAccessor)
-) -> HTMLResponse:
+async def long_running(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         "listing.j2",
         {

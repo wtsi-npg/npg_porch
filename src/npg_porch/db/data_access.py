@@ -255,7 +255,7 @@ class AsyncDbAccessor:
         Gets information about tasks including their creation date, ordered
         by their most recent status update.
 
-        Can be filtered by pipeline name.
+        Can be filtered by pipeline name and status.
         """
         latest_event = (
             select(samax(Event.time).label("status_date"), Event.task_id)
@@ -289,6 +289,11 @@ class AsyncDbAccessor:
         return count_result.scalar()
 
     async def get_long_running_tasks(self) -> list[TaskExpanded]:
+        """
+        Returns tasks have been NOT DONE for longer than is expected, taking
+        2 standard deviations more than the mean time for DONE tasks in their
+        pipeline.
+        """
         tasks = await self.get_expanded_tasks()
         lengths = {}
         not_done = {}
