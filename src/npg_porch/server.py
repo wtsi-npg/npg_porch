@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
+from datetime import datetime, timedelta
 from importlib import metadata
 
 from fastapi import FastAPI, Request, Depends
@@ -34,6 +35,9 @@ from npg_porch.models import TaskStateEnum
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
+
+DAY_ONE = datetime(1, 1, 1)
+RECENT = datetime.now() - timedelta(days=14)
 
 tags_metadata = [
     {
@@ -104,7 +108,7 @@ async def root(
 
     endpoint = "/ui/tasks"
     endpoint += f"/{pipeline_name}" if pipeline_name else "/All"
-    endpoint += f"/{task_status}/"
+    endpoint += f"/{task_status}/{DAY_ONE}"
 
     return templates.TemplateResponse(
         "listing.j2",
@@ -133,6 +137,24 @@ async def long_running(request: Request) -> HTMLResponse:
         {
             "endpoint": "/ui/long_running",
             "pipeline_name": "Long Running",
+            "request": request,
+            "version": version,
+        },
+    )
+
+
+@app.get(
+    "/recently_failed",
+    response_class=HTMLResponse,
+    tags=["ui"],
+    summary="Web page with listing of tasks that have failed in the last 2 " "weeks",
+)
+async def recently_failed(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "listing.j2",
+        {
+            "endpoint": f"/ui/tasks/All/{TaskStateEnum.FAILED}/{RECENT}",
+            "pipeline_name": "Recently Failed",
             "request": request,
             "version": version,
         },

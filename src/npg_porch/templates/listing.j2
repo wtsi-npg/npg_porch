@@ -21,7 +21,7 @@
       </div>
 
       <div class="row mt-3 mb-4">
-        <div class="col-md-6 {{ "d-none" if pipeline_name == "Long Running"}}">
+        <div class="col-md-6 {{ "d-none" if pipeline_name == "Long Running" or pipeline_name == "Recently Failed" }}">
           <form method="get" action="/" id="selection_form" class="d-flex align-items-end gap-3">
             <div class="flex-grow-1">
               <label for="pipeline_selection" class="form-label text-start">Pipeline Selection:</label>
@@ -44,8 +44,9 @@
           </form>
         </div>
         <div class="col-md-6">
-          <a class="btn btn-primary {{ "d-none" if pipeline_name != "Long Running"}}" role="button" href="/">All Tasks</a>
-          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Long Running"}}" role="button" href="/long_running">Long Running</a>
+          <a class="btn btn-primary {{ "d-none" if pipeline_name != "Long Running" and pipeline_name != "Recently Failed" }}" role="button" href="/">All Tasks</a>
+          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Long Running" }} " role="button" href="/long_running">Long Running</a>
+          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Recently Failed" }}" role="button" href="/recently_failed">Recently Failed</a>
         </div>
       </div>
 
