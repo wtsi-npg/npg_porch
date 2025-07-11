@@ -249,7 +249,10 @@ class AsyncDbAccessor:
         return [t.convert_to_model() for t in tasks]
 
     async def get_expanded_tasks(
-        self, pipeline_name: str = None, status: list[TaskStateEnum] = None
+        self,
+        pipeline_name: str = None,
+        status: list[TaskStateEnum] = None,
+        since: datetime = None,
     ) -> list[TaskExpanded]:
         """
         Gets information about tasks including their creation date, ordered
@@ -276,6 +279,8 @@ class AsyncDbAccessor:
             query = query.where(DbPipeline.name == pipeline_name)
         if status:
             query = query.where(or_(DbTask.state == state for state in status))
+        if since:
+            query = query.where(latest_event.c.status_date >= since)
 
         self.logger.debug(query.compile())
         task_result = await self.session.execute(query)
