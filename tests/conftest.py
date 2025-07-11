@@ -6,5 +6,6 @@ from fixtures.deploy_db import (
     lots_of_tasks,
     fastapi_testclient,
     async_tasks,
+    async_past_tasks,
     db_accessor,
 )
