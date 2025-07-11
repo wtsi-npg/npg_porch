@@ -101,42 +101,52 @@ def lots_of_tasks():
 @pytest.fixture
 def past_tasks():
     pipeline = Pipeline(
-        name="ptest one", repository_uri="pipeline-test.com", version="0.3.14"
+        name="ptest_one", repository_uri="pipeline-test.com", version="0.3.14"
     )
     token = Token(
-        token="cac0533d5599489d9a3d998028a79fe8",
+        token="cac0533d5599489d9a3d998028a79fe0",
         pipeline=pipeline,
-        description="OpenStack host, job finder",
+        description="Token for past tasks",
     )
-    day_one_events = [Event(token=token, time=DAY_ONE, change="Created") * 16]
-    early_events = [Event(token=token, time=EARLY, change="Something") * 4]
-    recent_events = [Event(token=token, time=RECENT, change="Something") * 4]
-    now_events = [Event(token=token, time=NOW, change="Something") * 4]
+    day_one_events = [
+        Event(token=token, time=DAY_ONE, change="Created") for _ in range(12)
+    ]
+    early_events = [
+        Event(token=token, time=EARLY, change="Something") for _ in range(3)
+    ]
+    recent_events = [
+        Event(token=token, time=RECENT, change="Something") for _ in range(3)
+    ]
+    now_events = [Event(token=token, time=NOW, change="Something") for _ in range(3)]
 
     tasks = [
-        Task(pipeline=pipeline, events=[day_one_events[i]], state=TaskStateEnum.PENDING)
-        for i in range(16)
+        Task(
+            pipeline=pipeline,
+            definition={"Shared": "input"},
+            events=[day_one_events[i]],
+            state=TaskStateEnum.PENDING,
+        )
+        for i in range(12)
     ]
-    for i in range(4):
-        tasks[i + 4].events.append(early_events[i])
-        tasks[i + 8].events.append(recent_events[i])
-        tasks[i + 12].events.append(now_events[i])
 
     for i in range(3):
-        index = 4 * (i + 1)
+        tasks[i + 3].events.append(early_events[i])
+        tasks[i + 6].events.append(recent_events[i])
+        tasks[i + 9].events.append(now_events[i])
+        index = 3 * (i + 1)
         tasks[index].state = TaskStateEnum.RUNNING
         index += 1
         tasks[index].state = TaskStateEnum.FAILED
         index += 1
         tasks[index].state = TaskStateEnum.DONE
 
-        entities = UserList([pipeline, token])
-        entities.extend(day_one_events)
-        entities.extend(early_events)
-        entities.extend(recent_events)
-        entities.extend(now_events)
-        entities.extend(tasks)
-        return entities
+    entities = UserList([pipeline, token])
+    entities.extend(day_one_events)
+    entities.extend(early_events)
+    entities.extend(recent_events)
+    entities.extend(now_events)
+    entities.extend(tasks)
+    return entities
 
 
 @pytest.fixture

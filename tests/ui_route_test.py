@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -6,16 +8,36 @@ from npg_porch.server import app
 from npg_porch.models import Pipeline, Task, TaskStateEnum
 
 client = TestClient(app)
+DAY_ONE = datetime(1, 1, 1)
 
 
 @pytest.mark.asyncio
-async def test_get_ui_tasks(db_accessor):
+async def test_get_ui_tasks(db_accessor, async_past_tasks):
+    done_response = client.get(f"/ui/tasks/All/{TaskStateEnum.DONE}/{DAY_ONE}")
+    pending_response = client.get(f"/ui/tasks/All/{TaskStateEnum.PENDING}/{DAY_ONE}")
+    not_done_response = client.get(f"/ui/tasks/All/{ui.UiStateEnum.NOT_DONE}/{DAY_ONE}")
+    all_response = client.get(f"/ui/tasks/All/{ui.UiStateEnum.ALL}/{DAY_ONE}")
+
+    # These include async minimum tasks as well
+    assert done_response.json()["recordsTotal"] == 3, "Three tasks are done"
+    assert pending_response.json()["recordsTotal"] == 5, "Three tasks are pending"
+    assert not_done_response.json()["recordsTotal"] == 11, "Nine tasks are not done"
+    assert all_response.json()["recordsTotal"] == 14, "Twelve tasks are present"
+
+    recent_fail_response = client.get(
+        f"/ui/tasks/All/{TaskStateEnum.FAILED}/{datetime.now() - timedelta(days=14)}"
+    )
+
+    assert (
+        recent_fail_response.json()["recordsTotal"] == 2
+    ), "Two tasks have failed within the last 14 days"
+
     modelled_pipeline = Pipeline(
-        name="test_pipeline", version="1.0", uri="file://test.pipeline"
+        name="new_pipeline", version="1.0", uri="file://test.pipeline"
     )
     pipeline = await db_accessor.create_pipeline(modelled_pipeline)
 
-    response = client.get(f"/ui/tasks/test_pipeline/{ui.UiStateEnum.ALL}")
+    response = client.get(f"/ui/tasks/new_pipeline/{ui.UiStateEnum.ALL}/{DAY_ONE}")
     assert response.json()["recordsTotal"] == 0, "No tasks in new pipeline"
 
     for i in range(3):
@@ -28,40 +50,16 @@ async def test_get_ui_tasks(db_accessor):
             ),
         )
 
-    done_response = client.get(f"/ui/tasks/test_pipeline/{TaskStateEnum.DONE}")
-    pending_response = client.get(f"/ui/tasks/test_pipeline/{TaskStateEnum.PENDING}")
-    assert done_response.json()["recordsTotal"] == 0, "No tasks are done"
-    assert pending_response.json()["recordsTotal"] == 3, "Three tasks are pending"
-
-    # Change task to running
-    await db_accessor.update_task(
-        token_id=1,
-        task=Task(
-            task_input={"number": 1},
-            pipeline=pipeline,
-            status=TaskStateEnum.RUNNING,
-        ),
+    done_response = client.get(f"/ui/tasks/new_pipeline/{TaskStateEnum.DONE}/{DAY_ONE}")
+    pending_response = client.get(
+        f"/ui/tasks/new_pipeline/{TaskStateEnum.PENDING}/{DAY_ONE}"
     )
-
-    # Change task to done
-    await db_accessor.update_task(
-        token_id=1,
-        task=Task(
-            task_input={"number": 2},
-            pipeline=pipeline,
-            status=TaskStateEnum.DONE,
-        ),
-    )
-
-    done_response = client.get(f"/ui/tasks/test_pipeline/{TaskStateEnum.DONE}")
-    pending_response = client.get(f"/ui/tasks/test_pipeline/{TaskStateEnum.PENDING}")
-    not_done_response = client.get(f"/ui/tasks/test_pipeline/{ui.UiStateEnum.NOT_DONE}")
-    all_response = client.get(f"/ui/tasks/test_pipeline/{ui.UiStateEnum.ALL}")
-
-    assert done_response.json()["recordsTotal"] == 1, "One task is done"
-    assert pending_response.json()["recordsTotal"] == 1, "One task is pending"
-    assert not_done_response.json()["recordsTotal"] == 2, "Two tasks are not done"
-    assert all_response.json()["recordsTotal"] == 3, "Three tasks are present"
+    assert (
+        done_response.json()["recordsTotal"] == 0
+    ), "No tasks are done in new pipeline after task creation"
+    assert (
+        pending_response.json()["recordsTotal"] == 3
+    ), "Three tasks are pending in new pipeline after task creation"
 
 
 @pytest.mark.asyncio
