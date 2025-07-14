@@ -36,7 +36,6 @@ from npg_porch.models import TaskStateEnum
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
 
-DAY_ONE = datetime(1, 1, 1)
 RECENT = datetime.now() - timedelta(days=14)
 
 tags_metadata = [
@@ -108,7 +107,7 @@ async def root(
 
     endpoint = "/ui/tasks"
     endpoint += f"/{pipeline_name}" if pipeline_name else "/All"
-    endpoint += f"/{task_status}/{DAY_ONE}"
+    endpoint += f"/{task_status}/{datetime.min}"
 
     return templates.TemplateResponse(
         "listing.j2",
@@ -147,7 +146,7 @@ async def long_running(request: Request) -> HTMLResponse:
     "/recently_failed",
     response_class=HTMLResponse,
     tags=["ui"],
-    summary="Web page with listing of tasks that have failed in the last 2 " "weeks",
+    summary="Web page with listing of tasks that have failed in the last 2 weeks",
 )
 async def recently_failed(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(

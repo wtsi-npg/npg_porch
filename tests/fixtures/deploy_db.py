@@ -10,7 +10,6 @@ from npg_porch.db.data_access import AsyncDbAccessor
 from npg_porch.models import Task as ModelledTask, TaskStateEnum
 from npg_porch.server import app
 
-DAY_ONE = datetime(1, 1, 1)
 EARLY = datetime.now() - timedelta(days=20)
 RECENT = datetime.now() - timedelta(days=13)
 NOW = datetime.now()
@@ -109,7 +108,7 @@ def past_tasks():
         description="Token for past tasks",
     )
     day_one_events = [
-        Event(token=token, time=DAY_ONE, change="Created") for _ in range(12)
+        Event(token=token, time=datetime.min, change="Created") for _ in range(12)
     ]
     early_events = [
         Event(token=token, time=EARLY, change="Something") for _ in range(3)

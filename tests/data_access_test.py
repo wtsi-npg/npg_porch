@@ -318,6 +318,12 @@ async def test_get_expanded_tasks(db_accessor, async_past_tasks):
     assert len(expanded_tasks) == 14, "Gets all tasks"
 
     expanded_tasks = await db_accessor.get_expanded_tasks(
+        since=datetime.now() - timedelta(days=14)
+    )
+
+    assert len(expanded_tasks) == 8, "Eight tasks updated in the last 14 days"
+
+    expanded_tasks = await db_accessor.get_expanded_tasks(
         status=[TaskStateEnum.FAILED], since=datetime.now() - timedelta(days=14)
     )
 
@@ -372,7 +378,9 @@ async def test_get_expanded_tasks(db_accessor, async_past_tasks):
         status=[TaskStateEnum.PENDING]
     )
 
-    assert len(expanded_tasks) == 7, "Done tasks do not appear in PENDING results"
+    assert (
+        len(expanded_tasks) == 7
+    ), "Specifying PENDING status returns only pending tasks"
 
 
 @pytest.mark.asyncio

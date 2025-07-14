@@ -24,8 +24,6 @@ from starlette import status
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.models import TaskStateEnum
 
-DAY_ONE = datetime(1, 1, 1)
-
 
 class UiStateEnum(str, Enum):
     def __str__(self):
@@ -54,12 +52,12 @@ async def get_ui_tasks(
     request: Request,
     pipeline_name: str,
     state: TaskStateEnum | UiStateEnum,
-    since: datetime = DAY_ONE,
+    since: datetime,
     db_accessor=Depends(get_DbAccessor),
 ) -> dict:
     pipeline_name = None if pipeline_name == "All" else pipeline_name
     params = request.query_params.get
-    since = None if since == DAY_ONE else since
+    since = None if since == datetime.min else since  # This is not perfect, but
     state = (
         [
             taskstate

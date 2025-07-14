@@ -8,15 +8,18 @@ from npg_porch.server import app
 from npg_porch.models import Pipeline, Task, TaskStateEnum
 
 client = TestClient(app)
-DAY_ONE = datetime(1, 1, 1)
 
 
 @pytest.mark.asyncio
 async def test_get_ui_tasks(db_accessor, async_past_tasks):
-    done_response = client.get(f"/ui/tasks/All/{TaskStateEnum.DONE}/{DAY_ONE}")
-    pending_response = client.get(f"/ui/tasks/All/{TaskStateEnum.PENDING}/{DAY_ONE}")
-    not_done_response = client.get(f"/ui/tasks/All/{ui.UiStateEnum.NOT_DONE}/{DAY_ONE}")
-    all_response = client.get(f"/ui/tasks/All/{ui.UiStateEnum.ALL}/{DAY_ONE}")
+    done_response = client.get(f"/ui/tasks/All/{TaskStateEnum.DONE}/{datetime.min}")
+    pending_response = client.get(
+        f"/ui/tasks/All/{TaskStateEnum.PENDING}/{datetime.min}"
+    )
+    not_done_response = client.get(
+        f"/ui/tasks/All/{ui.UiStateEnum.NOT_DONE}/{datetime.min}"
+    )
+    all_response = client.get(f"/ui/tasks/All/{ui.UiStateEnum.ALL}/{datetime.min}")
 
     # These include async minimum tasks as well
     assert done_response.json()["recordsTotal"] == 3, "Three tasks are done"
@@ -37,7 +40,7 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
     )
     pipeline = await db_accessor.create_pipeline(modelled_pipeline)
 
-    response = client.get(f"/ui/tasks/new_pipeline/{ui.UiStateEnum.ALL}/{DAY_ONE}")
+    response = client.get(f"/ui/tasks/new_pipeline/{ui.UiStateEnum.ALL}/{datetime.min}")
     assert response.json()["recordsTotal"] == 0, "No tasks in new pipeline"
 
     for i in range(3):
@@ -50,9 +53,11 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
             ),
         )
 
-    done_response = client.get(f"/ui/tasks/new_pipeline/{TaskStateEnum.DONE}/{DAY_ONE}")
+    done_response = client.get(
+        f"/ui/tasks/new_pipeline/{TaskStateEnum.DONE}/{datetime.min}"
+    )
     pending_response = client.get(
-        f"/ui/tasks/new_pipeline/{TaskStateEnum.PENDING}/{DAY_ONE}"
+        f"/ui/tasks/new_pipeline/{TaskStateEnum.PENDING}/{datetime.min}"
     )
     assert (
         done_response.json()["recordsTotal"] == 0
