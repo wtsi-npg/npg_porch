@@ -19,8 +19,10 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from datetime import datetime
+from statistics import mean, stdev
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
@@ -246,12 +248,14 @@ class AsyncDbAccessor:
         tasks = task_result.scalars().all()
         return [t.convert_to_model() for t in tasks]
 
-    async def get_expanded_tasks(self, pipeline_name: str = None) -> list[TaskExpanded]:
+    async def get_expanded_tasks(
+        self, pipeline_name: str = None, status: list[TaskStateEnum] = None
+    ) -> list[TaskExpanded]:
         """
         Gets information about tasks including their creation date, ordered
         by their most recent status update.
 
-        Can be filtered by pipeline name.
+        Can be filtered by pipeline name and status.
         """
         latest_event = (
             select(samax(Event.time).label("status_date"), Event.task_id)
@@ -270,6 +274,8 @@ class AsyncDbAccessor:
 
         if pipeline_name:
             query = query.where(DbPipeline.name == pipeline_name)
+        if status:
+            query = query.where(or_(DbTask.state == state for state in status))
 
         self.logger.debug(query.compile())
         task_result = await self.session.execute(query)
@@ -281,6 +287,32 @@ class AsyncDbAccessor:
         query = select(count()).select_from(DbTask)
         count_result = await self.session.execute(query)
         return count_result.scalar()
+
+    async def get_long_running_tasks(self) -> list[TaskExpanded]:
+        """
+        Returns tasks have been NOT DONE for longer than is expected, taking
+        2 standard deviations more than the mean time for DONE tasks in their
+        pipeline.
+        """
+        tasks = await self.get_expanded_tasks()
+        lengths = {}
+        not_done = {}
+        for task in tasks:
+            if task.status == TaskStateEnum.DONE:
+                lengths.setdefault(task.pipeline.name, []).append(
+                    (task.updated - task.created).total_seconds()
+                )
+            elif task.status != TaskStateEnum.CANCELLED:
+                not_done.setdefault(task.pipeline.name, []).append(task)
+        long_running = []
+        for pipeline, pipeline_tasks in not_done.items():
+            if pipeline not in lengths.keys() or len(lengths[pipeline]) < 2:
+                continue  # not enough data for this pipeline
+            cutoff = mean(lengths[pipeline]) + (2 * stdev(lengths[pipeline]))
+            for task in pipeline_tasks:
+                if (datetime.now() - task.created).total_seconds() > cutoff:
+                    long_running.append(task)
+        return long_running
 
     async def get_db_task(
         self,
