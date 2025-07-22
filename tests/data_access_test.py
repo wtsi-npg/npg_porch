@@ -1,5 +1,6 @@
 import re
 import time
+from datetime import datetime, timedelta
 
 import pytest
 from npg_porch.db.data_access import AsyncDbAccessor
@@ -311,10 +312,22 @@ async def test_get_tasks(db_accessor):
 
 
 @pytest.mark.asyncio
-async def test_get_expanded_tasks(db_accessor):
+async def test_get_expanded_tasks(db_accessor, async_past_tasks):
     expanded_tasks = await db_accessor.get_expanded_tasks()
 
-    assert len(expanded_tasks) == 2, "Gets all tasks"
+    assert len(expanded_tasks) == 14, "Gets all tasks"
+
+    expanded_tasks = await db_accessor.get_expanded_tasks(
+        since=datetime.now() - timedelta(days=14)
+    )
+
+    assert len(expanded_tasks) == 8, "Eight tasks updated in the last 14 days"
+
+    expanded_tasks = await db_accessor.get_expanded_tasks(
+        status=[TaskStateEnum.FAILED], since=datetime.now() - timedelta(days=14)
+    )
+
+    assert len(expanded_tasks) == 2, "Two tasks failed in the last 14 days"
 
     pipeline = await store_me_a_pipeline(db_accessor)
 
@@ -328,9 +341,9 @@ async def test_get_expanded_tasks(db_accessor):
             ),
         )
 
-    expanded_tasks = await db_accessor.get_expanded_tasks()
+    expanded_tasks = await db_accessor.get_expanded_tasks(pipeline_name=pipeline.name)
 
-    assert len(expanded_tasks) == 5, "Gets tasks from new pipeline as well"
+    assert len(expanded_tasks) == 3, "Gets tasks from new pipeline"
     assert (
         expanded_tasks[0].created == expanded_tasks[0].updated
     ), "Creation date is the same as status update date"
@@ -353,7 +366,9 @@ async def test_get_expanded_tasks(db_accessor):
 
     expanded_tasks = await db_accessor.get_expanded_tasks()
 
-    assert len(expanded_tasks) == 5, "Updating a task does not change number of results"
+    assert (
+        len(expanded_tasks) == 17
+    ), "Updating a task does not change number of results"
     # ordered by updated date, so this should always be the task that was updated
     assert (
         expanded_tasks[0].created < expanded_tasks[0].updated
@@ -363,7 +378,9 @@ async def test_get_expanded_tasks(db_accessor):
         status=[TaskStateEnum.PENDING]
     )
 
-    assert len(expanded_tasks) == 4, "Done tasks do not appear in PENDING results"
+    assert (
+        len(expanded_tasks) == 7
+    ), "Specifying PENDING status returns only pending tasks"
 
 
 @pytest.mark.asyncio

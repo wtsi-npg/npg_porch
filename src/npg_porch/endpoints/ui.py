@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
+from datetime import datetime
 from enum import Enum
 from fastapi import APIRouter, Depends, Request
 from starlette import status
@@ -42,7 +43,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/tasks/{pipeline_name}/{state}",
+    "/tasks/{pipeline_name}/{state}/{since}",
     response_model=dict,
     summary="Returns all expanded tasks for the specified pipeline and status "
     "in a displayable format for the ui",
@@ -51,10 +52,12 @@ async def get_ui_tasks(
     request: Request,
     pipeline_name: str,
     state: TaskStateEnum | UiStateEnum,
+    since: datetime,
     db_accessor=Depends(get_DbAccessor),
 ) -> dict:
     pipeline_name = None if pipeline_name == "All" else pipeline_name
     params = request.query_params.get
+    since = None if since == datetime.min else since  # This is not perfect, but
     state = (
         [
             taskstate
@@ -66,7 +69,7 @@ async def get_ui_tasks(
         if state == UiStateEnum.ALL
         else [state]
     )
-    task_list = await db_accessor.get_expanded_tasks(pipeline_name, state)
+    task_list = await db_accessor.get_expanded_tasks(pipeline_name, state, since)
     return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
 
 

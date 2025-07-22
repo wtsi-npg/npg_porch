@@ -1,4 +1,6 @@
 from collections import UserList
+from datetime import datetime, timedelta
+
 import pytest
 import pytest_asyncio
 from starlette.testclient import TestClient
@@ -7,6 +9,10 @@ from npg_porch.db.models import Pipeline, Task, Event, Token
 from npg_porch.db.data_access import AsyncDbAccessor
 from npg_porch.models import Task as ModelledTask, TaskStateEnum
 from npg_porch.server import app
+
+EARLY = datetime.now() - timedelta(days=20)
+RECENT = datetime.now() - timedelta(days=13)
+NOW = datetime.now()
 
 
 @pytest.fixture
@@ -92,6 +98,57 @@ def lots_of_tasks():
 
 
 @pytest.fixture
+def past_tasks():
+    pipeline = Pipeline(
+        name="ptest_one", repository_uri="pipeline-test.com", version="0.3.14"
+    )
+    token = Token(
+        token="cac0533d5599489d9a3d998028a79fe0",
+        pipeline=pipeline,
+        description="Token for past tasks",
+    )
+    day_one_events = [
+        Event(token=token, time=datetime.min, change="Created") for _ in range(12)
+    ]
+    early_events = [
+        Event(token=token, time=EARLY, change="Something") for _ in range(3)
+    ]
+    recent_events = [
+        Event(token=token, time=RECENT, change="Something") for _ in range(3)
+    ]
+    now_events = [Event(token=token, time=NOW, change="Something") for _ in range(3)]
+
+    tasks = [
+        Task(
+            pipeline=pipeline,
+            definition={"Shared": "input"},
+            events=[day_one_events[i]],
+            state=TaskStateEnum.PENDING,
+        )
+        for i in range(12)
+    ]
+
+    for i in range(3):
+        tasks[i + 3].events.append(early_events[i])
+        tasks[i + 6].events.append(recent_events[i])
+        tasks[i + 9].events.append(now_events[i])
+        index = 3 * (i + 1)
+        tasks[index].state = TaskStateEnum.RUNNING
+        index += 1
+        tasks[index].state = TaskStateEnum.FAILED
+        index += 1
+        tasks[index].state = TaskStateEnum.DONE
+
+    entities = UserList([pipeline, token])
+    entities.extend(day_one_events)
+    entities.extend(early_events)
+    entities.extend(recent_events)
+    entities.extend(now_events)
+    entities.extend(tasks)
+    return entities
+
+
+@pytest.fixture
 def sync_minimum(sync_session, minimum_data):
     sync_session.add_all(minimum_data)
     sync_session.commit()
@@ -108,6 +165,13 @@ async def async_minimum(async_session, minimum_data):
 @pytest_asyncio.fixture
 async def async_tasks(async_session, lots_of_tasks):
     async_session.add_all(lots_of_tasks)
+    await async_session.commit()
+    return async_session
+
+
+@pytest_asyncio.fixture
+async def async_past_tasks(async_session, past_tasks):
+    async_session.add_all(past_tasks)
     await async_session.commit()
     return async_session
 
