@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
-
+from datetime import datetime, timedelta
 from importlib import metadata
 
 from fastapi import FastAPI, Request, Depends
@@ -31,9 +31,12 @@ from jinja2 import Environment, PackageLoader
 
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui
+from npg_porch.models import TaskStateEnum
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
 # https://fastapi.tiangolo.com/tutorial/metadata
+
+RECENT = datetime.now() - timedelta(days=14)
 
 tags_metadata = [
     {
@@ -74,10 +77,22 @@ version = metadata.version("npg_porch")
 async def root(
     request: Request,
     pipeline_name: str = None,
+    task_status: ui.UiStateEnum | TaskStateEnum = ui.UiStateEnum.ALL,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
+    redirect = False
+    url = request.url
     if not pipeline_name and "pipeline_name" in request.query_params.keys():
-        return RedirectResponse(request.url.remove_query_params("pipeline_name"))
+        url = request.url.remove_query_params("pipeline_name")
+        redirect = True
+    if (
+        task_status == ui.UiStateEnum.ALL
+        and "task_status" in request.query_params.keys()
+    ):
+        url = request.url.remove_query_params("task_status")
+        redirect = True
+    if redirect:
+        return RedirectResponse(url)
 
     pipeline_list = await db_accessor.get_recent_pipelines()
     if pipeline_name and pipeline_name not in [
@@ -89,13 +104,56 @@ async def root(
             <h3> {pipeline_name} not registered in POrch </h3> 
             """
         )
-    endpoint = f"/ui/tasks/{pipeline_name}" if pipeline_name else "/ui/tasks"
+
+    endpoint = "/ui/tasks"
+    endpoint += f"/{pipeline_name}" if pipeline_name else "/All"
+    endpoint += f"/{task_status}/{datetime.min}"
+
     return templates.TemplateResponse(
         "listing.j2",
         {
             "endpoint": endpoint,
             "pipeline_name": pipeline_name,
+            "task_status": task_status,
             "pipelines": pipeline_list,
+            "request": request,
+            "states": [state for state in ui.UiStateEnum]
+            + [state for state in TaskStateEnum],
+            "version": version,
+        },
+    )
+
+
+@app.get(
+    "/long_running",
+    response_class=HTMLResponse,
+    tags=["ui"],
+    summary="Web page with listing of long running Porch tasks",
+)
+async def long_running(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "listing.j2",
+        {
+            "endpoint": "/ui/long_running",
+            "pipeline_name": "Long Running",
+            "request": request,
+            "version": version,
+        },
+    )
+
+
+@app.get(
+    "/recently_failed",
+    response_class=HTMLResponse,
+    tags=["ui"],
+    summary="Web page with listing of tasks that have failed in the last 2 weeks",
+)
+async def recently_failed(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "listing.j2",
+        {
+            "endpoint": f"/ui/tasks/All/{TaskStateEnum.FAILED}/{RECENT}",
+            "pipeline_name": "Recently Failed",
             "request": request,
             "version": version,
         },

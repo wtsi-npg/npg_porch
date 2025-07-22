@@ -3,7 +3,21 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## Unreleased
+
+## [2.2] - 2025-07-22
+
+### Added
+
+* Colour rows based on status.
+* Status selection dropdown to change listing view.
+* Long Running jobs view.
+* Recent Failures view.
+
+### Changed
+
+* Improve layout.
+* Consolidate ui data endpoints.
 
 ## [2.1.3] - 2025-04-17
 
