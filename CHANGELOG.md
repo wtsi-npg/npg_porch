@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+
+* Exclude failed tasks from Long Running view.
+
 ## [2.2] - 2025-07-22
 
 ### Added
