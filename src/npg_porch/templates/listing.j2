@@ -16,7 +16,9 @@
     <div class="container-fluid mb-5">
       <div class="row mt-4 mb-4">
         <div class="col">
-          <h3 class="text-start mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }} {{ "- %s" % task_status if task_status else "" }}</h3>
+          <h3 class="text-start mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }} {{ "- %s" % task_status if task_status and task_status != "All" else "" }}</h3>
+          {{ "<p>Long running tasks have existed for two standard deviations longer than the mean length of tasks in their pipeline.</p>" if pipeline_name == "Long Running" }} <!-- Update once fixed -->
+          {{ "<p>Recently failed tasks changed to the failed status in the last 2 weeks.</p>" if pipeline_name == "Recently Failed" }}
         </div>
       </div>
 
