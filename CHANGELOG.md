@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 * Exclude failed tasks from Long Running view.
+* Improve clarity of page headings and contents.
 
 ## [2.2] - 2025-07-22
 
