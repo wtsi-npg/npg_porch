@@ -394,7 +394,7 @@ async def test_count_tasks(db_accessor, async_tasks):
 async def test_get_long_running_tasks(db_accessor):
     pipeline = await store_me_a_pipeline(db_accessor, 2)
 
-    for i in range(4):
+    for i in range(5):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
@@ -407,7 +407,7 @@ async def test_get_long_running_tasks(db_accessor):
     # increase expected time to ensure that a task added later will not be "long_running"
     time.sleep(1)
 
-    # Change task to done
+    # Change tasks to done states
     for i in range(2):
         await db_accessor.update_task(
             token_id=1,
@@ -417,6 +417,14 @@ async def test_get_long_running_tasks(db_accessor):
                 status=TaskStateEnum.DONE,
             ),
         )
+    await db_accessor.update_task(
+        token_id=1,
+        task=Task(
+            task_input={"number": 3},
+            pipeline=pipeline,
+            status=TaskStateEnum.FAILED,
+        ),
+    )
 
     long_running_tasks = await db_accessor.get_long_running_tasks()
 

@@ -303,11 +303,13 @@ class AsyncDbAccessor:
         lengths = {}
         not_done = {}
         for task in tasks:
+            if task.status in [TaskStateEnum.CANCELLED, TaskStateEnum.FAILED]:
+                continue
             if task.status == TaskStateEnum.DONE:
                 lengths.setdefault(task.pipeline.name, []).append(
                     (task.updated - task.created).total_seconds()
                 )
-            elif task.status != TaskStateEnum.CANCELLED:
+            else:
                 not_done.setdefault(task.pipeline.name, []).append(task)
         long_running = []
         for pipeline, pipeline_tasks in not_done.items():
