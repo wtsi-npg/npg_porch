@@ -1,7 +1,6 @@
-# Copyright (C) 2021, 2022, 2024 Genome Research Ltd.
+# Copyright (C) 2025 Genome Research Ltd.
 #
-# Author: Kieron Taylor kt19@sanger.ac.uk
-# Author: Marina Gourtovaia mg8@sanger.ac.uk
+# Author: Michael Kubiak mk35@sanger.ac.uk
 #
 # This file is part of npg_porch
 #
@@ -21,14 +20,16 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class Pipeline(BaseModel):
+class Version(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(
+    version: str = Field(
+        default=None,
+        title="Version",
+        description="The version string",
+    )
+    pipeline: str = Field(
         default=None,
         title="Pipeline Name",
-        description="A user-controlled name for the pipeline",
-    )
-    uri: str | None = Field(
-        default=None, title="URI", description="URI to bootstrap the pipeline code"
+        description="The pipeline to which this version belongs",
     )

@@ -43,7 +43,7 @@ class Task(Base):
 
     __tablename__ = "task"
     task_id = Column(Integer, primary_key=True, autoincrement=True)
-    pipeline_id = Column(Integer, ForeignKey("pipeline.pipeline_id"))
+    version_id = Column(Integer, ForeignKey("version.version_id"))
     job_descriptor = Column(String)
     # This is the serialisation of Dict representing the JSON
     # provided by the workflow - we don't want to get into serialising
@@ -59,13 +59,13 @@ class Task(Base):
 
     # Set unique this way so that SQLite creates the constraint
     __table_args__ = (
-        UniqueConstraint("pipeline_id", "job_descriptor", name="unique_tasks"),
+        UniqueConstraint("version_id", "job_descriptor", name="unique_tasks"),
     )
 
     # Index('idx_unique_tasks', pipeline_id, job_descriptor, unique=True)
-    Index("idx_ordered_tasks", pipeline_id, created)
+    Index("idx_ordered_tasks", version_id, created)
 
-    pipeline = relationship("Pipeline", back_populates="tasks")
+    version = relationship("Version", back_populates="task")
     events = relationship("Event", back_populates="task")
 
     def convert_to_model(
@@ -74,7 +74,7 @@ class Task(Base):
         updated: datetime = None,
     ) -> ModelledTask | ModelledTaskExpanded:
         init_args = {
-            "pipeline": self.pipeline.convert_to_model(),
+            "version": self.version.convert_to_model(),
             "task_input_id": self.job_descriptor,
             "task_input": self.definition,
             "status": self.state,

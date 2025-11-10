@@ -24,6 +24,7 @@ import ujson
 from pydantic import BaseModel, Field, ValidationError
 
 from npg_porch.models.pipeline import Pipeline
+from npg_porch.models import Version
 
 
 class TaskStateEnum(str, Enum):
@@ -39,7 +40,7 @@ class TaskStateEnum(str, Enum):
 
 
 class Task(BaseModel):
-    pipeline: Pipeline
+    version: Version
     task_input_id: str | None = Field(
         None,
         title="Task Input ID",
@@ -61,9 +62,9 @@ class Task(BaseModel):
         """
         Allow instances of Task to be compared with ==
 
-        The pipeline and task_input_ids can partially differ and it still be a
+        The version and task_input_ids can partially differ and it still be a
         valid comparison. Clients do not get to create task_input_ids and may
-        not fully specify a pipeline.
+        not fully specify a version.
 
         Automatically attempts to cast a dict into a Task, and therefore
         ignores any properties not valid for a Task
@@ -81,8 +82,8 @@ class Task(BaseModel):
         truths = []
         for k, v in self.model_dump().items():
             other_d = other.model_dump()
-            if k == "pipeline":
-                truths.append(v["name"] == other_d[k]["name"])
+            if k == "version":
+                truths.append(v["pipeline"] == other_d[k]["pipeline"])
             elif k == "task_input_id":
                 break
             elif k == "status":
