@@ -23,7 +23,7 @@ import hashlib
 import ujson
 from pydantic import BaseModel, Field, ValidationError
 
-from npg_porch.models.pipeline import Pipeline
+from npg_porch.models import Version
 
 
 class TaskStateEnum(str, Enum):
@@ -83,6 +83,7 @@ class Task(BaseModel):
             other_d = other.model_dump()
             if k == "pipeline":
                 truths.append(v["name"] == other_d[k]["name"])
+                truths.append(v["version"] == other_d[k]["version"])
             elif k == "task_input_id":
                 break
             elif k == "status":

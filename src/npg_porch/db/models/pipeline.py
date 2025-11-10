@@ -35,14 +35,10 @@ class Pipeline(Base):
     pipeline_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
     repository_uri = Column(String, nullable=False)
-    version = Column(String, nullable=False)
 
-    tasks = relationship("Task", back_populates="pipeline")
-
+    versions = relationship("Version", back_populates="pipeline")
     tokens = relationship("Token", back_populates="pipeline")
 
     def convert_to_model(self):
         "Convert sqlalchemy object to npg_porch format"
-        return ModeledPipeline(
-            name=self.name, version=self.version, uri=self.repository_uri
-        )
+        return ModeledPipeline(name=self.name, uri=self.repository_uri)
