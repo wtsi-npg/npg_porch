@@ -23,7 +23,6 @@ import hashlib
 import ujson
 from pydantic import BaseModel, Field, ValidationError
 
-from npg_porch.models.pipeline import Pipeline
 from npg_porch.models import Version
 
 

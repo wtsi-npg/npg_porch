@@ -1,3 +1,3 @@
 from .pipeline import Pipeline
-from .task import Task, TaskStateEnum, TaskExpanded
 from .version import Version
+from .task import Task, TaskStateEnum, TaskExpanded

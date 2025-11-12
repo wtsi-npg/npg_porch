@@ -18,18 +18,15 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from pydantic import BaseModel, ConfigDict, Field
+from npg_porch.models import Pipeline
 
 
 class Version(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    pipeline: Pipeline
     version: str = Field(
         default=None,
         title="Version",
         description="The version string",
-    )
-    pipeline: str = Field(
-        default=None,
-        title="Pipeline Name",
-        description="The pipeline to which this version belongs",
     )

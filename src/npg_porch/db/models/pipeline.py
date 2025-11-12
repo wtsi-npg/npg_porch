@@ -36,7 +36,6 @@ class Pipeline(Base):
     name = Column(String, unique=True, nullable=False)
     repository_uri = Column(String, nullable=False)
 
-    tasks = relationship("Task", back_populates="pipeline")
     versions = relationship("Version", back_populates="pipeline")
     tokens = relationship("Token", back_populates="pipeline")
 

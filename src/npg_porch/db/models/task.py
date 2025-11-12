@@ -65,7 +65,7 @@ class Task(Base):
     # Index('idx_unique_tasks', pipeline_id, job_descriptor, unique=True)
     Index("idx_ordered_tasks", version_id, created)
 
-    version = relationship("Version", back_populates="task")
+    version = relationship("Version", back_populates="tasks")
     events = relationship("Event", back_populates="task")
 
     def convert_to_model(
