@@ -30,7 +30,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, PackageLoader
 
 from npg_porch.db.connection import get_DbAccessor
-from npg_porch.endpoints import pipelines, tasks, ui
+from npg_porch.endpoints import pipelines, tasks, ui, versions
 from npg_porch.models import TaskStateEnum
 
 # https://fastapi.tiangolo.com/tutorial/bigger-applications/
@@ -61,6 +61,7 @@ app = FastAPI(
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 app.include_router(ui.router)
+app.include_router(versions.router)
 
 env = Environment(loader=PackageLoader("npg_porch", "templates"))
 templates = Jinja2Templates(env=env)
