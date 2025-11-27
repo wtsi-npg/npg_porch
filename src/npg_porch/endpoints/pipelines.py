@@ -124,7 +124,7 @@ async def create_pipeline_token(
     },
     summary="Create one pipeline record.",
     description="""
-    Using JSON data in the request, creates a new pipeline record.
+    Using JSON data in the request, creates new pipeline and version records.
     A valid special power user token is required for authorisation.""",
 )
 async def create_pipeline(
@@ -137,16 +137,30 @@ async def create_pipeline(
         raise HTTPException(status_code=403)
 
     try:
-        new_pipeline = await db_accessor.create_pipeline(pipeline)
+        await db_accessor.create_pipeline(pipeline)
+    except IntegrityError as e:
+        logging.info(str(e))
+        if re.search("NOT NULL", str(e)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pipeline must specify a name and URI",
+            )
+        else:
+            logging.info("Pipeline already exists, skipping to version creation")
+            pass
+
+    try:
+        new_version = await db_accessor.create_version(pipeline)
     except IntegrityError as e:
         logging.error(str(e))
         if re.search("NOT NULL", str(e)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pipeline must specify a name and URI and version",
+                detail="Version must specify a version string",
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Pipeline already exists"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Version already exists",
             )
-    return new_pipeline
+    return new_version

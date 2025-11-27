@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from .base import Base
@@ -34,6 +34,7 @@ class Version(Base):
     version_id = Column(Integer, primary_key=True, autoincrement=True)
     version = Column(String, nullable=False)
     pipeline_id = Column(Integer, ForeignKey("pipeline.pipeline_id"), nullable=False)
+    unique_version = UniqueConstraint(version, pipeline_id, name="unique_version")
 
     pipeline = relationship("Pipeline", back_populates="versions")
     tasks = relationship("Task", back_populates="version")
