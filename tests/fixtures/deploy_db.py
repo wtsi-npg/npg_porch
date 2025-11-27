@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 from starlette.testclient import TestClient
 
-from npg_porch.db.models import Pipeline, Task, Event, Token
+from npg_porch.db.models import Pipeline, Task, Event, Token, Version
 from npg_porch.db.data_access import AsyncDbAccessor
 from npg_porch.models import Task as ModelledTask, TaskStateEnum
 from npg_porch.server import app
@@ -19,9 +19,9 @@ NOW = datetime.now()
 def minimum_data():
     "Provides one or two of everything"
 
-    pipeline = Pipeline(
-        name="ptest one", repository_uri="pipeline-test.com", version="0.3.14"
-    )
+    pipeline = Pipeline(name="ptest one", repository_uri="pipeline-test.com")
+    version = Version(pipeline=pipeline, version="0.3.14")
+
     tokens = [
         Token(
             token="cac0533d5599489d9a3d998028a79fe8",
@@ -38,14 +38,14 @@ def minimum_data():
     b_event = Event(token=tokens[0], change="Created")
     tasks = [
         Task(
-            pipeline=pipeline,
+            version=version,
             events=[a_event],
             job_descriptor="8cb72a9439dc643d67e859ceca424b9327a9c1abf9c772525df299f656137c22",
             definition={"to_do": "stuff", "why": "reasons"},
             state=TaskStateEnum.PENDING,
         ),
         Task(
-            pipeline=pipeline,
+            version=version,
             events=[b_event],
             # Probably wrong job_descriptor
             job_descriptor="4994ef1668bc9614bf0a8f199da50345e85e8b714ab91e95cf619c74af7d3eda",
@@ -54,7 +54,7 @@ def minimum_data():
         ),
     ]
 
-    entities = UserList([pipeline, b_event, a_event])
+    entities = UserList([pipeline, version, b_event, a_event])
     entities.extend(tokens)
     entities.extend(tasks)
 
@@ -65,9 +65,9 @@ def minimum_data():
 def lots_of_tasks():
     "A good supply of tasks for testing claims"
 
-    pipeline = Pipeline(
-        name="ptest some", repository_uri="pipeline-test.com", version="0.3.14"
-    )
+    pipeline = Pipeline(name="ptest some", repository_uri="pipeline-test.com")
+    a_version = Version(pipeline=pipeline, version="0.3.14")
+    b_version = Version(pipeline=pipeline, version="0.3.15")
     job_finder_token = Token(
         token="ba53eaf7073d4c2b95ca47aeed41086c",
         pipeline=pipeline,
@@ -76,22 +76,23 @@ def lots_of_tasks():
 
     tasks = []
     for i in range(0, 10):
+        version, v_string = (a_version, "0.3.14") if i < 5 else (b_version, "0.3.15")
         # A convoluted way of running generate_task_id() so we can set it
         # correctly in the DB without going through the API
         t = ModelledTask(
-            pipeline={"name": "does not matter"},
+            version={"version": v_string, "pipeline": {"name": "does not matter"}},
             task_input={"input": i + 1},
             status=TaskStateEnum.PENDING,
         )
         t_db = Task(
-            pipeline=pipeline,
+            version=version,
             job_descriptor=t.generate_task_id(),
             state=t.status,
             definition=t.task_input,
         )
         tasks.append(t_db)
 
-    entities = UserList([pipeline, job_finder_token])
+    entities = UserList([pipeline, a_version, b_version, job_finder_token])
     for t in tasks:
         entities.append(t)
     return entities
@@ -99,9 +100,8 @@ def lots_of_tasks():
 
 @pytest.fixture
 def past_tasks():
-    pipeline = Pipeline(
-        name="ptest_one", repository_uri="pipeline-test.com", version="0.3.14"
-    )
+    pipeline = Pipeline(name="ptest_one", repository_uri="pipeline-test.com")
+    version = Version(pipeline=pipeline, version="0.3.14")
     token = Token(
         token="cac0533d5599489d9a3d998028a79fe0",
         pipeline=pipeline,
@@ -139,7 +139,7 @@ def past_tasks():
         index += 1
         tasks[index].state = TaskStateEnum.DONE
 
-    entities = UserList([pipeline, token])
+    entities = UserList([pipeline, version, token])
     entities.extend(day_one_events)
     entities.extend(early_events)
     entities.extend(recent_events)
