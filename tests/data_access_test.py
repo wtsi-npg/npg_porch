@@ -23,8 +23,7 @@ def give_me_a_version(number: int = 1):
 
 async def store_me_a_version(dac: AsyncDbAccessor, number: int = 1) -> ModelledVersion:
     version_model = give_me_a_version(number)
-    await dac.create_pipeline(version_model.pipeline)
-    return await dac.create_version(version_model)
+    return await dac.create_pipeline(version_model)
 
 
 def test_data_accessor_setup(async_session):
@@ -58,7 +57,10 @@ async def test_get_all_pipelines(db_accessor):
 
     # Make a second pipeline with the same version and different uri as the one in the fixture
     await db_accessor.create_pipeline(
-        ModelledPipeline(name="ptest two", uri="test-the-other-one.com")
+        ModelledVersion(
+            pipeline=ModelledPipeline(name="ptest two", uri="test-the-other-one.com"),
+            version="0.3.14",
+        )
     )
 
     pipes = await db_accessor.get_all_pipelines(uri="test-the-other-one.com")
@@ -69,24 +71,36 @@ async def test_get_all_pipelines(db_accessor):
 async def test_create_pipeline(db_accessor):
     version = give_me_a_version()
 
-    saved_pipeline = await db_accessor.create_pipeline(version.pipeline)
-    saved_version = await db_accessor.create_version(version)
+    saved_version = await db_accessor.create_pipeline(version)
 
-    assert isinstance(saved_pipeline, ModelledPipeline)
+    assert isinstance(saved_version.pipeline, ModelledPipeline)
     assert isinstance(saved_version, ModelledVersion)
-    assert saved_pipeline.name == version.pipeline.name
+    assert saved_version.pipeline.name == version.pipeline.name
     assert saved_version.version == version.version
-    assert saved_pipeline.uri == version.pipeline.uri
+    assert saved_version.pipeline.uri == version.pipeline.uri
 
     with pytest.raises(AssertionError):
         await db_accessor.create_pipeline({})
     with pytest.raises(IntegrityError) as exception:
         # Making duplicate provides a useful error
-        await db_accessor.create_pipeline(version.pipeline)
+        await db_accessor.create_pipeline(version)
 
         assert re.match("UNIQUE constraint failed", exception.value)
+
+
+@pytest.mark.asyncio
+async def test_create_version(db_accessor):
+    version = give_me_a_version()
+    saved_version = await db_accessor.create_pipeline(version)
+
+    new_version = ModelledVersion(version="2.0", pipeline=version.pipeline)
+    saved_new_version = await db_accessor.create_version(new_version)
+    assert saved_new_version.version == "2.0"
+    assert saved_new_version.pipeline == saved_version.pipeline
+    with pytest.raises(AssertionError):
+        await db_accessor.create_version({})
     with pytest.raises(IntegrityError) as exception:
-        await db_accessor.create_version(version)
+        await db_accessor.create_version(new_version)
 
         assert "UNIQUE constraint failed" in exception.value
 
@@ -108,7 +122,7 @@ async def test_create_task(db_accessor):
     assert (
         saved_task.status == TaskStateEnum.PENDING
     ), "State automatically set to PENDING"
-    assert saved_task.pipeline.name == "ptest 1"
+    assert saved_task.version.pipeline.name == "ptest 1"
     assert saved_task.task_input_id, "Input ID is created automatically"
 
     events = await db_accessor.get_events_for_task(saved_task)
@@ -120,7 +134,7 @@ async def test_create_task(db_accessor):
     assert (
         existing_task.status == TaskStateEnum.PENDING
     ), "State automatically set to PENDING"
-    assert existing_task.pipeline.name == "ptest 1"
+    assert existing_task.version.pipeline.name == "ptest 1"
     events = await db_accessor.get_events_for_task(existing_task)
     assert len(events) == 1, "No additional events"
 
@@ -136,7 +150,7 @@ async def test_claim_tasks(db_accessor):
         assert exception.value == "Pipeline not found"
 
     # Now try again with a pipeline but no tasks
-    await db_accessor.create_version(version)
+    await db_accessor.create_pipeline(version)
     tasks = await db_accessor.claim_tasks(1, version)
     assert isinstance(tasks, list)
     assert len(tasks) == 0
@@ -284,7 +298,7 @@ async def test_get_tasks(db_accessor):
 
     tasks = await db_accessor.get_tasks(pipeline_name="ptest one")
     assert len(tasks) == 2, "New tasks filtered out by pipeline name"
-    assert tasks[0].pipeline.name == "ptest one"
+    assert tasks[0].version.pipeline.name == "ptest one"
 
     # Change one task to another status
     await db_accessor.update_task(
