@@ -31,6 +31,7 @@ from npg_porch.db.connection import get_DbAccessor
 from npg_porch.models.permission import RolesEnum
 from npg_porch.models.pipeline import Pipeline
 from npg_porch.models.token import Token
+from npg_porch.models.version import Version
 
 router = APIRouter(
     prefix="/pipelines",
@@ -113,7 +114,7 @@ async def create_pipeline_token(
 
 @router.post(
     "/",
-    response_model=Pipeline,
+    response_model=Version,
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"description": "Pipeline was created"},
@@ -124,11 +125,11 @@ async def create_pipeline_token(
     },
     summary="Create one pipeline record.",
     description="""
-    Using JSON data in the request, creates a new pipeline record.
+    Using JSON data in the request, creates a new pipeline and/or version record.
     A valid special power user token is required for authorisation.""",
 )
 async def create_pipeline(
-    pipeline: Pipeline,
+    version: Version,
     db_accessor=Depends(get_DbAccessor),
     permissions=Depends(validate),
 ) -> Pipeline:
@@ -137,16 +138,30 @@ async def create_pipeline(
         raise HTTPException(status_code=403)
 
     try:
-        new_pipeline = await db_accessor.create_pipeline(pipeline)
+        new_pipeline = await db_accessor.create_pipeline(version.pipeline)
+    except IntegrityError as e:
+        logging.info(str(e))
+        if re.search("NOT NULL", str(e)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pipeline must specify a name and URI",
+            )
+        else:
+            logging.info("Pipeline already exists, skipping to version creation")
+            pass
+
+    try:
+        new_version = await db_accessor.create_version(version)
     except IntegrityError as e:
         logging.error(str(e))
         if re.search("NOT NULL", str(e)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pipeline must specify a name and URI and version",
+                detail="Version must specify a version string",
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Pipeline already exists"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Version already exists",
             )
-    return new_pipeline
+    return new_version

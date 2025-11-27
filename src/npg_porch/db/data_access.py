@@ -30,9 +30,10 @@ from sqlalchemy.sql.functions import count, max as samax
 
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
+from npg_porch.db.models import Version as DbVersion
 from npg_porch.db.models import Task as DbTask
 from npg_porch.db.models import Token as DbToken
-from npg_porch.models import Pipeline, Task, TaskStateEnum, TaskExpanded
+from npg_porch.models import Pipeline, Task, TaskStateEnum, TaskExpanded, Version
 from npg_porch.models.token import Token
 
 old_pipelines = ["Test pipeline 1", "Snakemake_Cardinal"]
@@ -62,10 +63,28 @@ class AsyncDbAccessor:
     async def _get_pipeline_db_objects(
         self,
         name: str | None = None,
-        version: str | None = None,
         uri: str | None = None,
     ) -> list[Pipeline]:
         query = select(DbPipeline)
+        if name:
+            query = query.filter_by(name=name)
+        if uri:
+            query = query.filter_by(repository_uri=uri)
+
+        pipeline_result = await self.session.execute(query)
+        return pipeline_result.scalars().all()
+
+    async def _get_pipeline_version_db_objects(
+        self,
+        name: str | None = None,
+        version: str | None = None,
+        uri: str | None = None,
+    ):
+        query = (
+            select(DbVersion)
+            .join(DbVersion.pipeline)
+            .options(joinedload(DbVersion.pipeline))
+        )
         if name:
             query = query.filter_by(name=name)
         if version:
@@ -73,14 +92,18 @@ class AsyncDbAccessor:
         if uri:
             query = query.filter_by(repository_uri=uri)
 
-        pipeline_result = await self.session.execute(query)
-        return pipeline_result.scalars().all()
+        version_result = await self.session.execute(query)
+        return version_result.scalars().all()
 
-    async def get_all_pipelines(
-        self, uri: str | None = None, version: str | None = None
-    ) -> list[Pipeline]:
-        pipelines = await self._get_pipeline_db_objects(uri=uri, version=version)
+    async def get_all_pipelines(self, uri: str | None = None) -> list[Pipeline]:
+        pipelines = await self._get_pipeline_db_objects(uri=uri)
         return [pipe.convert_to_model() for pipe in pipelines]
+
+    async def get_pipeline_versions(
+        self, pipeline_name: str | None = None
+    ) -> list[Version]:
+        versions = self._get_pipeline_version_db_objects(name=pipeline_name)
+        return [version.convert_to_model() for version in versions]
 
     async def get_recent_pipelines(self):
         query = (
@@ -97,13 +120,26 @@ class AsyncDbAccessor:
         session = self.session
         assert isinstance(pipeline, Pipeline)
 
-        pipe = DbPipeline(
-            name=pipeline.name, version=pipeline.version, repository_uri=pipeline.uri
-        )
+        pipe = DbPipeline(name=pipeline.name, repository_uri=pipeline.uri)
 
         session.add(pipe)
         await session.commit()
         return pipe.convert_to_model()
+
+    async def create_version(self, version: Version) -> Version:
+        session = self.session
+        assert isinstance(version, Version)
+
+        ver = DbVersion(
+            pipeline=DbPipeline(
+                name=version.pipeline.name, repository_uri=version.pipeline.uri
+            ),
+            version=version.version,
+        )
+
+        session.add(ver)
+        await session.commit()
+        return ver.convert_to_model()
 
     async def create_pipeline_token(self, name: str, desc: str) -> Token:
         session = self.session
