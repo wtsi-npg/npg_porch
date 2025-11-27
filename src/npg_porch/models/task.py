@@ -23,7 +23,7 @@ import hashlib
 import ujson
 from pydantic import BaseModel, Field, ValidationError
 
-from npg_porch.models import Version
+from npg_porch.models import Pipeline
 
 
 class TaskStateEnum(str, Enum):

@@ -13,8 +13,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 def give_me_a_pipeline(number: int = 1):
     return ModelledPipeline(
-        name=f"ptest {number}",
         version=str(number),
+        name=f"ptest {number}",
         uri=f"file:///team117/test_pipeline{number}",
     )
 
@@ -22,7 +22,9 @@ def give_me_a_pipeline(number: int = 1):
 async def store_me_a_pipeline(
     dac: AsyncDbAccessor, number: int = 1
 ) -> ModelledPipeline:
-    return await dac.create_pipeline(give_me_a_pipeline(number))
+    pipeline_model = give_me_a_pipeline(number)
+    await dac.create_pipeline(pipeline_model.pipeline)
+    return await dac.create_version(pipeline_model)
 
 
 def test_data_accessor_setup(async_session):
@@ -44,7 +46,6 @@ async def test_get_pipeline(db_accessor):
     pipeline = await db_accessor.get_pipeline_by_name("ptest one")
     assert pipeline
     assert pipeline.name == "ptest one"
-    assert pipeline.version == "0.3.14"
 
 
 @pytest.mark.asyncio
@@ -57,23 +58,11 @@ async def test_get_all_pipelines(db_accessor):
 
     # Make a second pipeline with the same version and different uri as the one in the fixture
     await db_accessor.create_pipeline(
-        ModelledPipeline(
-            name="ptest two", version="0.3.14", uri="test-the-other-one.com"
-        )
+        ModelledPipeline(name="ptest two", uri="test-the-other-one.com")
     )
-
-    pipes = await db_accessor.get_all_pipelines(version="0.3.14")
-    assert len(pipes) == 2
 
     pipes = await db_accessor.get_all_pipelines(uri="test-the-other-one.com")
     assert len(pipes) == 1
-
-    pipes = await db_accessor.get_all_pipelines(
-        version="0.3.14", uri="pipeline-test.com"
-    )
-    assert (
-        len(pipes) == 1
-    ), "Both parameters work together, even if it does not reduce the results"
 
 
 @pytest.mark.asyncio
@@ -81,10 +70,12 @@ async def test_create_pipeline(db_accessor):
     pipeline = give_me_a_pipeline()
 
     saved_pipeline = await db_accessor.create_pipeline(pipeline)
+    saved_version = await db_accessor.create_version(pipeline)
 
     assert isinstance(saved_pipeline, ModelledPipeline)
+    assert isinstance(saved_version, ModelledPipeline)
     assert saved_pipeline.name == pipeline.name
-    assert saved_pipeline.version == pipeline.version
+    assert saved_version.version == pipeline.version
     assert saved_pipeline.uri == pipeline.uri
 
     with pytest.raises(AssertionError):
@@ -94,6 +85,10 @@ async def test_create_pipeline(db_accessor):
         await db_accessor.create_pipeline(pipeline)
 
         assert re.match("UNIQUE constraint failed", exception.value)
+    with pytest.raises(IntegrityError) as exception:
+        await db_accessor.create_version(pipeline)
+
+        assert "UNIQUE constraint failed" in exception.value
 
 
 @pytest.mark.asyncio
@@ -141,7 +136,7 @@ async def test_claim_tasks(db_accessor):
         assert exception.value == "Pipeline not found"
 
     # Now try again with a pipeline but no tasks
-    await db_accessor.create_pipeline(pipeline)
+    await db_accessor.create_version(pipeline)
     tasks = await db_accessor.claim_tasks(1, pipeline)
     assert isinstance(tasks, list)
     assert len(tasks) == 0
