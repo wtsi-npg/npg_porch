@@ -17,11 +17,16 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
+from npg_porch.auth.token import validate
 from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models.permission import Permission, PermissionValidationException
 from npg_porch.models.version import Version
 
 router = APIRouter(
@@ -50,3 +55,57 @@ async def get_versions(
             status_code=404, detail=f"Pipeline '{pipeline_name}' not _found"
         )
     return version
+
+
+@router.post(
+    "/",
+    response_model=Version,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"description": "Version was created"},
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Insufficient version properties provided"
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": "Version already exists for this pipeline"
+        },
+    },
+    summary="Create one version record.",
+    description="""
+    Using JSON data in the request, creates a new version record
+    for an existing pipeline.
+    A valid pipeline token is required for authorisation.
+    """,
+)
+async def create_version(
+    version: Version,
+    db_accessor=Depends(get_DbAccessor),
+    permission=Depends(validate),
+) -> Version:
+    try:
+        permission.validate_pipeline(version.pipeline)
+    except PermissionValidationException as e:
+        logging.warning(str(e))
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"Given credentials cannot be used for pipeline '{version.pipeline.name}'"
+            ),
+        )
+    try:
+        new_version = await db_accessor.create_version(version)
+    except IntegrityError as e:
+        logging.info(str(e))
+        if "NOT NULL" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Version must specify a version and a complete pipeline",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Version already exists for this pipeline",
+            )
+    # Except no pipeline?
+
+    return new_version

@@ -49,15 +49,14 @@ router = APIRouter(
     summary="Get information about all pipelines.",
     description="""
     Returns a list of pydantic Pipeline models.
-    A uri and/or version filter can be used.
+    A uri filter can be used.
     A valid token issued for any pipeline is required for authorisation.""",
 )
 async def get_pipelines(
     uri: str | None = None,
-    version: str | None = None,
     db_accessor=Depends(get_DbAccessor),
 ) -> list[Pipeline]:
-    return await db_accessor.get_all_pipelines(uri, version)
+    return await db_accessor.get_all_pipelines(uri)
 
 
 @router.get(
@@ -123,22 +122,22 @@ async def create_pipeline_token(
         },
         status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"},
     },
-    summary="Create one pipeline record.",
+    summary="Create one pipeline record and a linked version record.",
     description="""
-    Using JSON data in the request, creates a new pipeline and/or version record.
+    Using JSON data in the request, creates a new pipeline and version record.
     A valid special power user token is required for authorisation.""",
 )
 async def create_pipeline(
     version: Version,
     db_accessor=Depends(get_DbAccessor),
     permissions=Depends(validate),
-) -> Pipeline:
+) -> Version:
     if permissions.role != RolesEnum.POWER_USER:
         logging.error(f"Role {RolesEnum.POWER_USER} is required")
         raise HTTPException(status_code=403)
 
     try:
-        new_pipeline = await db_accessor.create_pipeline(version.pipeline)
+        new_version = await db_accessor.create_pipeline(version)
     except IntegrityError as e:
         logging.info(str(e))
         if re.search("NOT NULL", str(e)):
@@ -147,21 +146,10 @@ async def create_pipeline(
                 detail="Pipeline must specify a name and URI",
             )
         else:
-            logging.info("Pipeline already exists, skipping to version creation")
-            pass
-
-    try:
-        new_version = await db_accessor.create_version(version)
-    except IntegrityError as e:
-        logging.error(str(e))
-        if re.search("NOT NULL", str(e)):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Version must specify a version string",
-            )
-        else:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Version already exists",
+                detail="Pipeline already exists, use version api to create a "
+                "new version of an existing pipeline",
             )
+
     return new_version

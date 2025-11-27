@@ -39,9 +39,10 @@ class Version(Base):
     pipeline = relationship("Pipeline", back_populates="versions")
     tasks = relationship("Task", back_populates="version")
 
-
-def convert_to_model(self):
-    """
-    Convert sqlalchemy object to npg_porch format.
-    """
-    return ModeledVersion(version=self.version, pipeline=self.pipeline)
+    def convert_to_model(self):
+        """
+        Convert sqlalchemy object to npg_porch format.
+        """
+        return ModeledVersion(
+            version=self.version, pipeline=self.pipeline.convert_to_model()
+        )
