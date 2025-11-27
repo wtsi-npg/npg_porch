@@ -120,7 +120,7 @@ def past_tasks():
 
     tasks = [
         Task(
-            pipeline=pipeline,
+            version=version,
             definition={"Shared": "input"},
             events=[day_one_events[i]],
             state=TaskStateEnum.PENDING,

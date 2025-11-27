@@ -58,7 +58,11 @@ async def test_get_all_pipelines(db_accessor):
 
     # Make a second pipeline with the same version and different uri as the one in the fixture
     await db_accessor.create_pipeline(
-        ModelledPipeline(name="ptest two", uri="test-the-other-one.com")
+        ModelledPipeline(
+            name="ptest two",
+            uri="test-the-other-one.com",
+            version="0.3.14",
+        )
     )
 
     pipes = await db_accessor.get_all_pipelines(uri="test-the-other-one.com")
@@ -85,6 +89,19 @@ async def test_create_pipeline(db_accessor):
         await db_accessor.create_pipeline(pipeline)
 
         assert re.match("UNIQUE constraint failed", exception.value)
+
+
+@pytest.mark.asyncio
+async def test_create_version(db_accessor):
+    pipeline = give_me_a_pipeline()
+    saved_version = await db_accessor.create_pipeline(pipeline)
+
+    new_version = ModelledPipeline(version="2.0", name=pipeline.name, uri=pipeline.uri)
+    saved_new_version = await db_accessor.create_version(new_version)
+    assert saved_new_version.version == "2.0"
+    assert saved_new_version.name == saved_version.name
+    with pytest.raises(AssertionError):
+        await db_accessor.create_version({})
     with pytest.raises(IntegrityError) as exception:
         await db_accessor.create_version(pipeline)
 
@@ -284,7 +301,7 @@ async def test_get_tasks(db_accessor):
 
     tasks = await db_accessor.get_tasks(pipeline_name="ptest one")
     assert len(tasks) == 2, "New tasks filtered out by pipeline name"
-    assert tasks[0].pipeline.name == "ptest one"
+    assert tasks[0].version.pipeline.name == "ptest one"
 
     # Change one task to another status
     await db_accessor.update_task(
