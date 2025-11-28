@@ -28,8 +28,8 @@ from starlette import status
 
 from npg_porch.auth.token import validate
 from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models import Version
 from npg_porch.models.permission import PermissionValidationException
-from npg_porch.models.pipeline import Pipeline
 from npg_porch.models.task import Task, TaskStateEnum
 
 
@@ -85,7 +85,7 @@ async def get_tasks(
         status.HTTP_200_OK: {
             "description": "A task with the same signature already exists"
         },
-        status.HTTP_404_NOT_FOUND: {"description": "Pipeline does not exist."},
+        status.HTTP_404_NOT_FOUND: {"description": "Version does not exist."},
     },
     summary="Creates one task record.",
     description="""
@@ -98,13 +98,13 @@ async def get_tasks(
     Task object has its status set to the value currently available in the
     database.
 
-    The pipeline specified by the `pipeline` attribute of the Task object
+    The version specified by the `version` attribute of the Task object
     should exist. If it does not exist, return status 404 'Not found'.""",
 )
 async def create_task(
     task: Task, db_accessor=Depends(get_DbAccessor), permission=Depends(validate)
 ) -> Task:
-    _validate_request(permission, task.pipeline)
+    _validate_request(permission, task.version.pipeline)
 
     try:
         (task, created) = await db_accessor.create_task(
@@ -136,7 +136,7 @@ async def create_task(
 async def update_task(
     task: Task, db_accessor=Depends(get_DbAccessor), permission=Depends(validate)
 ) -> Task:
-    _validate_request(permission, task.pipeline)
+    _validate_request(permission, task.version.pipeline)
 
     try:
         changed_task = await db_accessor.update_task(
@@ -156,9 +156,9 @@ async def update_task(
             "description": "Receive a list of tasks that have been claimed"
         }
     },
-    summary="Claim tasks for a particular pipeline.",
+    summary="Claim tasks for a particular pipeline version.",
     description="""
-    Arguments - the Pipeline object and the maximum number of tasks
+    Arguments - the Version object and the maximum number of tasks
     to retrieve and claim, the latter defaults to 1 if not given.
 
     If no tasks that satisfy the given criteria and are unclaimed
@@ -167,19 +167,19 @@ async def update_task(
     If any tasks are claimed, return an array of these Task objects
     and status 200.
 
-    The pipeline object returned within each of the tasks is consistent
-    with the pipeline object in the payload, but has all possible
-    attributes defined (uri, version).""",
+    The version object returned within each of the tasks is consistent
+    with the version object in the payload, but has all possible
+    attributes defined (pipeline, version).""",
 )
 async def claim_task(
-    pipeline: Pipeline,
+    version: Version,
     num_tasks: Annotated[int | None, Query(gt=0)] = 1,
     db_accessor=Depends(get_DbAccessor),
     permission=Depends(validate),
 ) -> list[Task]:
-    _validate_request(permission, pipeline)
+    _validate_request(permission, version.pipeline)
     tasks = await db_accessor.claim_tasks(
-        token_id=permission.requestor_id, pipeline=pipeline, claim_limit=num_tasks
+        token_id=permission.requestor_id, version=version, claim_limit=num_tasks
     )
 
     return tasks

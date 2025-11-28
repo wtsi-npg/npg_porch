@@ -300,6 +300,24 @@ async def test_get_tasks(db_accessor):
     assert len(tasks) == 2, "New tasks filtered out by pipeline name"
     assert tasks[0].version.pipeline.name == "ptest one"
 
+    # Test tasks in a different version of the same pipeline
+
+    new_version = ModelledVersion(version="1.8", pipeline=version.pipeline)
+    saved_new_version = await db_accessor.create_version(new_version)
+
+    for i in range(3):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                version=saved_new_version,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
+
+    pipeline_tasks = await db_accessor.get_tasks(pipeline_name=version.pipeline.name)
+    assert len(pipeline_tasks) == 6, "6 tasks in this pipeline, 3 in each version"
+
     # Change one task to another status
     await db_accessor.update_task(
         token_id=1,

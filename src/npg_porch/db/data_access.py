@@ -301,23 +301,23 @@ class AsyncDbAccessor:
         """
         Gets all the tasks.
 
-        Can filter tasks by pipeline name and task status in order to be more useful.
+        Can filter tasks by pipeline name, task status and version in order to be more useful.
         """
         query = (
             select(DbTask)
             .join(DbTask.version)
             .join(DbVersion.pipeline)
-            .options(joinedload(DbTask.version, DbVersion.pipeline))
+            .options(contains_eager(DbTask.version, DbVersion.pipeline))
         )
 
         if pipeline_name:
             query = query.where(DbPipeline.name == pipeline_name)
 
         if task_status:
-            query = query.filter(DbTask.state == task_status)
+            query = query.where(DbTask.state == task_status)
 
         if version:
-            query = query.filter(DbVersion.version == version)
+            query = query.where(DbVersion.version == version)
 
         task_result = await self.session.execute(query)
         tasks = task_result.scalars().all()
