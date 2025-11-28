@@ -119,7 +119,7 @@ class AsyncDbAccessor:
     async def get_pipeline_versions(
         self, pipeline_name: str | None = None
     ) -> list[Version]:
-        versions = self._get_pipeline_version_db_objects(name=pipeline_name)
+        versions = await self._get_pipeline_version_db_objects(name=pipeline_name)
         return [version.convert_to_model() for version in versions]
 
     async def get_recent_pipelines(self):
