@@ -66,6 +66,7 @@ async def get_versions(
         status.HTTP_400_BAD_REQUEST: {
             "description": "Insufficient version properties provided"
         },
+        status.HTTP_404_NOT_FOUND: {"description": "Pipeline does not exist"},
         status.HTTP_409_CONFLICT: {
             "description": "Version already exists for this pipeline"
         },
@@ -104,6 +105,9 @@ async def create_version(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Version already exists for this pipeline",
             )
-    # Except no pipeline?
+    except NoResultFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Pipeline does not exist"
+        )
 
     return new_version

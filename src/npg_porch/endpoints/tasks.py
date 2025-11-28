@@ -28,8 +28,8 @@ from starlette import status
 
 from npg_porch.auth.token import validate
 from npg_porch.db.connection import get_DbAccessor
+from npg_porch.models import Pipeline
 from npg_porch.models.permission import PermissionValidationException
-from npg_porch.models.pipeline import Pipeline
 from npg_porch.models.task import Task, TaskStateEnum
 
 
@@ -156,7 +156,7 @@ async def update_task(
             "description": "Receive a list of tasks that have been claimed"
         }
     },
-    summary="Claim tasks for a particular pipeline.",
+    summary="Claim tasks for a particular pipeline version.",
     description="""
     Arguments - the Pipeline object and the maximum number of tasks
     to retrieve and claim, the latter defaults to 1 if not given.
@@ -169,7 +169,7 @@ async def update_task(
 
     The pipeline object returned within each of the tasks is consistent
     with the pipeline object in the payload, but has all possible
-    attributes defined (uri, version).""",
+    attributes defined (pipeline, version).""",
 )
 async def claim_task(
     pipeline: Pipeline,

@@ -23,7 +23,7 @@ async def store_me_a_pipeline(
     dac: AsyncDbAccessor, number: int = 1
 ) -> ModelledPipeline:
     pipeline_model = give_me_a_pipeline(number)
-    return await dac.create_pipeline(pipeline_model.pipeline)
+    return await dac.create_pipeline(pipeline_model)
 
 
 def test_data_accessor_setup(async_session):
@@ -299,6 +299,24 @@ async def test_get_tasks(db_accessor):
     tasks = await db_accessor.get_tasks(pipeline_name="ptest one")
     assert len(tasks) == 2, "New tasks filtered out by pipeline name"
     assert tasks[0].pipeline.name == "ptest one"
+
+    # Test tasks in a different version of the same pipeline
+
+    new_version = ModelledPipeline(version="1.8", name=pipeline.name, uri=pipeline.uri)
+    saved_new_version = await db_accessor.create_version(new_version)
+
+    for i in range(3):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                pipeline=saved_new_version,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
+
+    pipeline_tasks = await db_accessor.get_tasks(pipeline_name=pipeline.name)
+    assert len(pipeline_tasks) == 6, "6 tasks in this pipeline, 3 in each version"
 
     # Change one task to another status
     await db_accessor.update_task(
