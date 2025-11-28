@@ -39,7 +39,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/{pipeline}",
+    "/{pipeline_name}",
     response_model=list[str],
     summary="Get information about version of a pipeline.",
     description="Returns a list of pydantic Version models for a specific pipeline.",

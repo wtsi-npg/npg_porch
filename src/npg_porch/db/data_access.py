@@ -119,7 +119,7 @@ class AsyncDbAccessor:
     async def get_pipeline_versions(
         self, pipeline_name: str | None = None
     ) -> list[str]:
-        versions = self._get_pipeline_version_db_objects(name=pipeline_name)
+        versions = await self._get_pipeline_version_db_objects(name=pipeline_name)
         return [version.version for version in versions]
 
     async def get_recent_pipelines(self):
@@ -149,11 +149,11 @@ class AsyncDbAccessor:
         assert isinstance(pipeline, Pipeline)
 
         try:
-            await self._get_pipeline_db_object(pipeline.name)
+            pipe = await self._get_pipeline_db_object(pipeline.name)
         except NoResultFound:
             raise NoResultFound("Pipeline not found")
         ver = DbVersion(
-            pipeline=DbPipeline(name=pipeline.name, repository_uri=pipeline.uri),
+            pipeline=pipe,
             version=pipeline.version,
         )
 
@@ -201,7 +201,7 @@ class AsyncDbAccessor:
             # representation of the task.
             t = await self.get_db_task(
                 pipeline_name=task.pipeline.name,
-                version=task.version.version,
+                version=task.pipeline.version,
                 job_descriptor=t.job_descriptor,
             )
             created = False

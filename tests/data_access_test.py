@@ -23,8 +23,7 @@ async def store_me_a_pipeline(
     dac: AsyncDbAccessor, number: int = 1
 ) -> ModelledPipeline:
     pipeline_model = give_me_a_pipeline(number)
-    await dac.create_pipeline(pipeline_model.pipeline)
-    return await dac.create_version(pipeline_model)
+    return await dac.create_pipeline(pipeline_model.pipeline)
 
 
 def test_data_accessor_setup(async_session):
@@ -74,12 +73,10 @@ async def test_create_pipeline(db_accessor):
     pipeline = give_me_a_pipeline()
 
     saved_pipeline = await db_accessor.create_pipeline(pipeline)
-    saved_version = await db_accessor.create_version(pipeline)
 
     assert isinstance(saved_pipeline, ModelledPipeline)
-    assert isinstance(saved_version, ModelledPipeline)
     assert saved_pipeline.name == pipeline.name
-    assert saved_version.version == pipeline.version
+    assert saved_pipeline.version == pipeline.version
     assert saved_pipeline.uri == pipeline.uri
 
     with pytest.raises(AssertionError):
@@ -153,7 +150,7 @@ async def test_claim_tasks(db_accessor):
         assert exception.value == "Pipeline not found"
 
     # Now try again with a pipeline but no tasks
-    await db_accessor.create_version(pipeline)
+    await db_accessor.create_pipeline(pipeline)
     tasks = await db_accessor.claim_tasks(1, pipeline)
     assert isinstance(tasks, list)
     assert len(tasks) == 0
@@ -301,7 +298,7 @@ async def test_get_tasks(db_accessor):
 
     tasks = await db_accessor.get_tasks(pipeline_name="ptest one")
     assert len(tasks) == 2, "New tasks filtered out by pipeline name"
-    assert tasks[0].version.pipeline.name == "ptest one"
+    assert tasks[0].pipeline.name == "ptest one"
 
     # Change one task to another status
     await db_accessor.update_task(
