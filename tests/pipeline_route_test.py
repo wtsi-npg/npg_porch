@@ -16,20 +16,20 @@ headers4power_user = {
 }
 
 
-def http_create_pipeline(fastapi_testclient, pipeline):
+def http_create_pipeline(fastapi_testclient, version):
     response = fastapi_testclient.post(
-        "/pipelines", json=pipeline.model_dump(), follow_redirects=True
+        "/pipelines", json=version.model_dump(), follow_redirects=True
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     response = fastapi_testclient.post(
-        "/pipelines", json=pipeline.model_dump(), follow_redirects=True, headers=headers
+        "/pipelines", json=version.model_dump(), follow_redirects=True, headers=headers
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     response = fastapi_testclient.post(
         "/pipelines",
-        json=pipeline.model_dump(),
+        json=version.model_dump(),
         follow_redirects=True,
         headers=headers4power_user,
     )

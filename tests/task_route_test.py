@@ -1,6 +1,4 @@
-import pytest
-
-from npg_porch.models import Pipeline, Task, TaskStateEnum, Version
+from npg_porch.models import Task, TaskStateEnum, Version
 from starlette import status
 
 # Not testing get-all-tasks as this method will ultimately go

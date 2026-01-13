@@ -48,14 +48,7 @@ router = APIRouter(
 async def get_versions(
     pipeline_name: str, db_accessor=Depends(get_DbAccessor)
 ) -> List[Version]:
-    versions = None
-    try:
-        versions = await db_accessor.get_pipeline_versions(pipeline_name=pipeline_name)
-    except NoResultFound:
-        raise HTTPException(
-            status_code=404, detail=f"Pipeline '{pipeline_name}' not _found"
-        )
-    return versions
+    return await db_accessor.get_pipeline_versions(pipeline_name=pipeline_name)
 
 
 @router.post(
@@ -108,9 +101,5 @@ async def create_version(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Version already exists for this pipeline",
             )
-    except NoResultFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Pipeline does not exist"
-        )
 
     return new_version
