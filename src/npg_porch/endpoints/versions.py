@@ -18,6 +18,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
@@ -46,15 +47,15 @@ router = APIRouter(
 )
 async def get_versions(
     pipeline_name: str, db_accessor=Depends(get_DbAccessor)
-) -> Version:
-    version = None
+) -> List[Version]:
+    versions = None
     try:
-        version = await db_accessor.get_pipeline_versions(pipeline_name=pipeline_name)
+        versions = await db_accessor.get_pipeline_versions(pipeline_name=pipeline_name)
     except NoResultFound:
         raise HTTPException(
             status_code=404, detail=f"Pipeline '{pipeline_name}' not _found"
         )
-    return version
+    return versions
 
 
 @router.post(

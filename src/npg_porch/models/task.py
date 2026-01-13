@@ -82,7 +82,7 @@ class Task(BaseModel):
         for k, v in self.model_dump().items():
             other_d = other.model_dump()
             if k == "version":
-                truths.append(v["pipeline"] == other_d[k]["pipeline"])
+                truths.append(v["pipeline"]["name"] == other_d[k]["pipeline"]["name"])
             elif k == "task_input_id":
                 break
             elif k == "status":

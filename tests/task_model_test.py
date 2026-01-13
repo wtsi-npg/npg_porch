@@ -1,15 +1,14 @@
 from datetime import datetime
 
 from npg_porch.models.task import TaskExpanded, TaskStateEnum
-from npg_porch.models import Pipeline
+from npg_porch.models import Pipeline, Version
 
 
 def test_expanded_task_date_format():
-    pipeline = Pipeline(
-        name="pipeline", version="1.0", uri="file:///team117/test_pipeline"
-    )
+    pipeline = Pipeline(name="pipeline", uri="file:///team117/test_pipeline")
+    version = Version(pipeline=pipeline, version="1.0")
     task = TaskExpanded(
-        pipeline=pipeline,
+        version=version,
         created=datetime(2025, 1, 1, 0, 0, 0),
         updated=datetime(2025, 1, 2, 12, 30, 15),
         status=TaskStateEnum.PENDING,

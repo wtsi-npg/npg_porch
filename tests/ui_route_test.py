@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from npg_porch.endpoints import ui
 from npg_porch.server import app
-from npg_porch.models import Pipeline, Task, TaskStateEnum
+from npg_porch.models import Pipeline, Task, TaskStateEnum, Version
 
 client = TestClient(app)
 
@@ -35,10 +35,9 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
         recent_fail_response.json()["recordsTotal"] == 2
     ), "Two tasks have failed within the last 14 days"
 
-    modelled_pipeline = Pipeline(
-        name="new_pipeline", version="1.0", uri="file://test.pipeline"
-    )
-    pipeline = await db_accessor.create_pipeline(modelled_pipeline)
+    modelled_pipeline = Pipeline(name="new_pipeline", uri="file://test.pipeline")
+    modelled_version = Version(version="1.0", pipeline=modelled_pipeline)
+    version = await db_accessor.create_pipeline(modelled_version)
 
     response = client.get(f"/ui/tasks/new_pipeline/{ui.UiStateEnum.ALL}/{datetime.min}")
     assert response.json()["recordsTotal"] == 0, "No tasks in new pipeline"
@@ -48,7 +47,7 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
             token_id=1,
             task=Task(
                 task_input={"number": i + 1},
-                pipeline=pipeline,
+                version=version,
                 status=TaskStateEnum.PENDING,
             ),
         )
@@ -69,17 +68,16 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
 
 @pytest.mark.asyncio
 async def test_get_long_running_ui_tasks(db_accessor):
-    modelled_pipeline = Pipeline(
-        name="test_pipeline", version="1.0", uri="file://test.pipeline"
-    )
-    pipeline = await db_accessor.create_pipeline(modelled_pipeline)
+    modelled_pipeline = Pipeline(name="test_pipeline", uri="file://test.pipeline")
+    modelled_version = Version(version="1.0", pipeline=modelled_pipeline)
+    version = await db_accessor.create_pipeline(modelled_version)
 
     for i in range(4):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
                 task_input={"number": i + 1},
-                pipeline=pipeline,
+                version=version,
                 status=TaskStateEnum.PENDING,
             ),
         )
@@ -89,7 +87,7 @@ async def test_get_long_running_ui_tasks(db_accessor):
             token_id=1,
             task=Task(
                 task_input={"number": i + 1},
-                pipeline=pipeline,
+                version=version,
                 status=TaskStateEnum.DONE,
             ),
         )
