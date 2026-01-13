@@ -1,4 +1,4 @@
-from npg_porch.models import Pipeline, Task, TaskStateEnum
+from npg_porch.models import Task, TaskStateEnum, Pipeline
 from starlette import status
 
 # Not testing get-all-tasks as this method will ultimately go
@@ -16,7 +16,7 @@ headers4ptest_some = {
 def test_task_creation(async_minimum, fastapi_testclient):
     # Create a task with a sparse pipeline definition
     task_one = Task(
-        pipeline={"name": "ptest one"},
+        pipeline={"name": "ptest one", "version": "0.3.14"},
         task_input={"number": 1},
         status=TaskStateEnum.PENDING,
     )
@@ -43,7 +43,7 @@ def test_task_creation(async_minimum, fastapi_testclient):
     assert response.json() == response_obj
 
     task_two = Task(
-        pipeline={"name": "ptest none"},
+        pipeline={"name": "ptest none", "version": "0.3.14"},
         task_input={"number": 1},
         status=TaskStateEnum.PENDING,
     )
@@ -85,7 +85,9 @@ def test_task_update(async_minimum, fastapi_testclient):
     # And change the reference pipeline to something wrong.
     # This token is valid, but for a different pipeline. It is impossible
     # to have a valid token for a pipeline that does not exist.
-    modified_task.pipeline = Pipeline.model_validate({"name": "ptest one thousand"})
+    modified_task.pipeline = Pipeline.model_validate(
+        {"name": "ptest one thousand", "version": "1.0"}
+    )
     response = fastapi_testclient.put(
         "/tasks",
         json=modified_task.model_dump(),
@@ -96,22 +98,21 @@ def test_task_update(async_minimum, fastapi_testclient):
 
 
 def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
-    response = fastapi_testclient.get(
-        "/pipelines/ptest some", headers=headers4ptest_one
-    )
+    response = fastapi_testclient.get("/versions/ptest some", headers=headers4ptest_one)
     assert response.status_code == status.HTTP_200_OK
 
-    pipeline = response.json()
+    version_1 = Pipeline(version=response.json()[0], name="ptest some")
+    version_2 = Pipeline(version=response.json()[1], name="ptest some")
     tasks_seen = []
 
     # Cannot claim with a token issued for a different pipeline.
     response = fastapi_testclient.post(
-        "/tasks/claim", json=pipeline, headers=headers4ptest_one
+        "/tasks/claim", json=version_1.model_dump(), headers=headers4ptest_one
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     response = fastapi_testclient.post(
-        "/tasks/claim", json=pipeline, headers=headers4ptest_some
+        "/tasks/claim", json=version_1.model_dump(), headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
@@ -122,14 +123,18 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
     tasks_seen.append(t["task_input_id"])
 
     response = fastapi_testclient.post(
-        "/tasks/claim?num_tasks=0", json=pipeline, headers=headers4ptest_some
+        "/tasks/claim?num_tasks=0",
+        json=version_1.model_dump(),
+        headers=headers4ptest_some,
     )
     assert (
         response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     ), "Not allowed to use invalid numbers of tasks"  # noqa: E501
 
     response = fastapi_testclient.post(
-        "/tasks/claim?num_tasks=2", json=pipeline, headers=headers4ptest_some
+        "/tasks/claim?num_tasks=2",
+        json=version_1.model_dump(),
+        headers=headers4ptest_some,
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
@@ -139,16 +144,29 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
     # Cannot test race conditions, because sqlite only pretends to support full async
     # Claim the rest
     response = fastapi_testclient.post(
-        "/tasks/claim?num_tasks=8", json=pipeline, headers=headers4ptest_some
+        "/tasks/claim?num_tasks=8",
+        json=version_1.model_dump(),
+        headers=headers4ptest_some,
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
-    assert len(tasks) == 7, "Asked for eight, got seven"
+    assert len(tasks) == 2, "Asked for eight, got two"
+    tasks_seen.extend([t["task_input_id"] for t in tasks])
+
+    # Claim tasks from the other pipeline version
+    response = fastapi_testclient.post(
+        "/tasks/claim?num_tasks=10",
+        json=version_2.model_dump(),
+        headers=headers4ptest_some,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    tasks = response.json()
+    assert len(tasks) == 5, "Asked for ten, got five"
     tasks_seen.extend([t["task_input_id"] for t in tasks])
     assert len(set(tasks_seen)) == 10, "Ten unique tasks were claimed"
 
     response = fastapi_testclient.post(
-        "/tasks/claim", json=pipeline, headers=headers4ptest_some
+        "/tasks/claim", json=version_2.model_dump(), headers=headers4ptest_some
     )
     assert response.status_code == status.HTTP_200_OK
     tasks = response.json()
