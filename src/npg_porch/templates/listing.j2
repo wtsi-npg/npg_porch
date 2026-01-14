@@ -76,8 +76,8 @@
         ajax: '{{ endpoint }}',
         processing: true,
         columns: [
-          { data: 'pipeline.name' },
-          { data: 'pipeline.version' },
+          { data: 'version.pipeline.name' },
+          { data: 'version.version' },
           { data: 'task_input',
             render: function(data, type, row) {
               return JSON.stringify(data).replaceAll(",", ", ");

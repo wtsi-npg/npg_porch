@@ -80,7 +80,7 @@ async def create_version(
     try:
         permission.validate_pipeline(version.pipeline)
     except PermissionValidationException as e:
-        logging.warning(str(e))
+        logging.error(str(e))
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
@@ -90,7 +90,7 @@ async def create_version(
     try:
         new_version = await db_accessor.create_version(version)
     except IntegrityError as e:
-        logging.info(str(e))
+        logging.error(str(e))
         if "NOT NULL" in str(e):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

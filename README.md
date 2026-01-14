@@ -26,7 +26,7 @@ npg_porch does:
 
 ## Requirements
 
-Python >= 3.7
+Python >= 3.10
 sqlite3 >= 3.9
 
 ## Installation & Usage
@@ -43,7 +43,7 @@ export DB_SCHEMA='non_default'
 uvicorn npg_porch.server:app --host 0.0.0.0 --port 8080 --reload --log-config logging.json
 ```
 
-and open your browser at `http://localhost:8080` to see links to the docs.
+and open your browser at `http://localhost:8080` to see the task listing.
 
 On macOS you will need to ensure that a version of the `sqlite3` library that supports SQLite extensions
 is used when installing the `pysqlite3` package. The system library on macOS does not, so an alternative

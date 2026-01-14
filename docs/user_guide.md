@@ -53,10 +53,12 @@ You can name your pipeline however you like, but the name must be unique, and be
 **pipeline-def.json**
 
 ```javascript
-{
-    "name": "My First Pipeline",
-    "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+{   
     "version": "1.0"
+    "pipeline": {
+        "name": "My First Pipeline",
+        "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+    }
 }
 ```
 
@@ -78,10 +80,12 @@ We might create a cronjob that runs a script. It invokes `imeta` and retrieves a
 
 ```javascript
 {
-    "pipeline": {
-        "name": "My First Pipeline",
-        "uri": "https://github.com/wtsi-npg/my-special-pipeline",
-        "version": "1.0"
+    "version:{
+        "version": "1.0",
+        "pipeline": {
+            "name": "My First Pipeline",
+            "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+        }
     },
     "task_input": {
         "study_id": 100,
@@ -100,10 +104,12 @@ Like any dictionary or Perl hash, order does not matter. The previous document i
         "id_run": 45925,
         "study_id": 100
     },
-    "pipeline": {
-        "name": "My First Pipeline",
-        "uri": "https://github.com/wtsi-npg/my-special-pipeline",
-        "version": "1.0"
+    "version": {
+        "pipeline": {
+            "name": "My First Pipeline",
+            "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+        }
+        "version": "1.0",
     }
 }
 ```
@@ -123,7 +129,11 @@ However, any change in the number or name of keys as well as the values is diffe
 
 Try to limit the content to the variable parts of pipeline configuration. Settings like `type="CRAM"` might be better as static arguments to the pipeline, rather than part of the definition here.
 
-Note that it is possible to run the same `task_input` with a different `pipeline`. For example, if a task failed, you might release a pipeline update. In order to run the same task again, you would need to register another pipeline and register the same task definition with the new pipeline. We do not currently support updating a pipeline with a new version.
+Note that it is possible to run the same `task_input` with a different `pipeline` or `version`. For example, if a task failed, you might release a new pipeline version. In order to run the same task again, you would need to register another version to the pipeline and register the same task definition with the new pipeline.
+
+A new version of a pipeline can be registered using the same json format as is used for registering a pipeline. A pipeline token is required.
+
+`url='https://$SERVER:$PORT/versions'; curl -L -XPOST ${url} -H "content-type: application/json" -H "Authorization: Bearer $PIPELINE_TOKEN" -w " %{http_code}" -d @version-def.json`
 
 ### Step 3 - register the documents with npg_porch
 
@@ -173,9 +183,11 @@ if ($response->is_success) {
     },
     "task_input_id": "a1e556f26db6a950462aebb41251",
     "status": "PENDING"
-    "pipeline": {
-        "name": "My First Pipeline",
-        "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+    "version": {
+        "pipeline": {
+            "name": "My First Pipeline",
+            "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+        },
         "version": "1.0"
     }
 }
@@ -183,7 +195,7 @@ if ($response->is_success) {
 
 Once a task has been submitted, and a 201 CREATED response has been received, the npg_porch server assigns a timestamp to the task, gives it a status of `PENDING` and assigns a unique ID to it. The response from the server contains this extra information.
 
-A 200 OK response means that this particular task for this pipeline has already been registered. The current representation of the task is returned, the status of the task might be different from `PENDING`.  Note that if there are many tasks to register, some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
+A 200 OK response means that this particular task for this pipeline version has already been registered. The current representation of the task is returned, the status of the task might be different from `PENDING`.  Note that if there are many tasks to register, some of which were submitted previously, further work is required to make the process efficient - such as to ask the npg_porch server for a list of previously registered tasks for this pipeline.
 
 ### Step 4 - write a script or program that can launch the pipeline
 
@@ -201,9 +213,11 @@ Response body:
 ```javascript
 [
     {
-        "pipeline": {
-            "name": "My First Pipeline",
-            "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+        "version": {
+            "pipeline": {
+                "name": "My First Pipeline",
+                "uri": "https://github.com/wtsi-npg/my-special-pipeline",
+            }
             "version": "1.0"
         },
         "task_input": {
