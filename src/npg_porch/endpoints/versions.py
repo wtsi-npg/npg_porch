@@ -81,7 +81,7 @@ async def create_version(
     try:
         permission.validate_pipeline(pipeline)
     except PermissionValidationException as e:
-        logging.warning(str(e))
+        logging.error(str(e))
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Given credentials cannot be used for pipeline '{pipeline.name}'",
@@ -89,7 +89,7 @@ async def create_version(
     try:
         new_version = await db_accessor.create_version(pipeline)
     except IntegrityError as e:
-        logging.info(str(e))
+        logging.error(str(e))
         if "NOT NULL" in str(e):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
