@@ -126,7 +126,7 @@ def test_task_claim(async_minimum, async_tasks, fastapi_testclient):
         "/tasks/claim?num_tasks=0", json=version_1, headers=headers4ptest_some
     )
     assert (
-        response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     ), "Not allowed to use invalid numbers of tasks"  # noqa: E501
 
     response = fastapi_testclient.post(
