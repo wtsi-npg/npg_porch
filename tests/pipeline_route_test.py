@@ -19,7 +19,7 @@ def http_create_pipeline(fastapi_testclient, pipeline):
     response = fastapi_testclient.post(
         "/pipelines", json=pipeline.model_dump(), follow_redirects=True
     )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     response = fastapi_testclient.post(
         "/pipelines", json=pipeline.model_dump(), follow_redirects=True, headers=headers
@@ -96,7 +96,7 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         follow_redirects=True,
         headers=headers4power_user,
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Create a pipeline
     desired_pipeline = Pipeline(

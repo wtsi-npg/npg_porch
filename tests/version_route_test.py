@@ -20,7 +20,7 @@ def test_create_version(async_minimum, fastapi_testclient):
         "/versions", json=pipeline.model_dump(), follow_redirects=True
     )
     assert (
-        response.status_code == status.HTTP_403_FORBIDDEN
+        response.status_code == status.HTTP_401_UNAUTHORIZED
     ), "Fails to create version with no authentication"
 
     response = fastapi_testclient.post(
