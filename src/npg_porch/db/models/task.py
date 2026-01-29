@@ -65,7 +65,7 @@ class Task(Base):
     # Index('idx_unique_tasks', pipeline_id, job_descriptor, unique=True)
     Index("idx_ordered_tasks", version_id, created)
 
-    version = relationship("Version", back_populates="tasks")
+    pipeline_version = relationship("Version", back_populates="tasks")
     events = relationship("Event", back_populates="task")
 
     def convert_to_model(
@@ -74,7 +74,7 @@ class Task(Base):
         updated: datetime = None,
     ) -> ModelledTask | ModelledTaskExpanded:
         init_args = {
-            "pipeline": self.version.convert_to_api_pipeline(),
+            "pipeline": self.pipeline_version.convert_to_api_pipeline(),
             "task_input_id": self.job_descriptor,
             "task_input": self.definition,
             "status": self.state,

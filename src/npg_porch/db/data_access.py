@@ -116,9 +116,7 @@ class AsyncDbAccessor:
         pipelines = await self._get_pipeline_db_objects(uri=uri)
         return [pipe.convert_to_model() for pipe in pipelines]
 
-    async def get_pipeline_versions(
-        self, pipeline_name: str | None = None
-    ) -> list[str]:
+    async def get_pipeline_versions(self, pipeline_name: str) -> list[str]:
         versions = await self._get_pipeline_version_db_objects(name=pipeline_name)
         return [version.version for version in versions]
 
@@ -135,18 +133,19 @@ class AsyncDbAccessor:
 
     async def create_pipeline(self, pipeline: Pipeline) -> Pipeline:
         session = self.session
-        assert isinstance(pipeline, Pipeline)
+        if not isinstance(pipeline, Pipeline):
+            raise TypeError
 
         pipe = DbPipeline(name=pipeline.name, repository_uri=pipeline.uri)
         ver = DbVersion(version=pipeline.version, pipeline=pipe)
-        session.add(pipe)
         session.add(ver)
         await session.commit()
         return ver.convert_to_api_pipeline()
 
     async def create_version(self, pipeline: Pipeline) -> Pipeline:
         session = self.session
-        assert isinstance(pipeline, Pipeline)
+        if not isinstance(pipeline, Pipeline):
+            raise TypeError
 
         try:
             pipe = await self._get_pipeline_db_object(pipeline.name)
@@ -222,12 +221,12 @@ class AsyncDbAccessor:
 
         potential_tasks = await session.execute(
             select(DbTask)
-            .join(DbTask.version)
+            .join(DbTask.pipeline_version)
             .join(DbVersion.pipeline)
             .where(DbVersion.version_id == version.version_id)
             .where(DbTask.state == TaskStateEnum.PENDING)
             .order_by(DbTask.created)
-            .options(contains_eager(DbTask.version, DbVersion.pipeline))
+            .options(contains_eager(DbTask.pipeline_version, DbVersion.pipeline))
             .with_for_update()
             .limit(claim_limit)
             .execution_options(populate_existing=True)
@@ -257,7 +256,6 @@ class AsyncDbAccessor:
         """
         session = self.session
         # Get the matching task from the DB
-        # TODO: This seems inefficient, think about later
         try:
             db_ver = await self._get_version_db_object(
                 name=task.pipeline.name, version=task.pipeline.version
@@ -268,7 +266,7 @@ class AsyncDbAccessor:
         try:
             task_result = await session.execute(
                 select(DbTask)
-                .filter_by(version=db_ver)
+                .filter_by(pipeline_version=db_ver)
                 .filter_by(job_descriptor=task.generate_task_id())
             )
             og_task = task_result.scalar_one()  # Doesn't raise exception if no rows?!
@@ -300,11 +298,15 @@ class AsyncDbAccessor:
 
         Can filter tasks by pipeline name, task status and version in order to be more useful.
         """
+        if version and not pipeline_name:
+            raise Exception(
+                "A version without a pipeline name is not meaningful when getting tasks"
+            )
         query = (
             select(DbTask)
-            .join(DbTask.version)
+            .join(DbTask.pipeline_version)
             .join(DbVersion.pipeline)
-            .options(contains_eager(DbTask.version, DbVersion.pipeline))
+            .options(contains_eager(DbTask.pipeline_version, DbVersion.pipeline))
         )
 
         if pipeline_name:
@@ -333,6 +335,10 @@ class AsyncDbAccessor:
 
         Can be filtered by pipeline name and status.
         """
+        if version and not pipeline_name:
+            raise Exception(
+                "A version without a pipeline name is not meaningful when getting tasks"
+            )
         latest_event = (
             select(samax(Event.time).label("status_date"), Event.task_id)
             .select_from(Event)
@@ -343,9 +349,9 @@ class AsyncDbAccessor:
             select(DbTask, latest_event.c.status_date)
             .select_from(DbTask)
             .join(latest_event, DbTask.task_id == latest_event.c.task_id)
-            .join(DbTask.version)
+            .join(DbTask.pipeline_version)
             .join(DbVersion.pipeline)
-            .options(contains_eager(DbTask.version, DbVersion.pipeline))
+            .options(contains_eager(DbTask.pipeline_version, DbVersion.pipeline))
             .order_by(latest_event.c.status_date.desc())
         )
 
@@ -406,9 +412,9 @@ class AsyncDbAccessor:
         """Get the task."""
         query = (
             select(DbTask)
-            .join(DbTask.version)
+            .join(DbTask.pipeline_version)
             .join(DbVersion.pipeline)
-            .options(joinedload(DbTask.version, DbVersion.pipeline))
+            .options(joinedload(DbTask.pipeline_version, DbVersion.pipeline))
             .where(DbPipeline.name == pipeline_name)
             .where(DbVersion.version == version)
             .where(DbTask.job_descriptor == job_descriptor)
@@ -419,10 +425,11 @@ class AsyncDbAccessor:
 
     @staticmethod
     def convert_task_to_db(task: Task, version: DbVersion) -> DbTask:
-        assert task.status in TaskStateEnum
+        if task.status not in TaskStateEnum:
+            raise ValueError
 
         return DbTask(
-            version=version,
+            pipeline_version=version,
             job_descriptor=task.generate_task_id(),
             definition=task.task_input,
             state=task.status,

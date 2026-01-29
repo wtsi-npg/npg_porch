@@ -42,8 +42,8 @@ router = APIRouter(
 @router.get(
     "/{pipeline_name}",
     response_model=list[str],
-    summary="Get information about version of a pipeline.",
-    description="Returns a list of pydantic Version models for a specific pipeline.",
+    summary="Get information about versions of a pipeline.",
+    description="Returns a list of the available versions for a specific pipeline.",
 )
 async def get_versions(
     pipeline_name: str, db_accessor=Depends(get_DbAccessor)
@@ -93,7 +93,7 @@ async def create_version(
         if "NOT NULL" in str(e):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Version must specify a version and a complete pipeline",
+                detail="Message body must specify a version and a complete pipeline",
             )
         else:
             raise HTTPException(

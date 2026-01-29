@@ -37,7 +37,7 @@ class Version(Base):
     unique_version = UniqueConstraint(version, pipeline_id, name="unique_version")
 
     pipeline = relationship("Pipeline", back_populates="versions")
-    tasks = relationship("Task", back_populates="version")
+    tasks = relationship("Task", back_populates="pipeline_version")
 
     def convert_to_api_pipeline(self):
         """

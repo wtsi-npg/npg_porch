@@ -79,7 +79,7 @@ async def test_create_pipeline(db_accessor):
     assert saved_pipeline.version == pipeline.version
     assert saved_pipeline.uri == pipeline.uri
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         await db_accessor.create_pipeline({})
     with pytest.raises(IntegrityError) as exception:
         # Making duplicate provides a useful error
@@ -97,7 +97,7 @@ async def test_create_version(db_accessor):
     saved_new_version = await db_accessor.create_version(new_version)
     assert saved_new_version.version == "2.0"
     assert saved_new_version.name == saved_version.name
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         await db_accessor.create_version({})
     with pytest.raises(IntegrityError) as exception:
         await db_accessor.create_version(pipeline)

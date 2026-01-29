@@ -38,14 +38,14 @@ def minimum_data():
     b_event = Event(token=tokens[0], change="Created")
     tasks = [
         Task(
-            version=version,
+            pipeline_version=version,
             events=[a_event],
             job_descriptor="8cb72a9439dc643d67e859ceca424b9327a9c1abf9c772525df299f656137c22",
             definition={"to_do": "stuff", "why": "reasons"},
             state=TaskStateEnum.PENDING,
         ),
         Task(
-            version=version,
+            pipeline_version=version,
             events=[b_event],
             # Probably wrong job_descriptor
             job_descriptor="4994ef1668bc9614bf0a8f199da50345e85e8b714ab91e95cf619c74af7d3eda",
@@ -85,7 +85,7 @@ def lots_of_tasks():
             status=TaskStateEnum.PENDING,
         )
         t_db = Task(
-            version=version,
+            pipeline_version=version,
             job_descriptor=t.generate_task_id(),
             state=t.status,
             definition=t.task_input,
@@ -120,7 +120,7 @@ def past_tasks():
 
     tasks = [
         Task(
-            version=version,
+            pipeline_version=version,
             definition={"Shared": "input"},
             events=[day_one_events[i]],
             state=TaskStateEnum.PENDING,
