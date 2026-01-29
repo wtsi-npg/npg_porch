@@ -28,6 +28,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.functions import count, max as samax
 
+from npg_porch.db.exceptions import IncompatibleArgumentsException
 from npg_porch.db.models import Event
 from npg_porch.db.models import Pipeline as DbPipeline
 from npg_porch.db.models import Version as DbVersion
@@ -299,7 +300,7 @@ class AsyncDbAccessor:
         Can filter tasks by pipeline name, task status and version in order to be more useful.
         """
         if version and not pipeline_name:
-            raise Exception(
+            raise IncompatibleArgumentsException(
                 "A version without a pipeline name is not meaningful when getting tasks"
             )
         query = (
@@ -336,7 +337,7 @@ class AsyncDbAccessor:
         Can be filtered by pipeline name and status.
         """
         if version and not pipeline_name:
-            raise Exception(
+            raise IncompatibleArgumentsException(
                 "A version without a pipeline name is not meaningful when getting tasks"
             )
         latest_event = (

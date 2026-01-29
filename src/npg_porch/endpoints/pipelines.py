@@ -137,12 +137,12 @@ async def create_pipeline(
 
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
-    except IntegrityError as e:
+    except IntegrityError or TypeError as e:
         logging.info(str(e))
         if re.search("NOT NULL", str(e)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pipeline must specify a name and URI",
+                detail="Pipeline must specify a name, version and URI",
             )
         else:
             raise HTTPException(

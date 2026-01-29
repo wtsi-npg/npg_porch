@@ -225,3 +225,8 @@ def test_get_tasks(async_minimum, async_tasks, fastapi_testclient):
     print(response.text)
     tasks = response.json()
     assert len(tasks) == 0, "but no tasks are returned that match status and pipeline"
+
+    response = fastapi_testclient.get(
+        '/tasks?pipeline_version="0.3.14"', headers=headers4ptest_one
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST

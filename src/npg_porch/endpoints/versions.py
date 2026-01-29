@@ -88,7 +88,7 @@ async def create_version(
         )
     try:
         new_version = await db_accessor.create_version(pipeline)
-    except IntegrityError as e:
+    except IntegrityError or TypeError as e:
         logging.error(str(e))
         if "NOT NULL" in str(e):
             raise HTTPException(
