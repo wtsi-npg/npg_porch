@@ -48,15 +48,14 @@ router = APIRouter(
     summary="Get information about all pipelines.",
     description="""
     Returns a list of pydantic Pipeline models.
-    A uri and/or version filter can be used.
+    A uri filter can be used.
     A valid token issued for any pipeline is required for authorisation.""",
 )
 async def get_pipelines(
     uri: str | None = None,
-    version: str | None = None,
     db_accessor=Depends(get_DbAccessor),
 ) -> list[Pipeline]:
-    return await db_accessor.get_all_pipelines(uri, version)
+    return await db_accessor.get_all_pipelines(uri)
 
 
 @router.get(
@@ -122,9 +121,9 @@ async def create_pipeline_token(
         },
         status.HTTP_409_CONFLICT: {"description": "Pipeline already exists"},
     },
-    summary="Create one pipeline record.",
+    summary="Create one pipeline record and a linked version record.",
     description="""
-    Using JSON data in the request, creates a new pipeline record.
+    Using JSON data in the request, creates new pipeline and version records.
     A valid special power user token is required for authorisation.""",
 )
 async def create_pipeline(
@@ -138,15 +137,18 @@ async def create_pipeline(
 
     try:
         new_pipeline = await db_accessor.create_pipeline(pipeline)
-    except IntegrityError as e:
-        logging.error(str(e))
+    except IntegrityError or TypeError as e:
+        logging.info(str(e))
         if re.search("NOT NULL", str(e)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pipeline must specify a name and URI and version",
+                detail="Pipeline must specify a name, version and URI",
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Pipeline already exists"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Pipeline already exists, use version api to create a "
+                "new version of an existing pipeline",
             )
+
     return new_pipeline

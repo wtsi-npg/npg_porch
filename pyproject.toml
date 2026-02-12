@@ -12,7 +12,7 @@ license = {file = "LICENSE.md"}
 dependencies = [
     "aiosqlite",
     "asyncpg",
-    "fastapi",
+    "fastapi >= 0.122.0",
     "jinja2",
     "pydantic > 2.0.0",
     "psycopg2-binary",

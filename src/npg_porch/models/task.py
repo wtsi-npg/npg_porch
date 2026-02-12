@@ -21,9 +21,14 @@ from datetime import datetime
 from enum import Enum
 import hashlib
 import ujson
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+    field_serializer,
+)
 
-from npg_porch.models.pipeline import Pipeline
+from npg_porch.models import Pipeline
 
 
 class TaskStateEnum(str, Enum):
@@ -83,6 +88,7 @@ class Task(BaseModel):
             other_d = other.model_dump()
             if k == "pipeline":
                 truths.append(v["name"] == other_d[k]["name"])
+                truths.append(v["version"] == other_d[k]["version"])
             elif k == "task_input_id":
                 break
             elif k == "status":
@@ -113,5 +119,7 @@ class TaskExpanded(Task):
         description="The timestamp of task status update",
     )
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%d\u00A0%H:%M:%S")}
+    @field_serializer("created", mode="plain")
+    @field_serializer("updated", mode="plain")
+    def serialise_datetime(self, value: datetime):
+        return value.strftime("%Y-%m-%d\u00A0%H:%M:%S")
