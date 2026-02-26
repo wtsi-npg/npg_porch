@@ -1,0 +1,24 @@
+CREATE TABLE npg_porch.version (
+  version_id SERIAL PRIMARY KEY,
+  version VARCHAR(32) NOT NULL,
+  pipeline_id INT NOT NULL REFERENCES pipeline (pipeline_id),
+  CONSTRAINT unique_version UNIQUE(version, pipeline_id)
+);
+
+INSERT INTO npg_porch.version (version, pipeline_id) SELECT version, pipeline_id FROM npg_porch.pipeline;
+
+ALTER TABLE npg_porch.task 
+  ADD COLUMN version_id INT,
+  DROP CONSTRAINT unique_tasks,
+  ADD CONSTRAINT task_version_id_fkey FOREIGN KEY (version_id) REFERENCES version (version_id),
+  ADD CONSTRAINT unique_tasks UNIQUE (version_id, job_descriptor);
+
+UPDATE npg_porch.task AS t SET version_id = v.version_id FROM npg_porch.version AS v JOIN npg_porch.pipeline AS p USING (pipeline_id) WHERE p.pipeline_id = t.pipeline_id;
+
+GRANT SELECT ON TABLE npg_porch.version TO npg_ro;
+
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA npg_porch TO npg_rw;
+GRANT INSERT, DELETE, SELECT, UPDATE ON TABLE npg_porch.version TO npg_rw;
+
+ALTER TABLE npg_porch.pipeline DROP COLUMN version;
+ALTER TABLE npg_porch.task DROP COLUMN pipeline_id;
