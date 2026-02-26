@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * Separate version table, allowing multiple versions per pipeline.
+* Alembic config and revision files to keep track of database changes.
 
 ### Changed
 
