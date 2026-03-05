@@ -33,7 +33,7 @@
           <form method="get" action="/" id="selection_form" class="row g-3 align-items-end">
             <div class="col-lg-3 col-md-6">
               <label for="filter_mode" class="form-label text-start">Filter Mode:</label>
-              <select class="form-select" name="filter_mode" id="filter_mode">
+              <select class="form-select" id="filter_mode">
                 <option value="all" {{ "selected" if filter_mode == "all" }}>All</option>
                 <option value="long_running" {{ "selected" if filter_mode == "long_running" }}>Long Running</option>
                 <option value="recently_failed" {{ "selected" if filter_mode == "recently_failed" }}>Recently Failed</option>
@@ -121,6 +121,7 @@
       })
 
       const filterMode = document.getElementById('filter_mode');
+      const selectionForm = document.getElementById('selection_form');
       const pipelineSelection = document.getElementById('pipeline_selection');
       const stateSelection = document.getElementById('state_selection');
 
@@ -134,6 +135,15 @@
         if (!isAll) {
           pipelineSelection.value = '';
           stateSelection.value = 'All';
+        }
+        if (selectionForm) {
+          if (filterMode.value === 'long_running') {
+            selectionForm.action = '/long_running';
+          } else if (filterMode.value === 'recently_failed') {
+            selectionForm.action = '/recently_failed';
+          } else {
+            selectionForm.action = '/';
+          }
         }
       }
 
