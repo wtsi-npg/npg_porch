@@ -71,21 +71,13 @@ version = metadata.version("npg_porch")
 
 
 class FilterModeEnum(str, Enum):
-    def __str__(self):
-        return self.value
-
-    DEFAULT = "default"
+    ALL = "all"
     LONG_RUNNING = "long_running"
     RECENTLY_FAILED = "recently_failed"
 
-
-def _parse_filter_mode(raw_mode: str | None) -> FilterModeEnum:
-    if not raw_mode:
-        return FilterModeEnum.DEFAULT
-    try:
-        return FilterModeEnum(raw_mode)
-    except ValueError:
-        return FilterModeEnum.DEFAULT
+    @classmethod
+    def _missing_(cls, value):
+        return cls.ALL
 
 
 def _build_filter_heading(
@@ -131,31 +123,36 @@ async def root(
     filter_mode: str | None = None,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
-    filter_mode = _parse_filter_mode(filter_mode)
+    mode = FilterModeEnum(filter_mode)
     redirect = False
     url = request.url
-    if filter_mode != FilterModeEnum.DEFAULT:
+
+    if filter_mode is not None and mode == FilterModeEnum.ALL:
+        url = url.remove_query_params("filter_mode")
+        redirect = True
+
+        if not pipeline_name and "pipeline_name" in request.query_params.keys():
+            url = request.url.remove_query_params("pipeline_name")
+            redirect = True
+        if (
+            task_status == ui.UiStateEnum.ALL and
+            "task_status" in request.query_params.keys()
+        ):
+            url = request.url.remove_query_params("task_status")
+            redirect = True
+    else:
         if "pipeline_name" in request.query_params.keys():
             url = request.url.remove_query_params("pipeline_name")
             redirect = True
         if "task_status" in request.query_params.keys():
             url = request.url.remove_query_params("task_status")
             redirect = True
-    else:
-        if not pipeline_name and "pipeline_name" in request.query_params.keys():
-            url = request.url.remove_query_params("pipeline_name")
-            redirect = True
-        if (
-            task_status == ui.UiStateEnum.ALL
-            and "task_status" in request.query_params.keys()
-        ):
-            url = request.url.remove_query_params("task_status")
-            redirect = True
+
     if redirect:
         return RedirectResponse(url)
 
     pipeline_list = await db_accessor.get_recent_pipelines()
-    if filter_mode == FilterModeEnum.DEFAULT:
+    if mode == FilterModeEnum.ALL:
         if pipeline_name and pipeline_name not in [
             pipeline.name for pipeline in pipeline_list
         ]:
@@ -166,7 +163,7 @@ async def root(
                 """
             )
 
-    endpoint = _build_endpoint(pipeline_name, task_status, filter_mode)
+    endpoint = _build_endpoint(pipeline_name, task_status, mode)
 
     return templates.TemplateResponse(
         "listing.j2",
@@ -174,9 +171,9 @@ async def root(
             "endpoint": endpoint,
             "pipeline_name": pipeline_name,
             "task_status": task_status,
-            "filter_mode": str(filter_mode),
+            "filter_mode": mode.value,
             "filter_heading": _build_filter_heading(
-                pipeline_name, task_status, filter_mode
+                pipeline_name, task_status, mode
             ),
             "pipelines": pipeline_list,
             "request": request,
@@ -194,7 +191,15 @@ async def root(
     summary="Web page with listing of long running Porch tasks",
 )
 async def long_running(request: Request) -> HTMLResponse:
-    return RedirectResponse(url="/?filter_mode=long_running")
+    return templates.TemplateResponse(
+        "listing.j2",
+        {
+            "endpoint": "/ui/long_running",
+            "pipeline_name": "Long Running",
+            "request": request,
+            "version": version,
+        },
+    )
 
 
 @app.get(
@@ -204,7 +209,14 @@ async def long_running(request: Request) -> HTMLResponse:
     summary="Web page with listing of tasks that have failed in the last 2 weeks",
 )
 async def recently_failed(request: Request) -> HTMLResponse:
-    return RedirectResponse(url="/?filter_mode=recently_failed")
+    return templates.TemplateResponse(
+        "listing.j2",
+        {
+            "endpoint": f"/ui/tasks/All/{TaskStateEnum.FAILED}/{RECENT}",
+            "pipeline_name": "Recently Failed",
+            "request": request,
+            "version": version,        },
+    )
 
 
 @app.get(

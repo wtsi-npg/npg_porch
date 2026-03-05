@@ -13,16 +13,18 @@
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
   </head>
   <body>
-    {% set filter_mode = filter_mode if filter_mode else "default" %}
+    {% set filter_mode = filter_mode if filter_mode else "all" %}
     <div class="container-fluid mb-5">
       <div class="row mt-4 mb-4">
         <div class="col">
           <h3 class="text-start mb-0">Porch Tasks - {{ filter_heading if filter_heading else "All" }}</h3>
-          {% if filter_mode == "long_running" %}
-            <p class="text-muted mb-1">Long running tasks have existed for two standard deviations longer than the mean length of tasks in their pipeline.</p>
-          {% elif filter_mode == "recently_failed" %}
-            <p class="text-muted mb-1">Recently failed tasks changed to the failed status in the last 2 weeks.</p>
-          {% endif %}
+          <p class="text-muted mb-1" style="min-height: 3rem;">
+            {% if filter_mode == "long_running" %}
+              Long running tasks have existed for two standard deviations longer than the mean length of tasks in their pipeline.
+            {% elif filter_mode == "recently_failed" %}
+              Recently failed tasks changed to the failed status in the last 2 weeks.
+            {% endif %}
+          </p>
         </div>
       </div>
 
@@ -32,14 +34,14 @@
             <div class="col-lg-3 col-md-6">
               <label for="filter_mode" class="form-label text-start">Filter Mode:</label>
               <select class="form-select" name="filter_mode" id="filter_mode">
-                <option value="default" {{ "selected" if filter_mode == "default" }}>Default</option>
+                <option value="all" {{ "selected" if filter_mode == "all" }}>All</option>
                 <option value="long_running" {{ "selected" if filter_mode == "long_running" }}>Long Running</option>
                 <option value="recently_failed" {{ "selected" if filter_mode == "recently_failed" }}>Recently Failed</option>
               </select>
             </div>
             <div class="col-lg-4 col-md-6">
               <label for="pipeline_selection" class="form-label text-start">Pipeline Selection:</label>
-              <select class="form-select" name="pipeline_name" id="pipeline_selection" {{ "disabled" if filter_mode != "default" }}>
+              <select class="form-select" name="pipeline_name" id="pipeline_selection" {{ "disabled" if filter_mode != "all" }}>
                 <option disabled>--Pipeline Selection--</option>
                 <option {{ "selected" if not pipeline_name }} value="">All</option>
                 {% for pipeline in pipelines %}
@@ -49,7 +51,7 @@
             </div>
             <div class="col-lg-3 col-md-6">
               <label for="state_selection" class="form-label text-start">Task Status Selection:</label>
-              <select class="form-select" name="task_status" id="state_selection" {{ "disabled" if filter_mode != "default" }}>
+              <select class="form-select" name="task_status" id="state_selection" {{ "disabled" if filter_mode != "all" }}>
                 <option disabled>--Task Status Selection--</option>
                 {% for state in states %}
                   <option {{ "selected" if task_status == state }} value="{{ state }}">{{ state }}</option>
@@ -126,10 +128,10 @@
         if (!filterMode || !pipelineSelection || !stateSelection) {
           return;
         }
-        const isDefault = filterMode.value === 'default';
-        pipelineSelection.disabled = !isDefault;
-        stateSelection.disabled = !isDefault;
-        if (!isDefault) {
+        const isAll = filterMode.value === 'all';
+        pipelineSelection.disabled = !isAll;
+        stateSelection.disabled = !isAll;
+        if (!isAll) {
           pipelineSelection.value = '';
           stateSelection.value = 'All';
         }
