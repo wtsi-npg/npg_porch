@@ -48,25 +48,14 @@ def upgrade() -> None:
     """
     op.execute(sql)
     sql = """
-    GRANT SELECT ON TABLE npg_porch.version TO npg_ro
+    GRANT SELECT ON TABLE npg_porch.version TO npgtest_ro
     """
     op.execute(sql)
     sql = """
-    GRANT INSERT, DELETE, SELECT, UPDATE ON TABLE npg_porch.version TO npg_rw
+    GRANT INSERT, DELETE, SELECT, UPDATE ON TABLE npg_porch.version TO npgtest_rw
     """
     op.execute(sql)
 
 
-def downgrade() -> None:
-    """Downgrade schema."""
-    sql = """
-    ALTER TABLE npg_porch.task
-    DROP CONSTRAINT unique_tasks,
-    ADD CONSTRAINT unique_tasks UNIQUE (pipeline_id, job_descriptor)
-    DROP COLUMN version_id;
-    """
-    op.execute(sql)
-    sql = """
-    DROP TABLE npg_porch.version;
-    """
-    op.execute(sql)
+# No downgrade function as the creation for multiple versions prevents unique
+# pipelines from being recreated.  This will cause an error on attempting to downgrade.

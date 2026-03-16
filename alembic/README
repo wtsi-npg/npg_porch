@@ -1,1 +1,12 @@
-Generic single-database configuration.
+A revision can be created as follows, then populated with raw sql or alembic 'op's.
+```
+$ alembic revision -m "Revision message" --head revision_id(e.g. 3.0.0)
+```
+If the `--head` option is not included, alembic will generate its own random revision id, which makes it more difficult
+to find a particular revision when required.
+
+To apply a revision, export the database url as `ALEMBIC_DB_URL`, then run:
+```
+$ alembic upgrade revision_id
+```
+or `head` instead of revision_id to upgrade all the way to current.

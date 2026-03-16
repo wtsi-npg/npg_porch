@@ -31,13 +31,5 @@ def upgrade() -> None:
     op.execute(sql)
 
 
-def downgrade() -> None:
-    """Downgrade schema."""
-    sql = """
-    ALTER TABLE npg_porch.pipeline ADD COLUMN version
-    """
-    op.execute(sql)
-    sql = """
-    ALTER TABLE npg_porch.task ADD_COLUMN pipeline_id
-    """
-    op.execute(sql)
+# No downgrade function as the creation for multiple versions prevents unique
+# pipelines from being recreated.  This will cause an error on attempting to downgrade.
