@@ -262,3 +262,28 @@ A failed task might be rerun by changing this status from FAILED to PENDING, suc
 Inevitably a pipeline will fail: Disk full, segfault, missing data, missing dependency etc.
 
 T.B.C.
+
+### Web UI - change multiple task states
+
+The web UI (`/`) also supports editing task status directly in the table, including filtered views (`/long_running` and `/recently_failed`).
+
+1. Select new status values in one or more task rows.
+2. Click `Apply State Changes`.
+3. Enter a bearer token in the dialog when prompted.
+4. The UI sends one `PUT /tasks` request per changed row using the same task payload shape used by API clients:
+
+```javascript
+{
+    "pipeline": {
+        "name": "My First Pipeline",
+        "version": "1.0"
+    },
+    "task_input": {
+        "study_id": 100,
+        "id_run": 45925
+    },
+    "status": "RUNNING"
+}
+```
+
+The page reports a summary (`N updated, M failed`) and keeps failed rows marked so that you can correct and retry.

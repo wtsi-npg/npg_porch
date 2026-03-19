@@ -62,6 +62,11 @@ def test_task_update(async_minimum, fastapi_testclient):
     task = fastapi_testclient.get("/tasks", headers=headers4ptest_one).json()[0]
     assert task["status"] == TaskStateEnum.PENDING.value
 
+    unauthenticated = fastapi_testclient.put(
+        "/tasks", json=task, follow_redirects=True
+    )
+    assert unauthenticated.status_code == status.HTTP_401_UNAUTHORIZED
+
     task["status"] = TaskStateEnum.RUNNING
     response = fastapi_testclient.put(
         "/tasks", json=task, follow_redirects=True, headers=headers4ptest_one
@@ -95,6 +100,74 @@ def test_task_update(async_minimum, fastapi_testclient):
         headers=headers4ptest_one,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_task_update_mixed_outcomes(async_minimum, fastapi_testclient):
+    # Confirms task updates are independent in a mixed-outcome workflow: a valid
+    # update must be persisted even if a later update in the same user action
+    # fails validation, and the failed update must leave its target task
+    # unchanged.
+    #
+    # This is important because the web UI allows a user to update several tasks in one
+    # batch-like workflow (although we haven't gone to the length of creating a new
+    # batch-like endpoint and are just using the existing endpoint repeatedly).
+    tasks = fastapi_testclient.get(
+        "/tasks?pipeline_name=ptest one", headers=headers4ptest_one
+    ).json()
+    assert len(tasks) == 2, (
+        "The fixture should provide two tasks in ptest one for the mixed-outcome update scenario"
+    )
+
+    to_update = tasks[0]
+    to_fail = tasks[1]
+
+    to_update["status"] = TaskStateEnum.RUNNING
+    success_response = fastapi_testclient.put(
+        "/tasks", json=to_update, follow_redirects=True, headers=headers4ptest_one
+    )
+    assert success_response.status_code == status.HTTP_200_OK, (
+        "Updating the first task with a valid payload should succeed"
+    )
+
+    # Change the identifying task_input as well as the status so the server can
+    # no longer match this request to an existing task to update.
+    invalid_signature_payload = dict(to_fail)
+    invalid_signature_payload["status"] = TaskStateEnum.RUNNING
+    invalid_signature_payload["task_input"] = {"this": "does not match existing task"}
+    failed_response = fastapi_testclient.put(
+        "/tasks",
+        json=invalid_signature_payload,
+        follow_redirects=True,
+        headers=headers4ptest_one,
+    )
+    assert failed_response.status_code == status.HTTP_404_NOT_FOUND, (
+        "Updating the second task with a mismatched signature should fail"
+    )
+    assert failed_response.json() == {"detail": "Task to be modified could not be found"}, (
+        "A failed update should report that the original task could not be located"
+    )
+
+    # Re-query by status to prove the first update stuck and the second task was
+    # not moved despite the failed request.
+    running_tasks = fastapi_testclient.get(
+        "/tasks?pipeline_name=ptest one&status=RUNNING", headers=headers4ptest_one
+    ).json()
+    assert len(running_tasks) == 1, (
+        "Only the successfully updated task should be moved into RUNNING"
+    )
+    assert running_tasks[0]["task_input"] == to_update["task_input"], (
+        "The RUNNING task should be the one that was updated successfully"
+    )
+
+    pending_tasks = fastapi_testclient.get(
+        "/tasks?pipeline_name=ptest one&status=PENDING", headers=headers4ptest_one
+    ).json()
+    assert len(pending_tasks) == 1, (
+        "The failed update should leave the other task in PENDING"
+    )
+    assert pending_tasks[0]["task_input"] == to_fail["task_input"], (
+        "The still-pending task should be the one whose update failed"
+    )
 
 
 def test_task_claim(async_minimum, async_tasks, fastapi_testclient):

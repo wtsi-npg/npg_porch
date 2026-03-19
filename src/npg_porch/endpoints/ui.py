@@ -18,11 +18,25 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 from datetime import datetime
 from enum import Enum
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel
+from sqlalchemy.orm.exc import NoResultFound
 from starlette import status
 
+from npg_porch.auth.ui_session import (
+    clear_ui_session_cookie,
+    get_ui_session,
+    require_ui_session,
+    set_ui_session_cookie,
+    ui_session_store,
+    validate_ui_csrf,
+)
+from npg_porch.db.auth import CredentialsValidationException
 from npg_porch.db.connection import get_DbAccessor
-from npg_porch.models import TaskStateEnum
+from npg_porch.db.connection import get_CredentialsValidator
+from npg_porch.models import Task, TaskStateEnum
+from npg_porch.models.permission import PermissionValidationException, RolesEnum
 
 
 class UiStateEnum(str, Enum):
@@ -31,6 +45,10 @@ class UiStateEnum(str, Enum):
 
     ALL = "All"
     NOT_DONE = "NOT DONE"
+
+
+class UiSessionLoginRequest(BaseModel):
+    token: str
 
 
 router = APIRouter(
@@ -84,3 +102,97 @@ async def get_long_running_ui_tasks(
     params = request.query_params.get
     task_list = await db_accessor.get_long_running_tasks()
     return {"draw": params("draw"), "recordsTotal": len(task_list), "data": task_list}
+
+
+@router.post(
+    "/session",
+    summary="Create a browser session for authenticated UI task updates.",
+)
+async def create_ui_session(
+    session_request: UiSessionLoginRequest,
+    request: Request,
+    validator=Depends(get_CredentialsValidator),
+) -> JSONResponse:
+    try:
+        permission = await validator.token2permission(session_request.token)
+    except CredentialsValidationException:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token")
+
+    # Browser editing is restricted to pipeline-scoped tokens so the UI cannot
+    # silently mint a broader web session from a power-user credential.
+    if permission.role != RolesEnum.REGULAR_USER or permission.pipeline is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="UI task updates require a pipeline token",
+        )
+
+    existing_session = get_ui_session(request)
+    if existing_session:
+        # Keep one active browser session per client to avoid stale CSRF tokens
+        # lingering after a token switch.
+        ui_session_store.revoke(existing_session.session_id)
+
+    session = ui_session_store.create(permission)
+    response = JSONResponse(
+        {
+            "csrf_token": session.csrf_token,
+            "pipeline_name": session.pipeline_name,
+        }
+    )
+    response.headers["Cache-Control"] = "no-store"
+    set_ui_session_cookie(response, session.session_id)
+    return response
+
+
+@router.delete(
+    "/session",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Clear the current browser session for authenticated UI task updates.",
+)
+async def delete_ui_session(request: Request) -> Response:
+    session = get_ui_session(request)
+    if session is not None:
+        validate_ui_csrf(request, session)
+        ui_session_store.revoke(session.session_id)
+
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.headers["Cache-Control"] = "no-store"
+    clear_ui_session_cookie(response)
+    return response
+
+
+@router.put(
+    "/tasks",
+    response_model=Task,
+    responses={status.HTTP_200_OK: {"description": "Task was modified"}},
+    summary="Update one task using an authenticated browser session.",
+)
+async def update_ui_task(
+    task: Task,
+    request: Request,
+    db_accessor=Depends(get_DbAccessor),
+) -> Task:
+    # This route mirrors the API update flow but authenticates from the UI
+    # session cookie so the page no longer sends bearer tokens in JS requests.
+    session = require_ui_session(request)
+    validate_ui_csrf(request, session)
+
+    try:
+        session.permission.validate_pipeline(task.pipeline)
+    except PermissionValidationException:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Given credentials cannot be used for"
+                f" pipeline '{task.pipeline.name}'"
+            ),
+        )
+
+    try:
+        changed_task = await db_accessor.update_task(
+            token_id=session.permission.requestor_id, task=task
+        )
+    except NoResultFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+    return changed_task

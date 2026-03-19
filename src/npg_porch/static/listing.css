@@ -1,0 +1,54 @@
+.control-surface {
+  padding: 0.875rem 1rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 0.75rem;
+  background: #f8fbff;
+}
+
+.primary-action-button {
+  width: 14rem;
+  min-width: 14rem;
+}
+
+.update-toolbar {
+  margin-top: 0.75rem;
+}
+
+.update-toolbar-status {
+  margin-left: auto;
+  min-height: 1.25rem;
+}
+
+.update-toolbar-apply {
+  margin-left: auto;
+}
+
+.status-column,
+#tasks th.status-column,
+#tasks td.status-column {
+  min-width: 11rem;
+  white-space: nowrap;
+}
+
+#tasks td.status-column .task-status-select {
+  min-width: 9rem;
+}
+
+.task-filter-description {
+  min-height: 3rem;
+}
+
+.token-dialog-form {
+  min-width: 22rem;
+}
+
+@media (max-width: 1199.98px) {
+  .update-toolbar-status {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .update-toolbar-apply {
+    margin-left: 0;
+  }
+}

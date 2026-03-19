@@ -39,3 +39,6 @@ db = [
     ]
 
 [tool.setuptools_scm]
+
+[tool.setuptools.package-data]
+npg_porch = ["templates/*.j2", "static/*.css", "static/*.js"]

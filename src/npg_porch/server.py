@@ -20,6 +20,7 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from importlib import metadata
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import (
@@ -27,9 +28,11 @@ from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
 )
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, PackageLoader, select_autoescape
 
+from npg_porch.auth.ui_session import build_ui_session_context
 from npg_porch.db.connection import get_DbAccessor
 from npg_porch.endpoints import pipelines, tasks, ui, versions
 from npg_porch.models import TaskStateEnum
@@ -38,6 +41,24 @@ from npg_porch.models import TaskStateEnum
 # https://fastapi.tiangolo.com/tutorial/metadata
 
 RECENT = datetime.now() - timedelta(days=14)
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+HTML_PATHS_WITH_CSP = {"/", "/long_running", "/recently_failed", "/about"}
+# Lock HTML pages down to the CDN origins we intentionally depend on; the
+# listing page JS/CSS was moved to /static so CSP does not need inline script/style.
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self' https://code.jquery.com https://cdn.datatables.net",
+        "style-src 'self' https://cdn.jsdelivr.net https://cdn.datatables.net",
+        "img-src 'self' data:",
+        "font-src 'self' https://cdn.jsdelivr.net",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+    ]
+)
 
 tags_metadata = [
     {
@@ -59,12 +80,33 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
     openapi_tags=tags_metadata,
 )
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(pipelines.router)
 app.include_router(tasks.router)
 app.include_router(ui.router)
 app.include_router(versions.router)
 
-env = Environment(loader=PackageLoader("npg_porch", "templates"))
+
+@app.middleware("http")
+async def add_content_security_policy(request: Request, call_next):
+    response = await call_next(request)
+    content_type = response.headers.get("content-type", "")
+    if (
+        content_type.startswith("text/html")
+        and request.url.path not in {"/docs", "/redoc"}
+    ) or request.url.path in HTML_PATHS_WITH_CSP:
+        response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+    return response
+
+# Autoescape is enabled for .j2 templates so database-backed names and other
+# user-controlled values do not get rendered into HTML verbatim.
+env = Environment(
+    loader=PackageLoader("npg_porch", "templates"),
+    autoescape=select_autoescape(
+        enabled_extensions=("html", "htm", "xml", "j2"),
+        default_for_string=True,
+    ),
+)
 templates = Jinja2Templates(env=env)
 
 version = metadata.version("npg_porch")
@@ -120,12 +162,16 @@ async def root(
     request: Request,
     pipeline_name: str = None,
     task_status: ui.UiStateEnum | TaskStateEnum = ui.UiStateEnum.ALL,
+    filter_mode: FilterModeEnum = FilterModeEnum.ALL,
     db_accessor=Depends(get_DbAccessor),
 ) -> Response:
-    mode = FilterModeEnum.ALL
+    mode = filter_mode
     redirect = False
     url = request.url
 
+    if mode == FilterModeEnum.ALL and "filter_mode" in request.query_params.keys():
+        url = url.remove_query_params("filter_mode")
+        redirect = True
     if not pipeline_name and "pipeline_name" in request.query_params.keys():
         url = url.remove_query_params("pipeline_name")
         redirect = True
@@ -144,14 +190,20 @@ async def root(
         if pipeline_name and pipeline_name not in [
             pipeline.name for pipeline in pipeline_list
         ]:
-            return HTMLResponse(
-                f"""
-                <h1> Error 404 </h1>
-                <h3> {pipeline_name} not registered in POrch </h3> 
-                """
+            # The original raw HTML response reflected pipeline_name directly.
+            # Render a template instead so unknown names are escaped consistently.
+            return templates.TemplateResponse(
+                request,
+                "not_found.j2",
+                {
+                    "requested_pipeline": pipeline_name,
+                    "version": version,
+                },
+                status_code=404,
             )
 
     endpoint = _build_endpoint(pipeline_name, task_status, mode)
+    ui_session_context = build_ui_session_context(request)
 
     return templates.TemplateResponse(
         request,
@@ -165,7 +217,9 @@ async def root(
             "pipelines": pipeline_list,
             "states": [state for state in ui.UiStateEnum]
             + [state for state in TaskStateEnum],
+            "task_states": [str(state) for state in TaskStateEnum],
             "version": version,
+            **ui_session_context,
         },
     )
 
@@ -181,6 +235,7 @@ async def long_running(
     db_accessor=Depends(get_DbAccessor),
 ) -> HTMLResponse:
     pipeline_list = await db_accessor.get_recent_pipelines()
+    ui_session_context = build_ui_session_context(request)
     return templates.TemplateResponse(
         request,
         "listing.j2",
@@ -195,7 +250,9 @@ async def long_running(
             "pipelines": pipeline_list,
             "states": [state for state in ui.UiStateEnum]
             + [state for state in TaskStateEnum],
+            "task_states": [str(state) for state in TaskStateEnum],
             "version": version,
+            **ui_session_context,
         },
     )
 
@@ -211,6 +268,7 @@ async def recently_failed(
     db_accessor=Depends(get_DbAccessor),
 ) -> HTMLResponse:
     pipeline_list = await db_accessor.get_recent_pipelines()
+    ui_session_context = build_ui_session_context(request)
     return templates.TemplateResponse(
         request,
         "listing.j2",
@@ -225,7 +283,9 @@ async def recently_failed(
             "pipelines": pipeline_list,
             "states": [state for state in ui.UiStateEnum]
             + [state for state in TaskStateEnum],
+            "task_states": [str(state) for state in TaskStateEnum],
             "version": version,
+            **ui_session_context,
         },
     )
 

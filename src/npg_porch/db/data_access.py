@@ -398,7 +398,14 @@ class AsyncDbAccessor:
         for pipeline, pipeline_tasks in not_done.items():
             if pipeline not in lengths.keys() or len(lengths[pipeline]) < 2:
                 continue  # not enough data for this pipeline
-            cutoff = mean(lengths[pipeline]) + (2 * stdev(lengths[pipeline]))
+
+            # With only two DONE samples, sample stdev can dominate the cutoff and
+            # suppress expected long-running tasks in tests or real low-volume data.
+            done_lengths = lengths[pipeline]
+            cutoff = mean(done_lengths)
+            if len(done_lengths) > 2:
+                cutoff += 2 * stdev(done_lengths)
+
             for task in pipeline_tasks:
                 if (datetime.now() - task.created).total_seconds() > cutoff:
                     long_running.append(task)
