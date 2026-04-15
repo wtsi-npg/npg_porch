@@ -14,6 +14,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 * Exclude failed tasks from Long Running view.
 * Improve clarity of page headings and contents.
+* Update TemplateResponse signature to match new starlette version.
 
 ## [2.2] - 2025-07-22
 

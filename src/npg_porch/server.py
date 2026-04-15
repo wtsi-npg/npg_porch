@@ -130,8 +130,8 @@ async def root(
         url = url.remove_query_params("pipeline_name")
         redirect = True
     if (
-        task_status == ui.UiStateEnum.ALL and
-        "task_status" in request.query_params.keys()
+        task_status == ui.UiStateEnum.ALL
+        and "task_status" in request.query_params.keys()
     ):
         url = url.remove_query_params("task_status")
         redirect = True
@@ -154,17 +154,15 @@ async def root(
     endpoint = _build_endpoint(pipeline_name, task_status, mode)
 
     return templates.TemplateResponse(
+        request,
         "listing.j2",
         {
             "endpoint": endpoint,
             "pipeline_name": pipeline_name,
             "task_status": task_status,
             "filter_mode": mode.value,
-            "filter_heading": _build_filter_heading(
-                pipeline_name, task_status, mode
-            ),
+            "filter_heading": _build_filter_heading(pipeline_name, task_status, mode),
             "pipelines": pipeline_list,
-            "request": request,
             "states": [state for state in ui.UiStateEnum]
             + [state for state in TaskStateEnum],
             "version": version,
@@ -184,6 +182,7 @@ async def long_running(
 ) -> HTMLResponse:
     pipeline_list = await db_accessor.get_recent_pipelines()
     return templates.TemplateResponse(
+        request,
         "listing.j2",
         {
             "endpoint": "/ui/long_running",
@@ -194,7 +193,6 @@ async def long_running(
                 None, ui.UiStateEnum.ALL, FilterModeEnum.LONG_RUNNING
             ),
             "pipelines": pipeline_list,
-            "request": request,
             "states": [state for state in ui.UiStateEnum]
             + [state for state in TaskStateEnum],
             "version": version,
@@ -214,6 +212,7 @@ async def recently_failed(
 ) -> HTMLResponse:
     pipeline_list = await db_accessor.get_recent_pipelines()
     return templates.TemplateResponse(
+        request,
         "listing.j2",
         {
             "endpoint": f"/ui/tasks/All/{TaskStateEnum.FAILED}/{RECENT}",
@@ -224,7 +223,6 @@ async def recently_failed(
                 None, ui.UiStateEnum.ALL, FilterModeEnum.RECENTLY_FAILED
             ),
             "pipelines": pipeline_list,
-            "request": request,
             "states": [state for state in ui.UiStateEnum]
             + [state for state in TaskStateEnum],
             "version": version,
@@ -241,5 +239,5 @@ async def recently_failed(
 async def about(request: Request, db_accessor=Depends(get_DbAccessor)) -> HTMLResponse:
     pipeline_list = await db_accessor.get_recent_pipelines()
     return templates.TemplateResponse(
-        "about.j2", {"pipelines": pipeline_list, "request": request, "version": version}
+        request, "about.j2", {"pipelines": pipeline_list, "version": version}
     )
