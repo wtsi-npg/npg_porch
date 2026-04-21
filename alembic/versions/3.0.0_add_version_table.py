@@ -48,11 +48,11 @@ def upgrade() -> None:
     """
     op.execute(sql)
     sql = """
-    GRANT SELECT ON TABLE npg_porch.version TO npgtest_ro
+    GRANT SELECT ON TABLE npg_porch.version TO npg_ro
     """
     op.execute(sql)
     sql = """
-    GRANT INSERT, DELETE, SELECT, UPDATE ON TABLE npg_porch.version TO npgtest_rw
+    GRANT INSERT, DELETE, SELECT, UPDATE ON TABLE npg_porch.version TO npg_rw
     """
     op.execute(sql)
 
