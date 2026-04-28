@@ -19,7 +19,7 @@ def http_create_pipeline(fastapi_testclient, pipeline):
     response = fastapi_testclient.post(
         "/pipelines", json=pipeline.model_dump(), follow_redirects=True
     )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     response = fastapi_testclient.post(
         "/pipelines", json=pipeline.model_dump(), follow_redirects=True, headers=headers
@@ -43,7 +43,6 @@ def test_pipeline_get(async_minimum, fastapi_testclient):
     pipeline = Pipeline.model_validate(response.json()[0])
     assert pipeline, "Response fits into the over-the-wire model"
     assert pipeline.name == "ptest one"
-    assert pipeline.version == "0.3.14"
 
 
 def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
@@ -58,16 +57,18 @@ def test_pipeline_filtered_get(async_minimum, fastapi_testclient):
     http_create_pipeline(fastapi_testclient, second_pipeline)
     http_create_pipeline(fastapi_testclient, third_pipeline)
 
-    response = fastapi_testclient.get("/pipelines?version=0.3.14", headers=headers)
-    assert response.status_code == status.HTTP_200_OK
-    pipes = response.json()
-    assert len(pipes) == 3, "All three pipelines have the same version"
+    # Would it be useful to put this functionality back in?
+    # response = fastapi_testclient.get("/pipelines?version=0.3.14", headers=headers)
+    # assert response.status_code == status.HTTP_200_OK
+    # pipes = response.json()
+    # assert len(pipes) == 3, "All three pipelines have the same version"
 
     response = fastapi_testclient.get("/pipelines?uri=http://test.com", headers=headers)
     assert response.status_code == status.HTTP_200_OK
     pipes = response.json()
     assert len(pipes) == 1, "Only one pipeline matches the uri"
-    assert pipes[0] == second_pipeline.model_dump()
+    assert pipes[0]["name"] == second_pipeline.name
+    assert pipes[0]["uri"] == second_pipeline.uri
 
 
 def test_get_known_pipeline(async_minimum, fastapi_testclient):
@@ -77,7 +78,6 @@ def test_get_known_pipeline(async_minimum, fastapi_testclient):
     pipeline = Pipeline.model_validate(response.json())
     assert pipeline, "Response fits into the over-the-wire model"
     assert pipeline.name == "ptest one"
-    assert pipeline.version == "0.3.14"
 
     response = fastapi_testclient.get("/pipelines/not here", headers=headers)
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -96,10 +96,12 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         follow_redirects=True,
         headers=headers4power_user,
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Create a pipeline
-    desired_pipeline = Pipeline(name="ptest two", uri="http://test.com", version="1")
+    desired_pipeline = Pipeline(
+        name="ptest two", uri="http://test.com", version="0.3.14"
+    )
 
     response = http_create_pipeline(fastapi_testclient, desired_pipeline)
     pipeline = Pipeline.model_validate(response)
@@ -113,7 +115,11 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
         headers=headers4power_user,
     )
     assert response.status_code == status.HTTP_409_CONFLICT, "ptest two already in DB"
-    assert response.json()["detail"] == "Pipeline already exists"
+    assert (
+        response.json()["detail"]
+        == "Pipeline already exists, use version api to create a new version of "
+        "an existing pipeline"
+    )
 
     # Create a different pipeline
     second_desired_pipeline = Pipeline(
@@ -125,10 +131,10 @@ def test_create_pipeline(async_minimum, fastapi_testclient):
     # Retrieve the same pipelines
     response = fastapi_testclient.get("/pipelines", headers=headers)
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()[1:] == [
-        desired_pipeline.model_dump(),
-        second_desired_pipeline.model_dump(),
-    ]
+    assert response.json()[1]["name"] == desired_pipeline.name
+    assert response.json()[1]["uri"] == desired_pipeline.uri
+    assert response.json()[2]["name"] == second_desired_pipeline.name
+    assert response.json()[2]["uri"] == second_desired_pipeline.uri
 
     # Create a very poorly provenanced pipeline
     third_desired_pipeline = Pipeline(

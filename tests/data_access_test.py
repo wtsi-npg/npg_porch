@@ -13,8 +13,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 def give_me_a_pipeline(number: int = 1):
     return ModelledPipeline(
-        name=f"ptest {number}",
         version=str(number),
+        name=f"ptest {number}",
         uri=f"file:///team117/test_pipeline{number}",
     )
 
@@ -22,7 +22,8 @@ def give_me_a_pipeline(number: int = 1):
 async def store_me_a_pipeline(
     dac: AsyncDbAccessor, number: int = 1
 ) -> ModelledPipeline:
-    return await dac.create_pipeline(give_me_a_pipeline(number))
+    pipeline_model = give_me_a_pipeline(number)
+    return await dac.create_pipeline(pipeline_model)
 
 
 def test_data_accessor_setup(async_session):
@@ -44,7 +45,6 @@ async def test_get_pipeline(db_accessor):
     pipeline = await db_accessor.get_pipeline_by_name("ptest one")
     assert pipeline
     assert pipeline.name == "ptest one"
-    assert pipeline.version == "0.3.14"
 
 
 @pytest.mark.asyncio
@@ -58,22 +58,14 @@ async def test_get_all_pipelines(db_accessor):
     # Make a second pipeline with the same version and different uri as the one in the fixture
     await db_accessor.create_pipeline(
         ModelledPipeline(
-            name="ptest two", version="0.3.14", uri="test-the-other-one.com"
+            name="ptest two",
+            uri="test-the-other-one.com",
+            version="0.3.14",
         )
     )
 
-    pipes = await db_accessor.get_all_pipelines(version="0.3.14")
-    assert len(pipes) == 2
-
     pipes = await db_accessor.get_all_pipelines(uri="test-the-other-one.com")
     assert len(pipes) == 1
-
-    pipes = await db_accessor.get_all_pipelines(
-        version="0.3.14", uri="pipeline-test.com"
-    )
-    assert (
-        len(pipes) == 1
-    ), "Both parameters work together, even if it does not reduce the results"
 
 
 @pytest.mark.asyncio
@@ -87,13 +79,30 @@ async def test_create_pipeline(db_accessor):
     assert saved_pipeline.version == pipeline.version
     assert saved_pipeline.uri == pipeline.uri
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         await db_accessor.create_pipeline({})
     with pytest.raises(IntegrityError) as exception:
         # Making duplicate provides a useful error
         await db_accessor.create_pipeline(pipeline)
 
         assert re.match("UNIQUE constraint failed", exception.value)
+
+
+@pytest.mark.asyncio
+async def test_create_version(db_accessor):
+    pipeline = give_me_a_pipeline()
+    saved_version = await db_accessor.create_pipeline(pipeline)
+
+    new_version = ModelledPipeline(version="2.0", name=pipeline.name, uri=pipeline.uri)
+    saved_new_version = await db_accessor.create_version(new_version)
+    assert saved_new_version.version == "2.0"
+    assert saved_new_version.name == saved_version.name
+    with pytest.raises(TypeError):
+        await db_accessor.create_version({})
+    with pytest.raises(IntegrityError) as exception:
+        await db_accessor.create_version(pipeline)
+
+        assert "UNIQUE constraint failed" in exception.value
 
 
 @pytest.mark.asyncio
@@ -291,6 +300,24 @@ async def test_get_tasks(db_accessor):
     assert len(tasks) == 2, "New tasks filtered out by pipeline name"
     assert tasks[0].pipeline.name == "ptest one"
 
+    # Test tasks in a different version of the same pipeline
+
+    new_version = ModelledPipeline(version="1.8", name=pipeline.name, uri=pipeline.uri)
+    saved_new_version = await db_accessor.create_version(new_version)
+
+    for i in range(3):
+        await db_accessor.create_task(
+            token_id=1,
+            task=Task(
+                task_input={"number": i + 1},
+                pipeline=saved_new_version,
+                status=TaskStateEnum.PENDING,
+            ),
+        )
+
+    pipeline_tasks = await db_accessor.get_tasks(pipeline_name=pipeline.name)
+    assert len(pipeline_tasks) == 6, "6 tasks in this pipeline, 3 in each version"
+
     # Change one task to another status
     await db_accessor.update_task(
         token_id=1,
@@ -394,7 +421,7 @@ async def test_count_tasks(db_accessor, async_tasks):
 async def test_get_long_running_tasks(db_accessor):
     pipeline = await store_me_a_pipeline(db_accessor, 2)
 
-    for i in range(4):
+    for i in range(5):
         await db_accessor.create_task(
             token_id=1,
             task=Task(
@@ -407,7 +434,7 @@ async def test_get_long_running_tasks(db_accessor):
     # increase expected time to ensure that a task added later will not be "long_running"
     time.sleep(1)
 
-    # Change task to done
+    # Change tasks to done states
     for i in range(2):
         await db_accessor.update_task(
             token_id=1,
@@ -417,6 +444,14 @@ async def test_get_long_running_tasks(db_accessor):
                 status=TaskStateEnum.DONE,
             ),
         )
+    await db_accessor.update_task(
+        token_id=1,
+        task=Task(
+            task_input={"number": 3},
+            pipeline=pipeline,
+            status=TaskStateEnum.FAILED,
+        ),
+    )
 
     long_running_tasks = await db_accessor.get_long_running_tasks()
 

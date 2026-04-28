@@ -6,7 +6,7 @@ from npg_porch.models import Pipeline
 
 def test_expanded_task_date_format():
     pipeline = Pipeline(
-        name="pipeline", version="1.0", uri="file:///team117/test_pipeline"
+        name="pipeline", uri="file:///team117/test_pipeline", version="1.0"
     )
     task = TaskExpanded(
         pipeline=pipeline,

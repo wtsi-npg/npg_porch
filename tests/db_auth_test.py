@@ -68,11 +68,7 @@ async def test_permission_object_is_returned(async_minimum):
     # The fixtures have a token not associated with any pipeline.
     # To model data realistically, create a pipeline not associated
     # with any token.
-    async_minimum.add(
-        Pipeline(
-            name="ptest ten", repository_uri="pipeline-testten.com", version="0.3.15"
-        )
-    )
+    async_minimum.add(Pipeline(name="ptest ten", repository_uri="pipeline-testten.com"))
     await async_minimum.commit()
 
     v = Validator(session=async_minimum)

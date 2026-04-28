@@ -5,6 +5,19 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [3.0] - 2026-04-28
+
+### Added
+
+* Separate version table, allowing multiple versions per pipeline.
+* Alembic config and revision files to keep track of database changes.
+
+### Changed
+
+* Exclude failed tasks from Long Running view.
+* Improve clarity of page headings and contents.
+* Update TemplateResponse signature to match new starlette version.
+
 ## [2.2] - 2025-07-22
 
 ### Added

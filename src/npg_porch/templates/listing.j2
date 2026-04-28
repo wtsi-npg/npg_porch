@@ -13,40 +13,55 @@
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
   </head>
   <body>
+    {% set filter_mode = filter_mode if filter_mode else "all" %}
     <div class="container-fluid mb-5">
       <div class="row mt-4 mb-4">
         <div class="col">
-          <h3 class="text-start mb-0">Porch Tasks - {{ pipeline_name if pipeline_name else "All" }} {{ "- %s" % task_status if task_status else "" }}</h3>
+          <h3 class="text-start mb-0">Porch Tasks - {{ filter_heading if filter_heading else "All" }}</h3>
+          <p class="text-muted mb-1" style="min-height: 3rem;">
+            {% if filter_mode == "long_running" %}
+              Long running tasks have existed for two standard deviations longer than the mean length of tasks in their pipeline.
+            {% elif filter_mode == "recently_failed" %}
+              Recently failed tasks changed to the failed status in the last 2 weeks.
+            {% endif %}
+          </p>
         </div>
       </div>
 
       <div class="row mt-3 mb-4">
-        <div class="col-md-6 {{ "d-none" if pipeline_name == "Long Running" or pipeline_name == "Recently Failed" }}">
-          <form method="get" action="/" id="selection_form" class="d-flex align-items-end gap-3">
-            <div class="flex-grow-1">
+        <div class="col">
+          <form method="get" action="/" id="selection_form" class="row g-3 align-items-end">
+            <div class="col-lg-3 col-md-6">
+              <label for="filter_mode" class="form-label text-start">Filter Mode:</label>
+              <select class="form-select" id="filter_mode">
+                <option value="all" {{ "selected" if filter_mode == "all" }}>All</option>
+                <option value="long_running" {{ "selected" if filter_mode == "long_running" }}>Long Running</option>
+                <option value="recently_failed" {{ "selected" if filter_mode == "recently_failed" }}>Recently Failed</option>
+              </select>
+            </div>
+            <div class="col-lg-4 col-md-6">
               <label for="pipeline_selection" class="form-label text-start">Pipeline Selection:</label>
-              <select class="form-select" name="pipeline_name" id="pipeline_selection">
+              <select class="form-select" name="pipeline_name" id="pipeline_selection" {{ "disabled" if filter_mode != "all" }}>
                 <option disabled>--Pipeline Selection--</option>
                 <option {{ "selected" if not pipeline_name }} value="">All</option>
                 {% for pipeline in pipelines %}
                   <option {{ "selected" if pipeline_name == pipeline.name }} value="{{ pipeline.name }}">{{ pipeline.name }}</option>
                 {% endfor %}
               </select>
-              <label for="state_selection">Task Status Selection:</label>
-              <select class="form-select" name="task_status" id="state_selection">
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <label for="state_selection" class="form-label text-start">Task Status Selection:</label>
+              <select class="form-select" name="task_status" id="state_selection" {{ "disabled" if filter_mode != "all" }}>
                 <option disabled>--Task Status Selection--</option>
                 {% for state in states %}
                   <option {{ "selected" if task_status == state }} value="{{ state }}">{{ state }}</option>
                 {% endfor %}
               </select>
-              <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+            <div class="col-lg-2 col-md-6 d-grid">
+              <button type="submit" class="btn btn-primary">Apply</button>
             </div>
           </form>
-        </div>
-        <div class="col-md-6">
-          <a class="btn btn-primary {{ "d-none" if pipeline_name != "Long Running" and pipeline_name != "Recently Failed" }}" role="button" href="/">All Tasks</a>
-          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Long Running" }} " role="button" href="/long_running">Long Running</a>
-          <a class="btn btn-primary {{ "d-none" if pipeline_name == "Recently Failed" }}" role="button" href="/recently_failed">Recently Failed</a>
         </div>
       </div>
 
@@ -104,6 +119,38 @@
           }
         }
       })
+
+      const filterMode = document.getElementById('filter_mode');
+      const selectionForm = document.getElementById('selection_form');
+      const pipelineSelection = document.getElementById('pipeline_selection');
+      const stateSelection = document.getElementById('state_selection');
+
+      function syncFilterMode() {
+        if (!filterMode || !pipelineSelection || !stateSelection) {
+          return;
+        }
+        const isAll = filterMode.value === 'all';
+        pipelineSelection.disabled = !isAll;
+        stateSelection.disabled = !isAll;
+        if (!isAll) {
+          pipelineSelection.value = '';
+          stateSelection.value = 'All';
+        }
+        if (selectionForm) {
+          if (filterMode.value === 'long_running') {
+            selectionForm.action = '/long_running';
+          } else if (filterMode.value === 'recently_failed') {
+            selectionForm.action = '/recently_failed';
+          } else {
+            selectionForm.action = '/';
+          }
+        }
+      }
+
+      if (filterMode) {
+        filterMode.addEventListener('change', syncFilterMode);
+        syncFilterMode();
+      }
     </script>
 
     <footer class="mt-5 py-3 border-top">

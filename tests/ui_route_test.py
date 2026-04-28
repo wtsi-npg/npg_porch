@@ -36,7 +36,7 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
     ), "Two tasks have failed within the last 14 days"
 
     modelled_pipeline = Pipeline(
-        name="new_pipeline", version="1.0", uri="file://test.pipeline"
+        name="new_pipeline", uri="file://test.pipeline", version="1.0"
     )
     pipeline = await db_accessor.create_pipeline(modelled_pipeline)
 
@@ -70,7 +70,7 @@ async def test_get_ui_tasks(db_accessor, async_past_tasks):
 @pytest.mark.asyncio
 async def test_get_long_running_ui_tasks(db_accessor):
     modelled_pipeline = Pipeline(
-        name="test_pipeline", version="1.0", uri="file://test.pipeline"
+        name="test_pipeline", uri="file://test.pipeline", version="1.0"
     )
     pipeline = await db_accessor.create_pipeline(modelled_pipeline)
 
