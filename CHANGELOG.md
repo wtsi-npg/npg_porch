@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [3.0] - 2026-04-28
+
 ### Added
 
 * Separate version table, allowing multiple versions per pipeline.
