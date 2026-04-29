@@ -1,0 +1,23 @@
+---
+# This is a GitLab ci-cd pipeline that will trigger deployment of Porch once
+# "wtsi-npg/npg_porch" repository is mirrored into GitLab.
+#
+# This will deploy porch on DEV environment as per below condition:
+# 1. Merge to `devel` branch
+
+stages:
+  - trigger
+
+trigger-porch-deployment-dev:
+  stage: trigger
+  variables:
+    PORCH_ENV: "dev"
+    MIRROR_AUTO_DEPLOY: "$MIRROR_AUTO_DEPLOY"
+  trigger:
+    project: npg/npg_deployment_porch
+    branch: devel
+    forward:
+      pipeline_variables: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "devel" &&
+           $CI_PIPELINE_SOURCE == "push"'

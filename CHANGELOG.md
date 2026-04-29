@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 * Separate version table, allowing multiple versions per pipeline.
 * Alembic config and revision files to keep track of database changes.
+* Added GitLab-CI file to invoke porch deployment in GitLab post successful gitlab mirror
 
 ### Changed
 
