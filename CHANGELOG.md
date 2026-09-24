@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+
+* Upgrade PostgreSQL to 18 in docker-dev container
+
 ## [3.0] - 2026-04-28
 
 ### Added
