@@ -26,13 +26,20 @@ RUN python -m venv /app && \
 FROM $BASE_IMAGE
 
 ARG DEBIAN_FRONTEND
+ARG PG_VERSION=18
+
+RUN apt-get update && \
+    apt-get install -q -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    postgresql-common && \
+    /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -q -y --no-install-recommends \
-    curl \
     libsqlite3-0 \
-    postgresql \
+    postgresql-${PG_VERSION} \
     sudo \
     tini \
     locales && \
