@@ -10,7 +10,7 @@ To create an image using the Dockerfile, run the following command from the root
 repository:
 
 ```bash
-docker build --rm -f docker/Dockerfile.dev -t npg_porch_dev .
+docker build --rm -f docker/local/Dockerfile.dev -t npg_porch_dev .
 ```
 
 The Dockerfile supports a number of arguments that can be passed to the `docker build`

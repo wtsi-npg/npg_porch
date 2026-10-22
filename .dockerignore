@@ -1,0 +1,34 @@
+# Build context is the repository root (see docker/deploy/Makefile).
+#
+# Keep .git: setuptools-scm needs it to determine the package version.
+# Only exclude files that git does not track. Excluding tracked files makes
+# them appear deleted inside the build, so setuptools-scm marks the version
+# as dirty.
+
+# Build artefacts
+build/
+dist/
+.eggs/
+**/*.egg-info
+**/__pycache__
+**/*.py[cod]
+
+# Local environments and secrets
+.venv/
+venv/
+.env
+.env.*
+**/*.pem
+**/*.key
+
+# Editor, OS and tool caches
+**/.DS_Store
+**/*~
+.vscode/
+.idea/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Makefile stamp files
+docker/deploy/npg_porch.*

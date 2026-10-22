@@ -87,11 +87,11 @@ ENV DB_HOST=$DB_HOST \
     DB_URL="postgresql+psycopg2://$URL_SLUG"
 
 RUN service postgresql start && \
-    /app/docker/scripts/create_database.sh && \
-    /app/docker/scripts/configure_database_service.sh && \
+    /app/docker/local/scripts/create_database.sh && \
+    /app/docker/local/scripts/configure_database_service.sh && \
     . /app/bin/activate && \
     /app/scripts/deploy_schema.py && \
-    /app/docker/scripts/insert_admin_token.sh && \
+    /app/docker/local/scripts/insert_admin_token.sh && \
     service postgresql stop
 
 USER $APP_USER
@@ -107,4 +107,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 CMD curl
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD ["/app/docker/scripts/entrypoint.sh"]
+CMD ["/app/docker/local/scripts/entrypoint.sh"]
